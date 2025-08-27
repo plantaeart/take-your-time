@@ -2,7 +2,7 @@ from typing import Optional
 import random
 import string
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from bson import ObjectId
 from app.models.enums.category import Category
 from app.models.enums.inventoryStatus import InventoryStatus
@@ -57,7 +57,8 @@ class ProductModel(BaseModel):
     createdAt: datetime
     updatedAt: datetime
 
-    class Config:
-        populate_by_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True,
+        json_encoders={ObjectId: str}
+    )

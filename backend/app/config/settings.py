@@ -2,6 +2,7 @@
 Settings configuration for the FastAPI application.
 """
 from pydantic_settings import BaseSettings
+from pydantic import ConfigDict
 from typing import List, Optional
 
 
@@ -28,9 +29,10 @@ class Settings(BaseSettings):
         """Parse frontend URLs into a list."""
         return [url.strip() for url in self.frontend_urls.split(",")]
     
-    class Config:
-        env_file = ".env.local"  # Default, can be overridden
-        env_file_encoding = "utf-8"
+    model_config = ConfigDict(
+        env_file=".env.local",  # Default, can be overridden
+        env_file_encoding="utf-8"
+    )
 
 
 # Global settings instance - will be initialized when needed

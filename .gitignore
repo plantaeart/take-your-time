@@ -158,6 +158,7 @@ uv.lock
 /backend/.env.local
 /backend/.env.dev-docker
 /backend/.env.production
+/backend/.env.test
 /backend/*.env
 
 # FastAPI specific
