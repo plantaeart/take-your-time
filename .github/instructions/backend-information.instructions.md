@@ -52,7 +52,7 @@ backend/
 
 ### ProductModel (app/models/product.py)
 MongoDB document model with these fields:
-- `id: PyObjectId` - MongoDB ObjectId
+- `id: int` - Auto-incrementing integer ID (1, 2, 3, etc.)
 - `code: str` - Auto-generated unique product code (format: f230fh0g3)
 - `name: str` - Product name (required)
 - `description: str` - Product description (optional)

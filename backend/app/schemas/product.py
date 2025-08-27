@@ -2,6 +2,7 @@
 Product Pydantic schemas for request/response validation.
 """
 from typing import Optional
+from datetime import datetime
 from pydantic import BaseModel, Field
 from app.models.enums.category import Category
 from app.models.enums.inventoryStatus import InventoryStatus
@@ -39,7 +40,7 @@ class ProductUpdate(BaseModel):
 
 class ProductResponse(BaseModel):
     """Schema for product response."""
-    id: str = Field(..., description="Product ID")
+    id: int = Field(..., description="Product ID")
     code: str
     name: str
     description: str
@@ -51,8 +52,8 @@ class ProductResponse(BaseModel):
     shellId: int
     inventoryStatus: InventoryStatus
     rating: float
-    createdAt: int
-    updatedAt: int
+    createdAt: datetime
+    updatedAt: datetime
 
 
 class ProductListResponse(BaseModel):

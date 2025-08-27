@@ -2,14 +2,13 @@
 Product API endpoints for CRUD operations.
 """
 from typing import Optional
-import time
+from datetime import datetime
 from fastapi import APIRouter, HTTPException, Query, Path
-from bson import ObjectId
 from pymongo.errors import DuplicateKeyError
 
 from app.config.database import db_manager
 from app.schemas.product import ProductCreate, ProductUpdate, ProductResponse, ProductListResponse
-from app.models.product import InventoryStatus, generate_product_code, generate_internal_reference
+from app.models.product import InventoryStatus, generate_product_code, generate_internal_reference, get_next_product_id
 
 router = APIRouter(tags=["products"])
 
@@ -50,7 +49,7 @@ async def get_products(
     # Convert to response format
     product_responses = []
     for product in products:
-        product["id"] = str(product["_id"])
+        # Remove MongoDB's _id field, keep our integer id
         del product["_id"]
         product_responses.append(ProductResponse(**product))
     
@@ -77,19 +76,15 @@ async def get_categories():
 
 @router.get("/products/{product_id}", response_model=ProductResponse)
 async def get_product(
-    product_id: str = Path(..., description="Product ID")
+    product_id: int = Path(..., description="Product ID")
 ):
     """Get a specific product by ID."""
-    if not ObjectId.is_valid(product_id):
-        raise HTTPException(status_code=400, detail="Invalid product ID format")
-    
     collection = db_manager.get_collection("products")
-    product = await collection.find_one({"_id": ObjectId(product_id)})
+    product = await collection.find_one({"id": product_id})
     
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     
-    product["id"] = str(product["_id"])
     del product["_id"]
     return ProductResponse(**product)
 
@@ -135,9 +130,13 @@ async def create_product(product_data: ProductCreate):
         if existing_product:
             raise HTTPException(status_code=400, detail="Product with this internal reference already exists")
     
+    # Generate next product ID
+    next_id = await get_next_product_id(collection)
+    
     # Create product with timestamps
-    current_time = int(time.time())
+    current_time = datetime.now()
     product_dict = product_data.model_dump()
+    product_dict["id"] = next_id  # Use generated integer ID
     product_dict["code"] = product_code  # Use generated or provided code
     product_dict["internalReference"] = internal_ref  # Use generated or provided internal reference
     product_dict.update({
@@ -150,7 +149,6 @@ async def create_product(product_data: ProductCreate):
         
         # Return the created product
         created_product = await collection.find_one({"_id": result.inserted_id})
-        created_product["id"] = str(created_product["_id"])
         del created_product["_id"]
         
         return ProductResponse(**created_product)
@@ -164,16 +162,13 @@ async def create_product(product_data: ProductCreate):
 @router.put("/products/{product_id}", response_model=ProductResponse)
 async def update_product(
     product_data: ProductUpdate,
-    product_id: str = Path(..., description="Product ID")
+    product_id: int = Path(..., description="Product ID")
 ):
     """Update an existing product."""
-    if not ObjectId.is_valid(product_id):
-        raise HTTPException(status_code=400, detail="Invalid product ID format")
-    
     collection = db_manager.get_collection("products")
     
     # Check if product exists
-    existing_product = await collection.find_one({"_id": ObjectId(product_id)})
+    existing_product = await collection.find_one({"id": product_id})
     if not existing_product:
         raise HTTPException(status_code=404, detail="Product not found")
     
@@ -187,23 +182,22 @@ async def update_product(
     if "code" in update_data and update_data["code"] != existing_product["code"]:
         code_exists = await collection.find_one({
             "code": update_data["code"],
-            "_id": {"$ne": ObjectId(product_id)}
+            "id": {"$ne": product_id}
         })
         if code_exists:
             raise HTTPException(status_code=400, detail="Product with this code already exists")
     
     # Add updated timestamp
-    update_data["updatedAt"] = int(time.time())
+    update_data["updatedAt"] = datetime.now()
     
     try:
         await collection.update_one(
-            {"_id": ObjectId(product_id)},
+            {"id": product_id},
             {"$set": update_data}
         )
         
         # Return updated product
-        updated_product = await collection.find_one({"_id": ObjectId(product_id)})
-        updated_product["id"] = str(updated_product["_id"])
+        updated_product = await collection.find_one({"id": product_id})
         del updated_product["_id"]
         
         return ProductResponse(**updated_product)
@@ -214,21 +208,18 @@ async def update_product(
 
 @router.delete("/products/{product_id}")
 async def delete_product(
-    product_id: str = Path(..., description="Product ID")
+    product_id: int = Path(..., description="Product ID")
 ):
     """Delete a product."""
-    if not ObjectId.is_valid(product_id):
-        raise HTTPException(status_code=400, detail="Invalid product ID format")
-    
     collection = db_manager.get_collection("products")
     
     # Check if product exists
-    existing_product = await collection.find_one({"_id": ObjectId(product_id)})
+    existing_product = await collection.find_one({"id": product_id})
     if not existing_product:
         raise HTTPException(status_code=404, detail="Product not found")
     
     try:
-        await collection.delete_one({"_id": ObjectId(product_id)})
+        await collection.delete_one({"id": product_id})
         return {"message": "Product deleted successfully", "product_id": product_id}
         
     except Exception as e:
@@ -239,37 +230,33 @@ async def delete_product(
 async def update_inventory(
     inventory_status: InventoryStatus,
     quantity: int,
-    product_id: str = Path(..., description="Product ID")
+    product_id: int = Path(..., description="Product ID")
 ):
     """Update product inventory status and quantity."""
-    if not ObjectId.is_valid(product_id):
-        raise HTTPException(status_code=400, detail="Invalid product ID format")
-    
     if quantity < 0:
         raise HTTPException(status_code=400, detail="Quantity cannot be negative")
     
     collection = db_manager.get_collection("products")
     
     # Check if product exists
-    existing_product = await collection.find_one({"_id": ObjectId(product_id)})
+    existing_product = await collection.find_one({"id": product_id})
     if not existing_product:
         raise HTTPException(status_code=404, detail="Product not found")
     
     try:
         await collection.update_one(
-            {"_id": ObjectId(product_id)},
+            {"id": product_id},
             {
                 "$set": {
                     "inventoryStatus": inventory_status.value,
                     "quantity": quantity,
-                    "updatedAt": int(time.time())
+                    "updatedAt": datetime.now()
                 }
             }
         )
         
         # Return updated product
-        updated_product = await collection.find_one({"_id": ObjectId(product_id)})
-        updated_product["id"] = str(updated_product["_id"])
+        updated_product = await collection.find_one({"id": product_id})
         del updated_product["_id"]
         
         return ProductResponse(**updated_product)

@@ -1,6 +1,7 @@
 from typing import Optional
 import random
 import string
+from datetime import datetime
 from pydantic import BaseModel, Field
 from bson import ObjectId
 from app.models.enums.category import Category
@@ -19,6 +20,14 @@ def generate_internal_reference() -> str:
     part2 = ''.join(random.choice(string.digits) for _ in range(3))
     return f"REF-{part1}-{part2}"
 
+async def get_next_product_id(collection) -> int:
+    """Get the next available product ID."""
+    # Find the product with the highest ID
+    result = await collection.find_one({}, sort=[("id", -1)])
+    if result and "id" in result:
+        return result["id"] + 1
+    return 1
+
 class PyObjectId(ObjectId):
     @classmethod
     def __get_validators__(cls):
@@ -33,7 +42,7 @@ class PyObjectId(ObjectId):
         return ObjectId(v)
 
 class ProductModel(BaseModel):
-    id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
+    id: Optional[int] = Field(None, description="Product ID (auto-generated)")
     code: str = Field(default_factory=generate_product_code)
     name: str
     description: str
@@ -45,8 +54,8 @@ class ProductModel(BaseModel):
     shellId: int
     inventoryStatus: InventoryStatus
     rating: float
-    createdAt: int
-    updatedAt: int
+    createdAt: datetime
+    updatedAt: datetime
 
     class Config:
         populate_by_name = True
