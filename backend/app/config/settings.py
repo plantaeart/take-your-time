@@ -23,9 +23,6 @@ class Settings(BaseSettings):
     # CORS
     frontend_urls: str
     
-    # Security
-    secret_key: str
-    
     @property
     def frontend_origins(self) -> List[str]:
         """Parse frontend URLs into a list."""

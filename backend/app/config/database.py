@@ -71,7 +71,7 @@ class DatabaseManager:
     
     def get_collection(self, collection_name: str):
         """Get a specific collection."""
-        if not self.database:
+        if self.database is None:
             raise RuntimeError("Database not connected")
         return self.database[collection_name]
 
@@ -82,6 +82,6 @@ db_manager = DatabaseManager()
 
 async def get_database():
     """Dependency to get database instance."""
-    if not db_manager.database:
+    if db_manager.database is None:
         await db_manager.connect_to_mongo()
     return db_manager.database

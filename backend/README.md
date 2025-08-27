@@ -1,26 +1,38 @@
-# Take Your Time - Booking API
+# Take Your Time - Product Management API
 
-A FastAPI-based booking reservation system for restaurants and events with MongoDB backend.
+A FastAPI-based product management system with MongoDB backend for inventory and catalog operations.
+**Local Development (.env.local):**
+```env
+ENVIRONMENT=local
+DEBUG=true
+MONGODB_URL=mongodb://localhost:27017
+DATABASE_NAME=TAKE_YOUR_TIME
+API_HOST=0.0.0.0
+API_PORT=8000
+FRONTEND_URLS=http://localhost:4200,http://127.0.0.1:4200
+```tures
 
-## 🚀 Features
-
-- **Complete CRUD operations** for booking management
+- **Complete CRUD operations** for product management
 - **MongoDB integration** with async PyMongo
 - **Environment-based configuration** (local/docker)
 - **CORS configured** for Angular frontend
 - **Docker containerization** ready
-- **Pagination and filtering** for booking lists
-- **Input validation** with Pydantic
+- **Advanced filtering and search** capabilities
+- **Pagination support** for large datasets
+- **Input validation** with Pydantic v2
+- **Inventory management** with status tracking
 - **Comprehensive API documentation** with Swagger UI
 
-## 📋 Booking Model
+## 📋 Product Model
 
-Each booking includes:
-- Customer information (name, email, phone)
-- Booking details (date, time slot, service type)
-- Capacity (adults, children, rooms/tables needed)
-- Status tracking (pending, confirmed, cancelled, completed)
-- Timestamps (created_at)
+Each product includes:
+- **Basic Info**: code, name, description, image
+- **Categorization**: category for organization
+- **Pricing**: price (float)
+- **Inventory**: quantity, inventory status (INSTOCK/LOWSTOCK/OUTOFSTOCK)
+- **References**: internalReference, shellId
+- **Quality**: rating (0-5 stars)
+- **Timestamps**: createdAt, updatedAt (Unix timestamps)
 
 ## 🛠️ Setup & Installation
 
@@ -40,7 +52,7 @@ Each booking includes:
 2. **Configure environment:**
    ```bash
    cp .env.local .env
-   # Edit .env with your local MongoDB settings
+   # Edit .env with your local MongoDB settings and secret key
    ```
 
 3. **Start MongoDB locally:**
@@ -83,49 +95,58 @@ Each booking includes:
 
 ## 📖 API Endpoints
 
-### Bookings CRUD
+### Products CRUD
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/v1/bookings/` | Create new booking |
-| GET | `/api/v1/bookings/` | List bookings (paginated) |
-| GET | `/api/v1/bookings/{id}` | Get specific booking |
-| PUT | `/api/v1/bookings/{id}` | Update booking |
-| PATCH | `/api/v1/bookings/{id}/status` | Update booking status |
-| DELETE | `/api/v1/bookings/{id}` | Delete booking |
+| POST | `/api/products/` | Create new product |
+| GET | `/api/products/` | List products (paginated, filterable) |
+| GET | `/api/products/{id}` | Get specific product |
+| PUT | `/api/products/{id}` | Update product |
+| DELETE | `/api/products/{id}` | Delete product |
+| GET | `/api/products/categories` | Get all unique categories |
+| PATCH | `/api/products/{id}/inventory` | Update inventory status & quantity |
 
-### Query Parameters (GET /bookings)
+### Query Parameters (GET /products)
 
 - `page`: Page number (default: 1)
-- `page_size`: Items per page (default: 10, max: 100)
-- `status`: Filter by status (pending, confirmed, cancelled, completed)
-- `service_type`: Filter by service (restaurant, event, meeting, conference, other)
-- `customer_name`: Filter by customer name (partial match)
+- `limit`: Items per page (default: 10, max: 100)
+- `category`: Filter by category
+- `inventory_status`: Filter by inventory status (INSTOCK, LOWSTOCK, OUTOFSTOCK)
+- `search`: Search in product name and description
 
 ### Example Requests
 
-**Create Booking:**
+**Create Product:**
 ```json
-POST /api/v1/bookings/
+POST /api/products/
 {
-  "customer_name": "John Doe",
-  "email": "john.doe@example.com",
-  "phone": "+1234567890",
-  "booking_date": "2025-08-30T18:00:00Z",
-  "time_slot": "18:00-20:00",
-  "service_type": "restaurant",
-  "nb_adultes": 2,
-  "nb_children": 1,
-  "nb_rest_room": 1
+  "code": "LAPTOP001",
+  "name": "Professional Laptop",
+  "description": "High-performance laptop for business use",
+  "image": "https://example.com/laptop.jpg",
+  "category": "Electronics",
+  "price": 1299.99,
+  "quantity": 50,
+  "internalReference": "INT-LAPTOP-001",
+  "shellId": 12345,
+  "inventoryStatus": "INSTOCK",
+  "rating": 4.5
 }
 ```
 
-**Update Status:**
+**Update Inventory:**
 ```json
-PATCH /api/v1/bookings/{id}/status
+PATCH /api/products/{id}/inventory
 {
-  "status": "confirmed"
+  "inventory_status": "LOWSTOCK",
+  "quantity": 5
 }
+```
+
+**Search Products:**
+```bash
+GET /api/products/?search=laptop&category=Electronics&page=1&limit=10
 ```
 
 ## 🔧 Configuration
@@ -141,7 +162,7 @@ DATABASE_NAME=TAKE_YOUR_TIME
 API_HOST=0.0.0.0
 API_PORT=8000
 FRONTEND_URLS=http://localhost:4200,http://127.0.0.1:4200
-SECRET_KEY=your-super-secret-key
+SECRET_KEY=your-secret-key-here
 ```
 
 **Docker (.env.dev-docker):**
@@ -153,7 +174,6 @@ DATABASE_NAME=TAKE_YOUR_TIME
 API_HOST=0.0.0.0
 API_PORT=8000
 FRONTEND_URLS=http://localhost:4200,http://127.0.0.1:4200,http://frontend:4200
-SECRET_KEY=your-super-secret-key
 ```
 
 ### CORS Configuration
@@ -170,6 +190,7 @@ Configured for Angular development:
 backend/
 ├── app/
 │   ├── __init__.py
+│   ├── version.py           # Centralized version management
 │   ├── config/
 │   │   ├── __init__.py
 │   │   ├── settings.py      # Environment settings
@@ -177,13 +198,13 @@ backend/
 │   │   └── cors.py          # CORS configuration
 │   ├── models/
 │   │   ├── __init__.py
-│   │   └── booking.py       # MongoDB document models
+│   │   └── product.py       # MongoDB document models
 │   ├── routers/
 │   │   ├── __init__.py
-│   │   └── bookings.py      # CRUD API routes
+│   │   └── products.py      # CRUD API routes
 │   └── schemas/
 │       ├── __init__.py
-│       └── booking.py       # Pydantic request/response schemas
+│       └── product.py       # Pydantic request/response schemas
 ├── .env.local               # Local environment config
 ├── .env.dev-docker          # Docker environment config
 ├── .dockerignore
@@ -204,7 +225,7 @@ uv run pytest
 uv run pytest --cov=app
 
 # Run specific test file
-uv run pytest tests/test_bookings.py
+uv run pytest tests/test_products.py
 ```
 
 ## 📝 Development Notes
@@ -222,18 +243,28 @@ uv run pytest tests/test_bookings.py
 - MongoDB collections are created automatically
 - Indexes can be added in `app/config/database.py`
 
+### Product Features
+
+- **Unique Code Validation**: Product codes must be unique
+- **Inventory Management**: Automatic status tracking
+- **Search Functionality**: Text search across name and description
+- **Category Management**: Dynamic category listing
+- **Timestamp Handling**: Unix timestamps for created/updated dates
+
 ### Error Handling
 
 - Comprehensive HTTP exception handling
-- Input validation with Pydantic
+- Input validation with Pydantic v2
 - Database connection error management
 - Proper HTTP status codes
+- ObjectId validation for MongoDB queries
 
 ## 🚦 Health Monitoring
 
 - Health check endpoint: `/health`
 - Docker health checks configured
 - Logging with Python logging module
+- Version information in health response
 
 ## 🔒 Security Considerations
 
@@ -242,6 +273,27 @@ uv run pytest tests/test_bookings.py
 - CORS properly configured
 - Environment-based secrets
 - Non-root Docker user
+- Secret key for JWT/sessions (if needed)
+
+## 📊 Product API Features
+
+### Advanced Filtering
+- Filter by category
+- Filter by inventory status
+- Text search in name and description
+- Pagination with configurable limits
+
+### Inventory Management
+- Track quantity and status
+- Update inventory in bulk
+- Automatic status calculation
+- Low stock alerts
+
+### Data Validation
+- Price validation (must be positive)
+- Rating validation (0-5 range)
+- Required fields enforcement
+- Unique code constraints
 
 ---
 

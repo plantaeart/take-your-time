@@ -9,7 +9,7 @@ from pymongo.errors import DuplicateKeyError
 
 from app.config.database import db_manager
 from app.schemas.product import ProductCreate, ProductUpdate, ProductResponse, ProductListResponse
-from app.models.product import ProductModel, InventoryStatus
+from app.models.product import InventoryStatus, generate_product_code, generate_internal_reference
 
 router = APIRouter(tags=["products"])
 
@@ -62,6 +62,19 @@ async def get_products(
     )
 
 
+@router.get("/products/categories", response_model=list[str])
+async def get_categories():
+    """Get all unique product categories."""
+    collection = db_manager.get_collection("products")
+    
+    try:
+        categories = await collection.distinct("category")
+        return sorted(categories)
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get categories: {str(e)}")
+
+
 @router.get("/products/{product_id}", response_model=ProductResponse)
 async def get_product(
     product_id: str = Path(..., description="Product ID")
@@ -86,14 +99,47 @@ async def create_product(product_data: ProductCreate):
     """Create a new product."""
     collection = db_manager.get_collection("products")
     
-    # Check if product code already exists
-    existing_product = await collection.find_one({"code": product_data.code})
-    if existing_product:
-        raise HTTPException(status_code=400, detail="Product with this code already exists")
+    # Generate code if not provided
+    product_code = product_data.code
+    if not product_code:
+        # Generate a unique code
+        max_attempts = 10
+        for _ in range(max_attempts):
+            product_code = generate_product_code()
+            existing_product = await collection.find_one({"code": product_code})
+            if not existing_product:
+                break
+        else:
+            raise HTTPException(status_code=500, detail="Failed to generate unique product code")
+    else:
+        # Check if provided code already exists
+        existing_product = await collection.find_one({"code": product_code})
+        if existing_product:
+            raise HTTPException(status_code=400, detail="Product with this code already exists")
+    
+    # Generate internal reference if not provided
+    internal_ref = product_data.internalReference
+    if not internal_ref:
+        # Generate a unique internal reference
+        max_attempts = 10
+        for _ in range(max_attempts):
+            internal_ref = generate_internal_reference()
+            existing_product = await collection.find_one({"internalReference": internal_ref})
+            if not existing_product:
+                break
+        else:
+            raise HTTPException(status_code=500, detail="Failed to generate unique internal reference")
+    else:
+        # Check if provided internal reference already exists
+        existing_product = await collection.find_one({"internalReference": internal_ref})
+        if existing_product:
+            raise HTTPException(status_code=400, detail="Product with this internal reference already exists")
     
     # Create product with timestamps
     current_time = int(time.time())
     product_dict = product_data.model_dump()
+    product_dict["code"] = product_code  # Use generated or provided code
+    product_dict["internalReference"] = internal_ref  # Use generated or provided internal reference
     product_dict.update({
         "createdAt": current_time,
         "updatedAt": current_time
@@ -110,7 +156,7 @@ async def create_product(product_data: ProductCreate):
         return ProductResponse(**created_product)
         
     except DuplicateKeyError:
-        raise HTTPException(status_code=400, detail="Product with this code already exists")
+        raise HTTPException(status_code=400, detail="Product with this code or internal reference already exists")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to create product: {str(e)}")
 
@@ -187,19 +233,6 @@ async def delete_product(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete product: {str(e)}")
-
-
-@router.get("/products/categories", response_model=list[str])
-async def get_categories():
-    """Get all unique product categories."""
-    collection = db_manager.get_collection("products")
-    
-    try:
-        categories = await collection.distinct("category")
-        return sorted(categories)
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get categories: {str(e)}")
 
 
 @router.patch("/products/{product_id}/inventory", response_model=ProductResponse)

@@ -23,8 +23,11 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan events."""
-    # Startup - connection already verified
+    # Startup
     logger.info("🚀 Starting up Take Your Time API...")
+    logger.info("🤔 Connecting to database...")
+    await db_manager.connect_to_mongo()
+    logger.info("✅ Database connected successfully")
     
     yield
     
@@ -93,16 +96,7 @@ if __name__ == "__main__":
     # Load settings using lazy initialization
     settings = get_settings()
     
-    # Verify database connection before starting server
-    async def startup_check():
-        if not await verify_database_connection():
-            logger.error("🚨 Startup check failed - exiting application")
-            sys.exit(1)
-    
-    # Run startup check
-    asyncio.run(startup_check())
-    
-    # If we reach here, database connection is OK
+    # Start the server - database connection will be handled in lifespan
     logger.info("🎯 Starting FastAPI server...")
     uvicorn.run(
         "main:app",
