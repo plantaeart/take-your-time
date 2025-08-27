@@ -75,11 +75,11 @@ class TestProductSchemas:
             "name": "Test Product",
             "description": "A test product",
             "image": "https://example.com/image.jpg",
-            "category": "ELECTRONICS",
+            "category": Category.ELECTRONICS,
             "price": 99.99,
             "quantity": 10,
             "shellId": 2,
-            "inventoryStatus": "INSTOCK",
+            "inventoryStatus": InventoryStatus.INSTOCK,
             "rating": 4.0
         }
         
@@ -94,11 +94,11 @@ class TestProductSchemas:
             "name": "Test Product",
             "description": "A test product",
             "image": "https://example.com/image.jpg",
-            "category": "ELECTRONICS",
+            "category": Category.ELECTRONICS,
             "price": -10.0,  # Invalid negative price
             "quantity": 10,
             "shellId": 2,
-            "inventoryStatus": "INSTOCK",
+            "inventoryStatus": InventoryStatus.INSTOCK,
             "rating": 4.0
         }
         
@@ -111,11 +111,11 @@ class TestProductSchemas:
             "name": "Test Product",
             "description": "A test product",
             "image": "https://example.com/image.jpg",
-            "category": "ELECTRONICS",
+            "category": Category.ELECTRONICS,
             "price": 99.99,
             "quantity": -5,  # Invalid negative quantity
             "shellId": 2,
-            "inventoryStatus": "INSTOCK",
+            "inventoryStatus": InventoryStatus.INSTOCK,
             "rating": 4.0
         }
         
@@ -128,11 +128,11 @@ class TestProductSchemas:
             "name": "Test Product",
             "description": "A test product",
             "image": "https://example.com/image.jpg",
-            "category": "ELECTRONICS",
+            "category": Category.ELECTRONICS,
             "price": 99.99,
             "quantity": 10,
             "shellId": 2,
-            "inventoryStatus": "INSTOCK",
+            "inventoryStatus": InventoryStatus.INSTOCK,
             "rating": 6.0  # Invalid rating > 5
         }
         
@@ -157,12 +157,12 @@ class TestProductSchemas:
             "name": "Test Product",
             "description": "A test product",
             "image": "https://example.com/image.jpg",
-            "category": "ELECTRONICS",
+            "category": Category.ELECTRONICS,
             "price": 99.99,
             "quantity": 10,
             "internalReference": "REF-123-456",
             "shellId": 2,
-            "inventoryStatus": "INSTOCK",
+            "inventoryStatus": InventoryStatus.INSTOCK,
             "rating": 4.0,
             "createdAt": datetime.now().isoformat(),
             "updatedAt": datetime.now().isoformat()
@@ -184,10 +184,10 @@ class TestValidationRules:
             "name": "Test Product",
             "description": "A test product",
             "image": "https://example.com/image.jpg",
-            "category": "ELECTRONICS",
+            "category": Category.ELECTRONICS,
             "price": 99.99,
             "quantity": 10,
-            "inventoryStatus": "INSTOCK",
+            "inventoryStatus": InventoryStatus.INSTOCK,
             "rating": 4.0,
             "shellId": 5
         }
@@ -206,11 +206,11 @@ class TestValidationRules:
             "name": "Test Product",
             "description": "A test product",
             "image": "https://example.com/image.jpg",
-            "category": "ELECTRONICS",
+            "category": Category.ELECTRONICS,
             "price": 99.99,
             "quantity": 10,
             "shellId": 2,
-            "inventoryStatus": "INSTOCK"
+            "inventoryStatus": InventoryStatus.INSTOCK
         }
         
         # Valid ratings
@@ -236,12 +236,12 @@ class TestValidationRules:
             "price": 99.99,
             "quantity": 10,
             "shellId": 2,
-            "inventoryStatus": "INSTOCK",
+            "inventoryStatus": InventoryStatus.INSTOCK,
             "rating": 4.0
         }
         
         # Valid categories
-        valid_categories = ["ELECTRONICS", "CLOTHING", "FITNESS", "ACCESSORIES"]
+        valid_categories = [Category.ELECTRONICS.value, Category.CLOTHING.value, Category.FITNESS.value, Category.ACCESSORIES.value]
         for category in valid_categories:
             data = base_data.copy()
             data["category"] = category
@@ -260,7 +260,7 @@ class TestValidationRules:
             "name": "Test Product",
             "description": "A test product",
             "image": "https://example.com/image.jpg",
-            "category": "ELECTRONICS",
+            "category": Category.ELECTRONICS,
             "price": 99.99,
             "quantity": 10,
             "shellId": 2,
@@ -268,7 +268,7 @@ class TestValidationRules:
         }
         
         # Valid inventory statuses
-        valid_statuses = ["INSTOCK", "LOWSTOCK", "OUTOFSTOCK"]
+        valid_statuses = [InventoryStatus.INSTOCK.value, InventoryStatus.LOWSTOCK.value, InventoryStatus.OUTOFSTOCK.value]
         for status in valid_statuses:
             data = base_data.copy()
             data["inventoryStatus"] = status

@@ -4,6 +4,8 @@ Test product API endpoints - Simple version.
 import pytest
 from fastapi.testclient import TestClient
 from main import create_app
+from app.models.enums.category import Category
+from app.models.enums.inventoryStatus import InventoryStatus
 
 # Create a simple test app
 @pytest.fixture
@@ -38,11 +40,11 @@ class TestProductEndpoints:
             "name": "Test Product",
             "description": "A test product",
             "image": "https://example.com/image.jpg",
-            "category": "ELECTRONICS",
+            "category": Category.ELECTRONICS,
             "price": 99.99,
             "quantity": 10,
             "shellId": 1,
-            "inventoryStatus": "INSTOCK",
+            "inventoryStatus": InventoryStatus.INSTOCK,
             "rating": 4.5
         }
         
@@ -50,7 +52,7 @@ class TestProductEndpoints:
         assert response.status_code == 201
         data = response.json()
         assert data["name"] == "Test Product"
-        assert data["category"] == "ELECTRONICS"
+        assert data["category"] == Category.ELECTRONICS.value
         assert data["price"] == 99.99
         assert "id" in data
         assert "code" in data
@@ -63,11 +65,11 @@ class TestProductEndpoints:
             "name": "Single Product",
             "description": "A single test product",
             "image": "https://example.com/single.jpg",
-            "category": "FITNESS",
+            "category": Category.FITNESS,
             "price": 29.99,
             "quantity": 15,
             "shellId": 2,
-            "inventoryStatus": "INSTOCK",
+            "inventoryStatus": InventoryStatus.INSTOCK,
             "rating": 3.8
         }
         
@@ -89,11 +91,11 @@ class TestProductEndpoints:
             "name": "Original Product",
             "description": "Original description",
             "image": "https://example.com/original.jpg",
-            "category": "ACCESSORIES",
+            "category": Category.ACCESSORIES,
             "price": 19.99,
             "quantity": 8,
             "shellId": 3,
-            "inventoryStatus": "INSTOCK",
+            "inventoryStatus": InventoryStatus.INSTOCK,
             "rating": 2.5
         }
         
@@ -106,11 +108,11 @@ class TestProductEndpoints:
             "name": "Updated Product",
             "description": "Updated description",
             "image": "https://example.com/updated.jpg",
-            "category": "ACCESSORIES",
+            "category": Category.ACCESSORIES,
             "price": 24.99,
             "quantity": 12,
             "shellId": 3,
-            "inventoryStatus": "INSTOCK",
+            "inventoryStatus": InventoryStatus.INSTOCK,
             "rating": 4.0
         }
         
@@ -127,11 +129,11 @@ class TestProductEndpoints:
             "name": "Product to Delete",
             "description": "Product to be deleted",
             "image": "https://example.com/delete.jpg",
-            "category": "ELECTRONICS",
+            "category": Category.ELECTRONICS,
             "price": 99.99,
             "quantity": 1,
             "shellId": 4,
-            "inventoryStatus": "INSTOCK",
+            "inventoryStatus": InventoryStatus.INSTOCK,
             "rating": 3.0
         }
         
@@ -154,11 +156,11 @@ class TestProductEndpoints:
             "name": "Test Electronics",
             "description": "A test electronic product",
             "image": "https://example.com/electronics.jpg",
-            "category": "ELECTRONICS",
+            "category": Category.ELECTRONICS,
             "price": 199.99,
             "quantity": 5,
             "shellId": 10,
-            "inventoryStatus": "INSTOCK",
+            "inventoryStatus": InventoryStatus.INSTOCK,
             "rating": 4.0
         }
         
@@ -171,7 +173,7 @@ class TestProductEndpoints:
         data = response.json()
         assert isinstance(data, list)
         assert len(data) > 0  # Should have categories
-        assert "ELECTRONICS" in data
+        assert Category.ELECTRONICS.value in data
 
     def test_update_inventory(self, client):
         """Test updating product inventory."""
@@ -180,11 +182,11 @@ class TestProductEndpoints:
             "name": "Inventory Test Product",
             "description": "Product for inventory testing",
             "image": "https://example.com/inventory.jpg",
-            "category": "CLOTHING",
+            "category": Category.CLOTHING,
             "price": 39.99,
             "quantity": 50,
             "shellId": 5,
-            "inventoryStatus": "INSTOCK",
+            "inventoryStatus": InventoryStatus.INSTOCK,
             "rating": 4.2
         }
         
@@ -195,11 +197,11 @@ class TestProductEndpoints:
         # Update inventory
         response = client.patch(
             f"/api/products/{product_id}/inventory",
-            params={"inventory_status": "LOWSTOCK", "quantity": 5}
+            params={"inventory_status": InventoryStatus.LOWSTOCK.value, "quantity": 5}
         )
         assert response.status_code == 200
         data = response.json()
-        assert data["inventoryStatus"] == "LOWSTOCK"
+        assert data["inventoryStatus"] == InventoryStatus.LOWSTOCK.value
         assert data["quantity"] == 5
 
     def test_pagination(self, client):
@@ -210,11 +212,11 @@ class TestProductEndpoints:
                 "name": f"Product {i+1}",
                 "description": f"Test product {i+1}",
                 "image": f"https://example.com/product{i+1}.jpg",
-                "category": "ELECTRONICS",
+                "category": Category.ELECTRONICS,
                 "price": 10.0 + i,
                 "quantity": i + 1,
                 "shellId": i + 10,
-                "inventoryStatus": "INSTOCK",
+                "inventoryStatus": InventoryStatus.INSTOCK,
                 "rating": 3.0 + i * 0.5
             }
             response = client.post("/api/products", json=product_data)

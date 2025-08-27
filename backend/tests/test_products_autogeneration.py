@@ -3,6 +3,8 @@ Test auto-generation functions for products.
 """
 import pytest
 from app.models.product import generate_product_code, generate_internal_reference, get_next_product_id
+from app.models.enums.category import Category
+from app.models.enums.inventoryStatus import InventoryStatus
 
 
 class TestAutoGeneration:
@@ -165,11 +167,11 @@ class TestAutoGeneration:
             "name": "Auto-Generated Product",
             "description": "A test product for auto-generation",
             "image": "https://example.com/image.jpg",
-            "category": "ELECTRONICS",
+            "category": Category.ELECTRONICS,
             "price": 99.99,
             "quantity": 10,
             "shellId": 2,
-            "inventoryStatus": "INSTOCK",
+            "inventoryStatus": InventoryStatus.INSTOCK,
             "rating": 4.0
         }
         
@@ -189,11 +191,11 @@ class TestAutoGeneration:
             "name": "Custom Code Product",
             "description": "A test product with custom code",
             "image": "https://example.com/image.jpg",
-            "category": "ELECTRONICS",
+            "category": Category.ELECTRONICS,
             "price": 99.99,
             "quantity": 10,
             "shellId": 2,
-            "inventoryStatus": "INSTOCK",
+            "inventoryStatus": InventoryStatus.INSTOCK,
             "rating": 4.0
         }
         
@@ -210,11 +212,11 @@ class TestAutoGeneration:
             "name": "Custom Reference Product",
             "description": "A test product with custom reference",
             "image": "https://example.com/image.jpg",
-            "category": "ELECTRONICS",
+            "category": Category.ELECTRONICS,
             "price": 99.99,
             "quantity": 10,
             "shellId": 2,
-            "inventoryStatus": "INSTOCK",
+            "inventoryStatus": InventoryStatus.INSTOCK,
             "rating": 4.0
         }
         
