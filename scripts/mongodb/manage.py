@@ -1,0 +1,195 @@
+#!/usr/bin/env python3
+"""
+MongoDB Docker Container Management Script
+Simple commands to run, create, and stop MongoDB container.
+"""
+import typer
+import subprocess
+import sys
+from rich.console import Console
+from rich.panel import Panel
+from rich.text import Text
+from typing import Optional
+
+app = typer.Typer(
+    name="mongodb",
+    help="🍃 MongoDB Docker Container Management",
+    add_completion=False
+)
+console = Console()
+
+MONGODB_IMAGE = "mongo:7.0"
+CONTAINER_NAME = "mongodb"
+PORT = "27017"
+DATABASE_NAME = "TAKE_YOUR_TIME"
+
+
+def run_command(command: str, capture_output: bool = True) -> subprocess.CompletedProcess:
+    """Run a shell command and return the result."""
+    try:
+        if capture_output:
+            result = subprocess.run(
+                command.split(),
+                capture_output=True,
+                text=True,
+                check=False
+            )
+        else:
+            result = subprocess.run(command.split(), check=False)
+        return result
+    except Exception as e:
+        console.print(f"[red]❌ Error running command: {e}[/red]")
+        return None
+
+
+def is_container_running() -> bool:
+    """Check if MongoDB container is running."""
+    result = run_command(f"docker ps -q -f name={CONTAINER_NAME}")
+    return result and result.stdout.strip() != ""
+
+
+def container_exists() -> bool:
+    """Check if MongoDB container exists (running or stopped)."""
+    result = run_command(f"docker ps -a -q -f name={CONTAINER_NAME}")
+    return result and result.stdout.strip() != ""
+
+
+@app.command("start")
+def start_mongodb(
+    detach: bool = typer.Option(True, "--detach/--no-detach", "-d", help="Run in detached mode")
+):
+    """🚀 Start MongoDB container."""
+    console.print(Panel.fit("🍃 Starting MongoDB Container", style="green"))
+    
+    if is_container_running():
+        console.print("[yellow]⚠️  MongoDB container is already running![/yellow]")
+        console.print(f"[blue]📍 Connection: mongodb://localhost:{PORT}[/blue]")
+        console.print(f"[blue]🗄️  Database: {DATABASE_NAME}[/blue]")
+        return
+    
+    if container_exists():
+        # Container exists but is stopped, start it
+        console.print("[blue]🔄 Starting existing MongoDB container...[/blue]")
+        result = run_command(f"docker start {CONTAINER_NAME}")
+        if result and result.returncode == 0:
+            console.print("[green]✅ MongoDB container started successfully![/green]")
+        else:
+            console.print("[red]❌ Failed to start MongoDB container[/red]")
+            return
+    else:
+        # Create and start new container
+        console.print("[blue]🏗️  Creating new MongoDB container...[/blue]")
+        detach_flag = "-d" if detach else ""
+        command = f"docker run {detach_flag} --name {CONTAINER_NAME} -p {PORT}:{PORT} -e MONGO_INITDB_DATABASE={DATABASE_NAME} {MONGODB_IMAGE}"
+        
+        if detach:
+            result = run_command(command)
+            if result and result.returncode == 0:
+                console.print("[green]✅ MongoDB container created and started![/green]")
+            else:
+                console.print("[red]❌ Failed to create MongoDB container[/red]")
+                return
+        else:
+            console.print("[yellow]📺 Running in foreground mode (Ctrl+C to stop)...[/yellow]")
+            run_command(command, capture_output=False)
+            return
+    
+    # Show connection info
+    console.print("\n[bold green]🎉 MongoDB is ready![/bold green]")
+    console.print(f"[blue]📍 Connection: mongodb://localhost:{PORT}[/blue]")
+    console.print(f"[blue]🗄️  Database: {DATABASE_NAME}[/blue]")
+    console.print("[blue]🔍 Test: docker exec mongodb mongosh --eval 'db.runCommand({ping: 1})'[/blue]")
+
+
+@app.command("stop")
+def stop_mongodb():
+    """🛑 Stop MongoDB container."""
+    console.print(Panel.fit("🛑 Stopping MongoDB Container", style="red"))
+    
+    if not is_container_running():
+        console.print("[yellow]⚠️  MongoDB container is not running[/yellow]")
+        return
+    
+    console.print("[blue]🔄 Stopping MongoDB container...[/blue]")
+    result = run_command(f"docker stop {CONTAINER_NAME}")
+    
+    if result and result.returncode == 0:
+        console.print("[green]✅ MongoDB container stopped successfully![/green]")
+    else:
+        console.print("[red]❌ Failed to stop MongoDB container[/red]")
+
+
+@app.command("status")
+def status_mongodb():
+    """📊 Check MongoDB container status."""
+    console.print(Panel.fit("📊 MongoDB Container Status", style="blue"))
+    
+    if is_container_running():
+        console.print("[green]✅ MongoDB container is running[/green]")
+        console.print(f"[blue]📍 Connection: mongodb://localhost:{PORT}[/blue]")
+        console.print(f"[blue]🗄️  Database: {DATABASE_NAME}[/blue]")
+        
+        # Show container details
+        result = run_command(f"docker ps --filter name={CONTAINER_NAME} --format 'table {{.ID}}\\t{{.Image}}\\t{{.Status}}\\t{{.Ports}}'")
+        if result and result.stdout:
+            console.print("\n[bold]Container Details:[/bold]")
+            console.print(result.stdout.strip())
+    elif container_exists():
+        console.print("[yellow]⚠️  MongoDB container exists but is stopped[/yellow]")
+        console.print("[blue]💡 Use 'mongodb start' to start it[/blue]")
+    else:
+        console.print("[red]❌ MongoDB container does not exist[/red]")
+        console.print("[blue]💡 Use 'mongodb start' to create and start it[/blue]")
+
+
+@app.command("remove")
+def remove_mongodb(
+    force: bool = typer.Option(False, "--force", "-f", help="Force remove running container")
+):
+    """🗑️  Remove MongoDB container and data."""
+    console.print(Panel.fit("🗑️ Removing MongoDB Container", style="red"))
+    
+    if not container_exists():
+        console.print("[yellow]⚠️  MongoDB container does not exist[/yellow]")
+        return
+    
+    if is_container_running() and not force:
+        console.print("[red]❌ MongoDB container is running[/red]")
+        console.print("[blue]💡 Stop it first with 'mongodb stop' or use --force[/blue]")
+        return
+    
+    if is_container_running() and force:
+        console.print("[blue]🔄 Force stopping MongoDB container...[/blue]")
+        run_command(f"docker stop {CONTAINER_NAME}")
+    
+    console.print("[blue]🗑️  Removing MongoDB container...[/blue]")
+    result = run_command(f"docker rm {CONTAINER_NAME}")
+    
+    if result and result.returncode == 0:
+        console.print("[green]✅ MongoDB container removed successfully![/green]")
+        console.print("[yellow]⚠️  All data in the container has been lost[/yellow]")
+    else:
+        console.print("[red]❌ Failed to remove MongoDB container[/red]")
+
+
+@app.command("logs")
+def logs_mongodb(
+    follow: bool = typer.Option(False, "--follow", "-f", help="Follow log output"),
+    tail: int = typer.Option(50, "--tail", "-n", help="Number of lines to show from the end")
+):
+    """📋 Show MongoDB container logs."""
+    console.print(Panel.fit("📋 MongoDB Container Logs", style="blue"))
+    
+    if not container_exists():
+        console.print("[red]❌ MongoDB container does not exist[/red]")
+        return
+    
+    follow_flag = "-f" if follow else ""
+    command = f"docker logs {follow_flag} --tail {tail} {CONTAINER_NAME}"
+    
+    console.print(f"[blue]📄 Showing last {tail} lines{'(following)' if follow else ''}...[/blue]")
+    run_command(command, capture_output=False)
+
+
+if __name__ == "__main__":
+    app()
