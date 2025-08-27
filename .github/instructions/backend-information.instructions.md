@@ -4,6 +4,10 @@ applyTo: '**'
 
 # Backend Information & Guidelines
 
+## 🚨 Important: Documentation Updates
+
+**CRITICAL INSTRUCTION**: When making ANY changes to the backend code, models, schemas, API endpoints, or configuration, you MUST update this instruction file to reflect those changes. This ensures the documentation stays current and any AI assistant can provide accurate help based on the latest system state.
+
 ## 🏗️ Architecture Overview
 
 This is a **Product Management API** built with FastAPI that provides comprehensive CRUD operations for product catalog management. The backend uses asynchronous MongoDB operations and follows modern Python best practices.
@@ -147,6 +151,7 @@ Fields for creating/updating products:
 - `name` is required
 - Price and quantity must be >= 0
 - Rating must be between 0-5
+- `shellId` must be >= 0
 
 ### ProductUpdate
 Optional fields for partial updates:
@@ -155,7 +160,9 @@ Optional fields for partial updates:
 ### ProductResponse
 Complete product data for API responses:
 - All model fields with proper serialization
-- ObjectId converted to string
+- `id` is integer (auto-incrementing)
+- `category` field uses Category enum type (may cause serialization issues)
+- `createdAt` and `updatedAt` are datetime objects
 
 ### ProductListResponse
 Paginated list response:
@@ -178,15 +185,6 @@ uv sync
 
 # Run main application
 uv run python main.py
-```
-
-### Docker Development
-```bash
-# Build and run
-docker-compose up --build
-
-# Stop services
-docker-compose down
 ```
 
 ## 🔐 CORS Configuration (app/config/cors.py)
@@ -224,6 +222,13 @@ Configured for Angular development:
 - Consistent response formats
 - Proper HTTP status codes
 - Include pagination for list endpoints
+
+### 6. Documentation Maintenance
+- **ALWAYS UPDATE THIS FILE** when making changes to models, schemas, endpoints, or configuration
+- Keep field descriptions and validation rules current
+- Document any breaking changes or API modifications
+- Note any inconsistencies or pending fixes
+- Update example requests/responses when API changes
 
 ## 🧪 Testing Notes
 

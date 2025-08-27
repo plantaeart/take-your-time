@@ -45,7 +45,7 @@ class ProductResponse(BaseModel):
     name: str
     description: str
     image: str
-    category: str
+    category: Category
     price: float
     quantity: int
     internalReference: str
