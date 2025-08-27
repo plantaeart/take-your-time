@@ -304,7 +304,10 @@ public
 /frontend/tmp/
 /frontend/out-tsc/
 /frontend/bazel-out/
+
+# Angular cache and build files
 /frontend/.angular/
+/frontend/.nx/cache/
 
 # Node
 /frontend/node_modules/
@@ -326,14 +329,24 @@ public
 !/frontend/.vscode/extensions.json
 /frontend/.history/*
 
-# Miscellaneous
-/frontend/.angular/cache/
+# Angular specific
 /frontend/.sass-cache/
 /frontend/connect.lock
 /frontend/coverage/
 /frontend/libpeerconnection.log
 /frontend/testem.log
 /frontend/typings/
+/frontend/.nyc_output/
+/frontend/.eslintcache
+/frontend/.stylelintcache
+
+# Angular 18 specific files
+/frontend/.angular/cache/
+/frontend/.angular/build-errors.log
+
+# Service worker
+/frontend/ngsw-worker.js
+/frontend/ngsw.json
 
 # System files
 /frontend/.DS_Store
