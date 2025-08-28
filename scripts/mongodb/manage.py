@@ -191,5 +191,77 @@ def logs_mongodb(
     run_command(command, capture_output=False)
 
 
+@app.command("clear-database")
+def clear_database(
+    confirm: bool = typer.Option(False, "--confirm", "-y", help="Skip confirmation prompt")
+):
+    """🗑️ Clear all data from the MongoDB database."""
+    console.print(Panel.fit("🗑️ Clear MongoDB Database", style="red"))
+    
+    if not is_container_running():
+        console.print("[red]❌ MongoDB container is not running[/red]")
+        console.print("[blue]💡 Start it first with 'mongodb start'[/blue]")
+        return
+    
+    # Confirmation prompt
+    if not confirm:
+        console.print(f"[yellow]⚠️  This will permanently delete ALL data in database: {DATABASE_NAME}[/yellow]")
+        console.print("[yellow]Collections that will be cleared:[/yellow]")
+        console.print("  • users")
+        console.print("  • products") 
+        console.print("  • carts")
+        console.print("  • wishlists")
+        console.print("  • token_blacklist")
+        console.print("  • user_token_invalidation")
+        
+        confirmation = typer.confirm("Are you sure you want to continue?")
+        if not confirmation:
+            console.print("[blue]🚫 Operation cancelled[/blue]")
+            return
+    
+    console.print("[blue]🔄 Clearing database...[/blue]")
+    
+    # MongoDB commands to clear all collections
+    commands = [
+        f"docker exec {CONTAINER_NAME} mongosh {DATABASE_NAME} --eval 'db.users.deleteMany({{}})'",
+        f"docker exec {CONTAINER_NAME} mongosh {DATABASE_NAME} --eval 'db.products.deleteMany({{}})'",
+        f"docker exec {CONTAINER_NAME} mongosh {DATABASE_NAME} --eval 'db.carts.deleteMany({{}})'",
+        f"docker exec {CONTAINER_NAME} mongosh {DATABASE_NAME} --eval 'db.wishlists.deleteMany({{}})'",
+        f"docker exec {CONTAINER_NAME} mongosh {DATABASE_NAME} --eval 'db.token_blacklist.deleteMany({{}})'",
+        f"docker exec {CONTAINER_NAME} mongosh {DATABASE_NAME} --eval 'db.user_token_invalidation.deleteMany({{}})'",
+    ]
+    
+    success_count = 0
+    for command in commands:
+        collection_name = command.split('db.')[1].split('.deleteMany')[0]
+        console.print(f"[blue]  Clearing {collection_name}...[/blue]")
+        
+        result = run_command(command)
+        if result and result.returncode == 0:
+            # Parse the output to show how many documents were deleted
+            if "deletedCount" in result.stdout:
+                try:
+                    import re
+                    match = re.search(r'"deletedCount"\s*:\s*(\d+)', result.stdout)
+                    if match:
+                        deleted_count = match.group(1)
+                        console.print(f"[green]    ✅ {collection_name}: {deleted_count} documents deleted[/green]")
+                    else:
+                        console.print(f"[green]    ✅ {collection_name}: cleared[/green]")
+                except:
+                    console.print(f"[green]    ✅ {collection_name}: cleared[/green]")
+            else:
+                console.print(f"[green]    ✅ {collection_name}: cleared[/green]")
+            success_count += 1
+        else:
+            console.print(f"[red]    ❌ Failed to clear {collection_name}[/red]")
+    
+    if success_count == len(commands):
+        console.print(f"\n[bold green]🎉 Database '{DATABASE_NAME}' cleared successfully![/bold green]")
+        console.print("[blue]💡 The application will create fresh data on next startup[/blue]")
+    else:
+        console.print(f"\n[yellow]⚠️  Partially completed: {success_count}/{len(commands)} collections cleared[/yellow]")
+
+
 if __name__ == "__main__":
     app()
