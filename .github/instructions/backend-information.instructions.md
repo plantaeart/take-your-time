@@ -4,21 +4,17 @@ applyTo: '**'
 
 # Backend Information & Guidelines
 
-## 🚨 Important: Documentation Updates
-
-**CRITICAL INSTRUCTION**: When making ANY changes to the backend code, models, schemas, API endpoints, or configuration, you MUST update this instruction file to reflect those changes. This ensures the documentation stays current and any AI assistant can provide accurate help based on the latest system state.
-
 ## 🏗️ Architecture Overview
 
-This is a **Product Management API** built with FastAPI that provides comprehensive CRUD operations for product catalog management. The backend uses asynchronous MongoDB operations and follows modern Python best practices.
+**Product Management API** with FastAPI + MongoDB. Fully refactored with camelCase fields and comprehensive type annotations.
 
 ### Tech Stack
 - **Framework**: FastAPI (Python 3.13)
-- **Database**: MongoDB with Motor (async driver)
+- **Database**: MongoDB with Motor (async driver)  
 - **Validation**: Pydantic v2
 - **Package Manager**: UV
-- **Container**: Docker with multi-stage builds
-- **CLI Tools**: Typer + Rich for container management scripts
+- **Authentication**: JWT with blacklist functionality
+- **User Management**: Admin role system
 
 ## 🗂️ Project Structure
 
@@ -26,221 +22,145 @@ This is a **Product Management API** built with FastAPI that provides comprehens
 backend/
 ├── main.py                 # FastAPI application entry point
 ├── pyproject.toml         # Dependencies and project config
-├── Dockerfile             # Multi-stage production build
-├── .env.local             # Local development environment
-├── .env.dev-docker        # Docker development environment
 └── app/
-    ├── __init__.py
+    ├── startup.py          # Database initialization
     ├── version.py          # Centralized version management
+    ├── auth/               # JWT authentication system
+    │   ├── blacklist.py    # Token blacklist management
+    │   ├── dependencies.py # Auth dependencies
+    │   ├── jwt.py          # JWT token handling
+    │   └── password.py     # Password hashing
     ├── config/
-    │   ├── __init__.py
-    │   ├── settings.py     # Pydantic settings (NO SECRET_KEY)
-    │   ├── database.py     # MongoDB connection management
-    │   └── cors.py         # CORS configuration for Angular
-    ├── models/
-    │   ├── __init__.py
-    │   ├── product.py      # MongoDB document model
-    │   └── enums/
-    │       ├── __init__.py
-    │       ├── category.py         # Product categories
-    │       └── inventoryStatus.py  # Stock status enum
-    ├── schemas/
-    │   ├── __init__.py
-    │   └── product.py      # Pydantic request/response schemas
-    └── routers/
-        ├── __init__.py
-        └── products.py     # Product CRUD endpoints
+    │   ├── settings.py     # Environment configuration
+    │   ├── database.py     # MongoDB connection
+    │   └── cors.py         # CORS for Angular
+    ├── models/             # MongoDB document models
+    │   ├── product.py      # Product model + indexes
+    │   ├── user.py         # User model + admin creation
+    │   ├── cart.py         # Shopping cart model
+    │   ├── wishlist.py     # User wishlist model
+    │   └── enums/          # Category, Status, Messages enums
+    ├── schemas/            # Pydantic request/response schemas
+    │   ├── product.py      # Product CRUD schemas
+    │   ├── auth.py         # JWT token schemas (OAuth2 standard)
+    │   ├── user.py         # User management schemas
+    │   ├── cart.py         # Cart operation schemas
+    │   └── wishlist.py     # Wishlist schemas
+    └── routers/            # API endpoints
+        ├── products.py     # Product CRUD + bulk import
+        ├── auth.py         # Login/register endpoints
+        ├── admin_users.py  # Admin user management
+        ├── cart.py         # Shopping cart operations
+        └── wishlist.py     # Wishlist operations
+```
 ```
 
-## 🎯 Core Models
+## 🎯 Core Models (All CamelCase + Type Annotated)
 
-### ProductModel (app/models/product.py)
-MongoDB document model with these fields:
-- `id: int` - Auto-incrementing integer ID (1, 2, 3, etc.)
-- `code: str` - Auto-generated unique product code (format: f230fh0g3)
-- `name: str` - Product name (required)
-- `description: str` - Product description (optional)
-- `image: str` - Image URL (optional)
-- `category: Category` - Product category enum (required)
-- `price: float` - Product price (required, >= 0)
-- `quantity: int` - Stock quantity (required, >= 0)
-- `internalReference: str` - Auto-generated internal SKU (format: REF-123-456)
-- `shellId: int` - Shell identifier (optional)
-- `inventoryStatus: InventoryStatus` - Stock status enum (required)
-- `rating: float` - Product rating (optional, 0-5)
-- `createdAt: datetime` - Creation timestamp
-- `updatedAt: datetime` - Last update timestamp
+### ProductModel
+- `id: int` - Auto-incrementing ID
+- `code: str` - Auto-generated unique code (f230fh0g3)
+- `name: str` - **UNIQUE** product name
+- `description: str`
+- `image: Optional[str]` - Image URL (optional/null)
+- `category: Category` - ELECTRONICS|CLOTHING|FITNESS|ACCESSORIES
+- `price: float` - >= 0
+- `quantity: int` - >= 0  
+- `internalReference: str` - Auto-generated (REF-123-456)
+- `shellId: int`
+- `inventoryStatus: InventoryStatus` - INSTOCK|LOWSTOCK|OUTOFSTOCK
+- `rating: Optional[float]` - 0-5 scale
+- `createdAt/updatedAt: datetime`
 
-### Enums
-- **Category**: ACCESSORIES, CLOTHING, FITNESS, ELECTRONICS
-- **InventoryStatus**: INSTOCK, LOWSTOCK, OUTOFSTOCK
+### UserModel
+- `id: int` - Auto-incrementing ID
+- `username/email: str` - **UNIQUE** fields
+- `hashedPassword: str`
+- `isActive/isAdmin: bool`
+- `createdAt/updatedAt: datetime`
 
-## 🔧 Configuration (app/config/settings.py)
+### CartModel & WishlistModel
+- `userId: int` - Owner reference
+- `items: List[CartItem/WishlistItem]` - Product references
+- `createdAt/updatedAt: datetime`
 
-**Important**: This configuration does NOT require a SECRET_KEY field.
+## 🔧 Configuration
 
-Required environment variables:
+**Required environment variables:**
 - `MONGODB_URL`: MongoDB connection string
 - `DATABASE_NAME`: Database name
 - `FRONTEND_URLS`: Comma-separated Angular app URLs
 
-Optional variables:
-- `ENVIRONMENT`: "local" (default)
-- `DEBUG`: true (default)
-- `API_HOST`: "0.0.0.0" (default)
-- `API_PORT`: 8000 (default)
-
-### Environment Files
-**Local (.env.local)**:
+**Local (.env.local):**
 ```env
-ENVIRONMENT=local
-DEBUG=true
 MONGODB_URL=mongodb://localhost:27017
 DATABASE_NAME=TAKE_YOUR_TIME
-API_HOST=0.0.0.0
-API_PORT=8000
 FRONTEND_URLS=http://localhost:4200,http://127.0.0.1:4200
 ```
 
-**Docker (.env.dev-docker)**:
-```env
-ENVIRONMENT=dev-docker
-DEBUG=true
-MONGODB_URL=mongodb://mongodb:27017
-DATABASE_NAME=TAKE_YOUR_TIME
-API_HOST=0.0.0.0
-API_PORT=8000
-FRONTEND_URLS=http://localhost:4200,http://127.0.0.1:4200,http://frontend:4200
-```
+## 🗄️ Database Features
 
-## 🛠️ API Endpoints (app/routers/products.py)
+### Unique Indexes (Enforced)
+- Product: `name`, `code`, `id`, `internalReference`
+- User: `email`, `username`, `id`
 
-### Product CRUD Operations
-1. **GET /products** - List products (paginated, filtered, searchable)
-   - Query params: `skip`, `limit`, `category`, `inventory_status`, `search`
-   - Returns: ProductListResponse with items and total count
+### Auto-Generation
+- Product codes: `f230fh0g3` format
+- Internal references: `REF-123-456` format
+- User/Product IDs: Auto-incrementing integers
 
-2. **POST /products** - Create new product
-   - Body: ProductCreate schema
-   - Returns: ProductResponse
-
-3. **GET /products/{product_id}** - Get single product
-   - Returns: ProductResponse
-
-4. **PUT /products/{product_id}** - Update product completely
-   - Body: ProductCreate schema
-   - Returns: ProductResponse
-
-5. **DELETE /products/{product_id}** - Delete product
-   - Returns: {"message": "Product deleted successfully"}
-
-6. **GET /products/categories** - List all available categories
-   - Returns: List of category strings
-
-7. **PATCH /products/{product_id}/inventory** - Update inventory status
-   - Body: {"inventory_status": "INSTOCK|LOWSTOCK|OUTOFSTOCK"}
-   - Returns: ProductResponse
-
-## 📦 Schemas (app/schemas/product.py)
-
-### ProductCreate
-Fields for creating/updating products:
-- All model fields except `id`, `created_at`, `updated_at`
-- `code` is optional (auto-generated if not provided, format: f230fh0g3)
-- `internalReference` is optional (auto-generated if not provided, format: REF-123-456)
-- `name` is required
-- Price and quantity must be >= 0
-- Rating must be between 0-5
-- `shellId` must be >= 0
-
-### ProductUpdate
-Optional fields for partial updates:
-- All fields optional except validation constraints
-
-### ProductResponse
-Complete product data for API responses:
-- All model fields with proper serialization
-- `id` is integer (auto-incrementing)
-- `category` field uses Category enum type (may cause serialization issues)
-- `createdAt` and `updatedAt` are datetime objects
-
-### ProductListResponse
-Paginated list response:
-- `items: List[ProductResponse]`
-- `total: int`
-
-## 🗄️ Database (app/config/database.py)
-
-- **Driver**: Motor (async MongoDB driver)
-- **Connection**: Async context manager
-- **Collection**: "products"
-- **Indexes**: Recommended on `code` (unique), `category`, `inventoryStatus`
+### Default Admin User
+- Email: `admin@admin.com`
+- Password: `admin`
+- Created automatically on startup
 
 ## 🚀 Development Commands
 
-### Local Development
 ```bash
 # Install dependencies
 uv sync
 
-# Run main application
+# Run application
 uv run python main.py
+
+# Clear database (via scripts)
+cd ../scripts && uv run python -m mongodb.manage clear-database
 ```
 
-## 🔐 CORS Configuration (app/config/cors.py)
+## 📝 Key Rules
 
-Configured for Angular development:
-- **Origins**: localhost:4200, 127.0.0.1:4200
-- **Methods**: GET, POST, PUT, DELETE, OPTIONS, PATCH
-- **Headers**: All standard headers for Angular apps
-- **Credentials**: Enabled
+### Naming Conventions
+- **Models/Schemas**: camelCase fields (`userId`, `createdAt`, `isActive`)
+- **OAuth2 Standard**: snake_case (`access_token`, `token_type`)
+- **Functions**: snake_case (`get_current_user`)
+- **Variables**: camelCase (`usersCollection`, `productData`)
 
-## 📝 Coding Guidelines
+### Type Annotations (Required)
+```python
+# MongoDB Collections
+collection: Collection = db_manager.get_collection("users")
 
-### 1. Async/Await Pattern
-- All database operations are async
-- Use `await` for MongoDB operations
-- Database connection uses async context manager
+# Query Results
+user: Optional[Dict[str, Any]] = await collection.find_one({"id": userId})
 
-### 2. Error Handling
-- Use FastAPI HTTPException for API errors
-- Include meaningful error messages
-- Return appropriate HTTP status codes
+# Model Instances
+product: ProductModel = ProductModel(**productData)
+```
 
-### 3. Validation
-- Use Pydantic v2 for all data validation
-- Implement field constraints (min/max values)
-- Use enums for categorical data
+### Validation
+- Product names are **UNIQUE** (enforced by database index)
+- Codes and internal references auto-generated and unique
+- Price/quantity must be >= 0
+- Rating must be 0-5 or null
+- Image field is optional/null
 
-### 4. MongoDB Operations
-- Use Motor async driver
-- Handle ObjectId serialization properly
-- Implement proper error handling for database operations
+## 🎯 Current Status
 
-### 5. API Design
-- RESTful endpoint design
-- Consistent response formats
-- Proper HTTP status codes
-- Include pagination for list endpoints
-
-### 6. Documentation Maintenance
-- **ALWAYS UPDATE THIS FILE** when making changes to models, schemas, endpoints, or configuration
-- Keep field descriptions and validation rules current
-- Document any breaking changes or API modifications
-- Note any inconsistencies or pending fixes
-- Update example requests/responses when API changes
-
-## 🧪 Testing Notes
-
-- No tests currently implemented
-- Recommended: pytest with pytest-asyncio
-- Test database operations with test containers
-- Mock external dependencies
-
-## 🚨 Important Notes
-
-1. **No SECRET_KEY Required**: The configuration intentionally does not include JWT or session management
-2. **Product-Focused**: This is a product catalog system, not a booking system
-3. **Async First**: All database operations are asynchronous
-4. **Pydantic v2**: Uses modern Pydantic features and validation
-5. **Version Management**: Centralized in app/version.py and pyproject.toml
+✅ **Complete camelCase refactoring** (5 routers, auth system)  
+✅ **Comprehensive type annotations** (204+ annotations)  
+✅ **JWT authentication** with blacklist functionality  
+✅ **Bulk product creation** endpoint for admin  
+✅ **Database indexes** for performance and uniqueness  
+✅ **Admin user management** system  
+✅ **Cart and wishlist** operations  
+✅ **MongoDB management** scripts
