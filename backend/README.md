@@ -1,19 +1,15 @@
 # Take Your Time - Product Management API
 
-A FastAPI-based product management system with MongoDB backend for inventory and catalog operations.
-**Local Development (.env.local):**
-```env
-ENVIRONMENT=local
-DEBUG=true
-MONGODB_URL=mongodb://localhost:27017
-DATABASE_NAME=TAKE_YOUR_TIME
-API_HOST=0.0.0.0
-API_PORT=8000
-FRONTEND_URLS=http://localhost:4200,http://127.0.0.1:4200
-```tures
+A comprehensive FastAPI-based product management system with MongoDB backend, featuring user authentication, cart management, wishlists, and full CRUD operations.
+
+## ✨ Features
 
 - **Complete CRUD operations** for product management
-- **MongoDB integration** with async PyMongo
+- **JWT Authentication** with token blacklist functionality
+- **User Management** with admin role system
+- **Shopping Cart** operations for authenticated users
+- **Wishlist Management** for saving favorite products
+- **MongoDB integration** with async Motor driver
 - **Environment-based configuration** (local/docker)
 - **CORS configured** for Angular frontend
 - **Docker containerization** ready
@@ -23,16 +19,35 @@ FRONTEND_URLS=http://localhost:4200,http://127.0.0.1:4200
 - **Inventory management** with status tracking
 - **Comprehensive API documentation** with Swagger UI
 
-## 📋 Product Model
+## 📋 Data Models
 
+### Product Model
 Each product includes:
-- **Basic Info**: code, name, description, image
-- **Categorization**: category for organization
-- **Pricing**: price (float)
-- **Inventory**: quantity, inventory status (INSTOCK/LOWSTOCK/OUTOFSTOCK)
-- **References**: internalReference, shellId
-- **Quality**: rating (0-5 stars)
-- **Timestamps**: createdAt, updatedAt (Unix timestamps)
+- **Basic Info**: code (auto-generated), name (unique), description, image (optional)
+- **Categorization**: category (ELECTRONICS|CLOTHING|FITNESS|ACCESSORIES)
+- **Pricing**: price (float, >= 0)
+- **Inventory**: quantity (int, >= 0), inventoryStatus (INSTOCK|LOWSTOCK|OUTOFSTOCK)
+- **References**: internalReference (auto-generated), shellId
+- **Quality**: rating (0-5 stars, optional)
+- **Timestamps**: createdAt, updatedAt (datetime)
+
+### User Model
+User accounts with authentication:
+- **Identity**: username (unique), email (unique), firstname
+- **Security**: hashedPassword (bcrypt), isActive, isAdmin
+- **Timestamps**: createdAt, updatedAt (datetime)
+
+### Cart Model
+Shopping cart functionality:
+- **Owner**: userId (reference to user)
+- **Items**: List of CartItems with productId, quantity, addedAt, updatedAt
+- **Timestamps**: createdAt, updatedAt (datetime)
+
+### Wishlist Model
+User wishlist for favorite products:
+- **Owner**: userId (reference to user)
+- **Items**: List of WishlistItems with productId, addedAt
+- **Timestamps**: createdAt, updatedAt (datetime)
 
 ## 🛠️ Setup & Installation
 
@@ -95,17 +110,68 @@ Each product includes:
 
 ## 📖 API Endpoints
 
+### Authentication
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/api/account` | Register new user | No |
+| POST | `/api/token` | Login (form-data or JSON) | No |
+| POST | `/api/logout` | Logout and blacklist token | Yes |
+
 ### Products CRUD
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/products/` | Create new product |
-| GET | `/api/products/` | List products (paginated, filterable) |
-| GET | `/api/products/{id}` | Get specific product |
-| PUT | `/api/products/{id}` | Update product |
-| DELETE | `/api/products/{id}` | Delete product |
-| GET | `/api/products/categories` | Get all unique categories |
-| PATCH | `/api/products/{id}/inventory` | Update inventory status & quantity |
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/api/products/` | Create new product | Admin |
+| GET | `/api/products/` | List products (paginated, filterable) | No |
+| GET | `/api/products/{id}` | Get specific product | No |
+| PUT | `/api/products/{id}` | Update product | Admin |
+| DELETE | `/api/products/{id}` | Delete product | Admin |
+| GET | `/api/products/categories` | Get all unique categories | No |
+| PATCH | `/api/products/{id}/inventory` | Update inventory status & quantity | Admin |
+| POST | `/api/products/bulk` | Bulk create products | Admin |
+
+### User Management (Admin Only)
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/api/admin/users/` | List all users | Admin |
+| GET | `/api/admin/users/{userId}` | Get specific user | Admin |
+| PUT | `/api/admin/users/{userId}` | Update user information | Admin |
+| DELETE | `/api/admin/users/{userId}` | Delete user account | Admin |
+
+### Shopping Cart
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/api/cart` | Get user's cart | Yes |
+| POST | `/api/cart/items` | Add item to cart | Yes |
+| PUT | `/api/cart/items/{productId}` | Update item quantity | Yes |
+| DELETE | `/api/cart/items/{productId}` | Remove item from cart | Yes |
+| DELETE | `/api/cart` | Clear entire cart | Yes |
+
+### Wishlist
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/api/wishlist` | Get user's wishlist | Yes |
+| POST | `/api/wishlist/items` | Add item to wishlist | Yes |
+| DELETE | `/api/wishlist/items/{productId}` | Remove item from wishlist | Yes |
+| DELETE | `/api/wishlist` | Clear entire wishlist | Yes |
+
+### Admin Cart Management
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/api/admin/users/{userId}/cart` | Get user's cart | Admin |
+| DELETE | `/api/admin/users/{userId}/cart` | Clear user's cart | Admin |
+
+### Admin Wishlist Management
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/api/admin/users/{userId}/wishlist` | Get user's wishlist | Admin |
+| DELETE | `/api/admin/users/{userId}/wishlist` | Clear user's wishlist | Admin |
 
 ### Query Parameters (GET /products)
 
@@ -162,7 +228,9 @@ DATABASE_NAME=TAKE_YOUR_TIME
 API_HOST=0.0.0.0
 API_PORT=8000
 FRONTEND_URLS=http://localhost:4200,http://127.0.0.1:4200
-SECRET_KEY=your-secret-key-here
+JWT_SECRET_KEY=your-secret-key-here
+JWT_ALGORITHM=HS256
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
 ```
 
 **Docker (.env.dev-docker):**
@@ -174,6 +242,9 @@ DATABASE_NAME=TAKE_YOUR_TIME
 API_HOST=0.0.0.0
 API_PORT=8000
 FRONTEND_URLS=http://localhost:4200,http://127.0.0.1:4200,http://frontend:4200
+JWT_SECRET_KEY=your-docker-secret-key-here
+JWT_ALGORITHM=HS256
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
 ```
 
 ### CORS Configuration
@@ -196,15 +267,41 @@ backend/
 │   │   ├── settings.py      # Environment settings
 │   │   ├── database.py      # MongoDB connection
 │   │   └── cors.py          # CORS configuration
-│   ├── models/
+│   ├── auth/                # JWT authentication system
 │   │   ├── __init__.py
-│   │   └── product.py       # MongoDB document models
-│   ├── routers/
+│   │   ├── blacklist.py     # Token blacklist management
+│   │   ├── dependencies.py  # Auth dependencies & decorators
+│   │   ├── jwt.py           # JWT token handling
+│   │   └── password.py      # Password hashing utilities
+│   ├── models/              # MongoDB document models
 │   │   ├── __init__.py
-│   │   └── products.py      # CRUD API routes
-│   └── schemas/
+│   │   ├── product.py       # Product model & indexes
+│   │   ├── user.py          # User model & admin creation
+│   │   ├── cart.py          # Shopping cart model
+│   │   ├── wishlist.py      # User wishlist model
+│   │   ├── token_blacklist.py # JWT blacklist model
+│   │   └── enums/           # Category, Status, Messages enums
+│   ├── routers/             # API endpoints
+│   │   ├── __init__.py
+│   │   ├── products.py      # Product CRUD + bulk import
+│   │   ├── auth.py          # Login/register/logout endpoints
+│   │   ├── admin_users.py   # Admin user management
+│   │   ├── cart.py          # Shopping cart operations
+│   │   └── wishlist.py      # Wishlist operations
+│   └── schemas/             # Pydantic request/response schemas
 │       ├── __init__.py
-│       └── product.py       # Pydantic request/response schemas
+│       ├── product.py       # Product CRUD schemas
+│       ├── auth.py          # JWT token schemas (OAuth2 standard)
+│       ├── user.py          # User management schemas
+│       ├── cart.py          # Cart operation schemas
+│       └── wishlist.py      # Wishlist schemas
+├── tests/                   # Comprehensive test suite (190 tests)
+│   ├── conftest.py          # Test configuration & fixtures
+│   ├── admin/               # Admin functionality tests
+│   ├── auth/                # Authentication & JWT tests
+│   ├── models/              # Model validation tests
+│   ├── products/            # Product API tests
+│   └── user/                # User functionality tests
 ├── .env.local               # Local environment config
 ├── .env.dev-docker          # Docker environment config
 ├── .dockerignore
@@ -215,18 +312,64 @@ backend/
 └── README.md
 ```
 
+## 🔐 Authentication & Security
+
+### JWT Authentication System
+- **Token-based authentication** with JWT (JSON Web Tokens)
+- **Secure password hashing** using bcrypt
+- **Token blacklist functionality** for secure logout
+- **Role-based access control** (Admin/User roles)
+- **OAuth2 compliant** token endpoints
+
+### Default Admin Account
+- **Email**: `admin@admin.com`
+- **Password**: `admin`
+- **Created automatically** on application startup
+- **Admin privileges**: Full access to user management and product operations
+
+### Security Features
+- **Password hashing**: bcrypt with salt rounds
+- **Token expiration**: Configurable JWT expiration (default: 30 minutes)
+- **Secure logout**: Token blacklist prevents reuse of invalidated tokens
+- **Protected endpoints**: Admin-only routes for sensitive operations
+- **CORS protection**: Configured for specific frontend origins
+
+### Authentication Flow
+1. **Register**: Create new user account (`POST /api/account`)
+2. **Login**: Get JWT token (`POST /api/token`)
+3. **Access**: Include token in Authorization header: `Bearer <token>`
+4. **Logout**: Invalidate token (`POST /api/logout`)
+
 ## 🧪 Testing
 
+### Comprehensive Test Suite (190 Tests)
+
 ```bash
-# Run tests
+# Run all tests
 uv run pytest
 
 # Run tests with coverage
 uv run pytest --cov=app
 
+# Run specific test categories
+uv run pytest tests/admin/          # Admin functionality (30 tests)
+uv run pytest tests/auth/           # Authentication & JWT (15 tests)
+uv run pytest tests/models/         # Model validation (72 tests)
+uv run pytest tests/products/       # Product API & logic (46 tests)
+uv run pytest tests/user/           # User functionality (27 tests)
+
 # Run specific test file
-uv run pytest tests/test_products.py
+uv run pytest tests/models/test_product_model.py -v
 ```
+
+### Test Coverage
+- **Admin Operations**: User management, cart/wishlist admin controls
+- **Authentication**: JWT tokens, login/logout, password hashing
+- **Model Validation**: All MongoDB models with comprehensive field testing
+- **Product Management**: CRUD operations, auto-generation, bulk imports
+- **User Features**: Shopping cart, wishlist, user account management
+
+See `tests/TEST_README.md` for detailed test documentation.
 
 ## 📝 Development Notes
 
