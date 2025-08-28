@@ -16,12 +16,12 @@ import { MenuItem } from "primeng/api";
 
     public readonly items: MenuItem[] = [
         {
-            label: 'Accueil',
+            label: 'Home',
             icon: 'pi pi-home',
             routerLink: ['/home']
         },
         {
-            label: 'Produits',
+            label: 'Products',
             icon: 'pi pi-barcode',
             routerLink: ['/products/list']
         }

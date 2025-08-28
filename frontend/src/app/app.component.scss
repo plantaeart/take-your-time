@@ -1,4 +1,6 @@
 .app-content {
-    overflow: hidden;
+    overflow-y: auto; /* Allow vertical scrolling */
+    overflow-x: hidden; /* Hide horizontal scroll */
     height: 100%;
+    padding: 0; /* Remove any default padding */
 }

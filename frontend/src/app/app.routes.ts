@@ -1,5 +1,6 @@
 import { Routes } from "@angular/router";
 import { HomeComponent } from "./shared/features/home/home.component";
+import { ProductsDisplayComponent } from "./components/products-display/products-display.component";
 
 export const APP_ROUTES: Routes = [
   {
@@ -7,9 +8,8 @@ export const APP_ROUTES: Routes = [
     component: HomeComponent,
   },
   {
-    path: "products",
-    loadChildren: () =>
-      import("./products/products.routes").then((m) => m.PRODUCTS_ROUTES)
+    path: "products/list",
+    component: ProductsDisplayComponent,
   },
   { path: "", redirectTo: "home", pathMatch: "full" },
 ];

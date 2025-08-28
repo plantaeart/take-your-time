@@ -1,0 +1,158 @@
+<div class="products-container">
+  <!-- Loading State -->
+  @if (productList.isLoading()) {
+    <div class="products-grid">
+      @for (i of [1,2,3,4,5,6,7,8]; track i) {
+        <p-card class="product-card">
+          <ng-template pTemplate="header">
+            <p-skeleton width="100%" height="200px"></p-skeleton>
+          </ng-template>
+          <p-skeleton width="100%" height="1.5rem" styleClass="mb-2"></p-skeleton>
+          <p-skeleton width="80%" height="1rem" styleClass="mb-3"></p-skeleton>
+          <p-skeleton width="60%" height="1rem" styleClass="mb-3"></p-skeleton>
+          <div class="flex justify-content-between align-items-center">
+            <p-skeleton width="80px" height="2rem"></p-skeleton>
+            <div class="flex gap-2">
+              <p-skeleton width="40px" height="2rem"></p-skeleton>
+              <p-skeleton width="40px" height="2rem"></p-skeleton>
+            </div>
+          </div>
+        </p-card>
+      }
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (productList.errorMessage()) {
+    <div class="error-container">
+      <div class="error-message">
+        <i class="pi pi-exclamation-triangle"></i>
+        <h3>Failed to load products</h3>
+        <p>{{ productList.errorMessage() }}</p>
+        <p-button 
+          label="Try Again" 
+          icon="pi pi-refresh" 
+          (onClick)="productList.refresh()">
+        </p-button>
+      </div>
+    </div>
+  }
+
+  <!-- Products Grid -->
+  @if (productList.hasProducts() && !productList.isLoading()) {
+    <div class="products-grid">
+      @for (product of productList.products(); track product.id) {
+        <p-card class="product-card">
+          <!-- Product Image -->
+          <ng-template pTemplate="header">
+            <div class="product-image-container">
+              <img 
+                [src]="product.image || defaultImage" 
+                [alt]="product.name"
+                class="product-image"
+                (error)="onImageError($event)">
+              
+              <!-- Stock Status Badge -->
+              <div class="stock-badge">
+                <p-tag 
+                  [value]="getStockConfig(product.inventoryStatus).label"
+                  [severity]="getStockConfig(product.inventoryStatus).severity">
+                </p-tag>
+              </div>
+            </div>
+          </ng-template>
+
+          <!-- Product Information -->
+          <div class="product-info">
+            <h3 class="product-name">{{ product.name }}</h3>
+            
+            <!-- Category Tag -->
+            <div class="category-tag">
+              <p-tag 
+                [value]="getCategoryConfig(product.category).label"
+                [severity]="getCategoryConfig(product.category).severity">
+              </p-tag>
+            </div>
+            
+            <p class="product-description">
+              {{ product.description }}
+            </p>
+
+            <div class="product-details">
+              <div class="quantity-info">
+                <i class="pi pi-box"></i>
+                <span>{{ product.quantity }}</span>
+              </div>
+
+              <div class="price">
+                {{ formatPrice(product.price) }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <ng-template pTemplate="footer">
+            <div class="product-actions">
+              <p-button 
+                icon="pi pi-heart"
+                severity="secondary"
+                [outlined]="true"
+                size="small"
+                pTooltip="Add to Wishlist"
+                tooltipPosition="top"
+                (onClick)="onAddToWishlist(product)">
+              </p-button>
+
+              <p-button 
+                label="Add to Cart"
+                icon="pi pi-shopping-cart"
+                size="small"
+                [disabled]="product.inventoryStatus === 'OUTOFSTOCK'"
+                (onClick)="onAddToCart(product)">
+              </p-button>
+            </div>
+          </ng-template>
+        </p-card>
+      }
+    </div>
+
+    <!-- Show More Button -->
+    @if (productList.canLoadMore()) {
+      <div class="show-more-container">
+        <p-button 
+          label="Show More Products"
+          icon="pi pi-angle-down"
+          [loading]="productList.isLoadingMore()"
+          severity="secondary"
+          [outlined]="true"
+          size="large"
+          (onClick)="onShowMore()">
+        </p-button>
+        
+        @if (productList.totalProducts() > 0) {
+          <p class="pagination-info">
+            Showing {{ productList.totalProducts() }} products
+          </p>
+        }
+      </div>
+    }
+  }
+
+  <!-- Empty State -->
+  @if (!productList.hasProducts() && !productList.isLoading() && !productList.errorMessage()) {
+    <div class="empty-state">
+      <div class="empty-message">
+        <i class="pi pi-search"></i>
+        <h3>No products found</h3>
+        <p>There are no products available at the moment.</p>
+        <p-button 
+          label="Refresh" 
+          icon="pi pi-refresh" 
+          severity="secondary"
+          [outlined]="true"
+          (onClick)="productList.refresh()">
+        </p-button>
+      </div>
+    </div>
+  }
+</div>
