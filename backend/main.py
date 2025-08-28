@@ -13,6 +13,11 @@ from app.config.settings import get_settings
 from app.config.cors import setup_cors
 from app.config.database import db_manager
 from app.routers.products import router as products_router
+from app.routers.auth import router as auth_router
+from app.routers.cart import router as cart_router
+from app.routers.wishlist import router as wishlist_router
+from app.routers.admin_users import router as admin_users_router
+from app.startup import initialize_database
 from app.version import __version__
 
 # Configure logging
@@ -28,6 +33,10 @@ async def lifespan(app: FastAPI):
     logger.info("🤔 Connecting to database...")
     await db_manager.connect_to_mongo()
     logger.info("✅ Database connected successfully")
+    
+    # Initialize database with admin user and indexes
+    logger.info("🔧 Initializing database...")
+    await initialize_database()
     
     yield
     
@@ -81,7 +90,11 @@ def create_app() -> FastAPI:
         }
     
     # Include routers
+    app.include_router(auth_router, prefix="/api")
     app.include_router(products_router, prefix="/api")
+    app.include_router(cart_router, prefix="/api")
+    app.include_router(wishlist_router, prefix="/api")
+    app.include_router(admin_users_router, prefix="/api")
     
     return app
 

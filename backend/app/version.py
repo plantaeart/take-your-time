@@ -46,7 +46,7 @@ def get_version() -> str:
             return pyproject_data["project"]["version"]
     except (FileNotFoundError, KeyError, toml.TomlDecodeError) as e:
         # Fallback version if pyproject.toml cannot be read
-        return "0.1.0"
+        return "1.0.0"
 
 
 def get_version_info() -> dict:

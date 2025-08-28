@@ -64,12 +64,12 @@ MongoDB document model with these fields:
 - `category: Category` - Product category enum (required)
 - `price: float` - Product price (required, >= 0)
 - `quantity: int` - Stock quantity (required, >= 0)
-- `internal_reference: str` - Auto-generated internal SKU (format: REF-123-456)
-- `shell_id: str` - Shell identifier (optional)
-- `inventory_status: InventoryStatus` - Stock status enum (required)
+- `internalReference: str` - Auto-generated internal SKU (format: REF-123-456)
+- `shellId: int` - Shell identifier (optional)
+- `inventoryStatus: InventoryStatus` - Stock status enum (required)
 - `rating: float` - Product rating (optional, 0-5)
-- `created_at: datetime` - Creation timestamp
-- `updated_at: datetime` - Last update timestamp
+- `createdAt: datetime` - Creation timestamp
+- `updatedAt: datetime` - Last update timestamp
 
 ### Enums
 - **Category**: ACCESSORIES, CLOTHING, FITNESS, ELECTRONICS
@@ -174,7 +174,7 @@ Paginated list response:
 - **Driver**: Motor (async MongoDB driver)
 - **Connection**: Async context manager
 - **Collection**: "products"
-- **Indexes**: Recommended on `code` (unique), `category`, `inventory_status`
+- **Indexes**: Recommended on `code` (unique), `category`, `inventoryStatus`
 
 ## 🚀 Development Commands
 

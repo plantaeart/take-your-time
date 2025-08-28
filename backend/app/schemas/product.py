@@ -10,17 +10,17 @@ from app.models.enums.inventoryStatus import InventoryStatus
 
 class ProductCreate(BaseModel):
     """Schema for creating a new product."""
-    code: Optional[str] = Field(None, min_length=9, max_length=9, description="Product code (auto-generated if not provided)")
     name: str = Field(..., min_length=1, max_length=200, description="Product name")
     description: str = Field(..., max_length=1000, description="Product description")
-    image: str = Field(..., description="Product image URL")
-    category: Category = Field(..., description="Product category")
     price: float = Field(..., gt=0, description="Product price")
-    quantity: int = Field(..., ge=0, description="Product quantity")
-    internalReference: Optional[str] = Field(None, pattern=r"^REF-\d{3}-\d{3}$", description="Internal reference (auto-generated if not provided)")
-    shellId: int = Field(..., ge=0, description="Shell ID")
+    category: Category = Field(..., description="Product category")
     inventoryStatus: InventoryStatus = Field(..., description="Inventory status")
-    rating: float = Field(..., ge=0, le=5, description="Product rating (0-5)")
+    quantity: int = Field(..., ge=0, description="Product quantity")
+    shellId: int = Field(..., ge=0, description="Shell ID")
+    image: Optional[str] = Field(None, description="Product image URL (optional)")
+    rating: Optional[float] = Field(None, ge=0, le=5, description="Product rating (0-5), null if not provided")
+    code: Optional[str] = Field(None, min_length=9, max_length=9, description="Product code (auto-generated if not provided)")
+    internalReference: Optional[str] = Field(None, pattern=r"^REF-\d{3}-\d{3}$", description="Internal reference (auto-generated if not provided)")
 
 
 class ProductUpdate(BaseModel):
@@ -44,14 +44,14 @@ class ProductResponse(BaseModel):
     code: str
     name: str
     description: str
-    image: str
+    image: Optional[str]  # Can be null
     category: Category
     price: float
     quantity: int
     internalReference: str
     shellId: int
     inventoryStatus: InventoryStatus
-    rating: float
+    rating: Optional[float]  # Can be null
     createdAt: datetime
     updatedAt: datetime
 
