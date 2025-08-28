@@ -1,8 +1,8 @@
-from typing import Optional
+from typing import Optional, Any
 import random
 import string
 from datetime import datetime
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_serializer
 from bson import ObjectId
 from pymongo import ASCENDING
 from app.models.enums.category import Category
@@ -60,9 +60,17 @@ class ProductModel(BaseModel):
 
     model_config = ConfigDict(
         populate_by_name=True,
-        arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        arbitrary_types_allowed=True
     )
+    
+    @field_serializer('*', when_used='json')
+    def serialize_any(self, value: Any) -> Any:
+        """Custom serializer for ObjectId and other types."""
+        if isinstance(value, ObjectId):
+            return str(value)
+        if isinstance(value, datetime):
+            return value.isoformat()
+        return value
 
 
 async def create_product_indexes(collection):

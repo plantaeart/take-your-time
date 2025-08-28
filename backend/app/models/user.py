@@ -2,8 +2,8 @@
 User model for MongoDB.
 """
 from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel, EmailStr, Field
+from typing import Optional, Any
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_serializer
 from pymongo import ASCENDING
 import secrets
 import string
@@ -43,11 +43,12 @@ class UserModel(BaseModel):
     createdAt: datetime = Field(default_factory=datetime.now)
     updatedAt: datetime = Field(default_factory=datetime.now)
     
-    class Config:
-        """Pydantic model configuration."""
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict()
+    
+    @field_serializer('createdAt', 'updatedAt', when_used='json')
+    def serialize_datetime(self, value: datetime) -> str:
+        """Serialize datetime to ISO format."""
+        return value.isoformat()
 
 
 async def get_next_user_id(collection) -> int:

@@ -40,35 +40,63 @@ def mock_db_manager():
 @pytest.fixture(autouse=True)
 def setup_test_environment(mock_db_manager):
     """Setup test environment with mongomock-motor."""
-    # Store original env file
-    original_env_file = os.environ.get("ENV_FILE")
+    # Store original environment variables
+    original_env = {}
+    test_env_vars = [
+        "ENV_FILE", "ENVIRONMENT", "DEBUG", "MONGODB_URL", "DATABASE_NAME",
+        "API_HOST", "API_PORT", "SECRET_KEY", "ALGORITHM", 
+        "ACCESS_TOKEN_EXPIRE_MINUTES", "FRONTEND_URLS"
+    ]
     
-    # Set test environment
+    for var in test_env_vars:
+        original_env[var] = os.environ.get(var)
+    
+    # Set ENV_FILE to point to test environment
     os.environ["ENV_FILE"] = ".env.test"
     
     # Force reset of settings to reload with test config
     import app.config.settings
     app.config.settings.settings = None
     
-    # Replace the global db_manager
+    # Replace the global db_manager in all modules
     original_db_manager = db_manager
     app.config.database.db_manager = mock_db_manager
     
-    # Also replace in routers module
+    # Replace in all router modules
     import app.routers.products
+    import app.routers.auth
+    import app.routers.admin_users
+    import app.routers.cart
+    import app.routers.wishlist
+    import app.auth.dependencies
+    import app.auth.blacklist
+    
     app.routers.products.db_manager = mock_db_manager
+    app.routers.auth.db_manager = mock_db_manager
+    app.routers.admin_users.db_manager = mock_db_manager
+    app.routers.cart.db_manager = mock_db_manager
+    app.routers.wishlist.db_manager = mock_db_manager
+    app.auth.dependencies.db_manager = mock_db_manager
+    app.auth.blacklist.db_manager = mock_db_manager
     
     yield
     
     # Cleanup - restore original db_manager
     app.config.database.db_manager = original_db_manager
     app.routers.products.db_manager = original_db_manager
+    app.routers.auth.db_manager = original_db_manager
+    app.routers.admin_users.db_manager = original_db_manager
+    app.routers.cart.db_manager = original_db_manager
+    app.routers.wishlist.db_manager = original_db_manager
+    app.auth.dependencies.db_manager = original_db_manager
+    app.auth.blacklist.db_manager = original_db_manager
     
-    # Restore original environment
-    if original_env_file:
-        os.environ["ENV_FILE"] = original_env_file
-    elif "ENV_FILE" in os.environ:
-        del os.environ["ENV_FILE"]
+    # Restore original environment variables
+    for var, value in original_env.items():
+        if value is not None:
+            os.environ[var] = value
+        elif var in os.environ:
+            del os.environ[var]
     
     # Reset settings
     app.config.settings.settings = None
@@ -84,3 +112,88 @@ def app():
 def client(app):
     """Create test client."""
     return TestClient(app)
+
+
+@pytest.fixture
+def admin_token(client):
+    """Get admin authentication token."""
+    # Create admin user via registration (will be regular user)
+    adminData = {
+        "username": "testadmin",
+        "firstname": "Test",
+        "email": "testadmin@example.com",
+        "password": "adminpassword"
+    }
+    
+    # Register user first
+    client.post("/api/account", json=adminData)
+    
+    # We need to manually promote this user to admin in the database
+    # Since this is a test fixture, we'll simulate the create_admin_user behavior
+    from app.config.database import db_manager
+    from app.auth.password import get_password_hash
+    import asyncio
+    
+    async def promote_to_admin():
+        collection = db_manager.get_collection("users")
+        await collection.update_one(
+            {"email": "testadmin@example.com"},
+            {"$set": {"isAdmin": True}}
+        )
+    
+    # Run the async function to promote user to admin
+    asyncio.run(promote_to_admin())
+    
+    # Login admin
+    loginData = {
+        "username": "testadmin@example.com",
+        "password": "adminpassword"
+    }
+    response = client.post("/api/token", data=loginData)
+    return response.json()["access_token"]
+
+
+@pytest.fixture
+def user_token(client):
+    """Get regular user authentication token."""
+    # Create regular user
+    userData = {
+        "username": "testuser",
+        "firstname": "Test",
+        "email": "testuser@example.com", 
+        "password": "userpassword"
+    }
+    
+    # Register user
+    client.post("/api/account", json=userData)
+    
+    # Login user
+    loginData = {
+        "username": "testuser@example.com",
+        "password": "userpassword"
+    }
+    response = client.post("/api/token", data=loginData)
+    return response.json()["access_token"]
+
+
+@pytest.fixture
+def second_user_token(client):
+    """Get second user authentication token for isolation testing."""
+    # Create second user
+    userData = {
+        "username": "testuser2",
+        "firstname": "Test2",
+        "email": "testuser2@example.com",
+        "password": "userpassword2"
+    }
+    
+    # Register user
+    client.post("/api/account", json=userData)
+    
+    # Login user
+    loginData = {
+        "username": "testuser2@example.com",
+        "password": "userpassword2"
+    }
+    response = client.post("/api/token", data=loginData)
+    return response.json()["access_token"]

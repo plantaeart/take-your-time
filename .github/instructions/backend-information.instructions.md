@@ -84,7 +84,20 @@ backend/
 - `items: List[CartItem/WishlistItem]` - Product references
 - `createdAt/updatedAt: datetime`
 
-## 🔧 Configuration
+## Security & Admin Management
+
+### Admin User Creation
+- **Admin users CANNOT be created via API endpoints**
+- Admin users are created only via the `create_admin_user()` function in `user.py`
+- Default admin user: `admin@admin.com` / `admin` (created on startup)
+- For testing: Use database promotion to set `isAdmin=true` manually
+
+### Authentication Security
+- JWT tokens with blacklist functionality
+- OAuth2 compliance with form-data and JSON login endpoints
+- Admin privileges checked via `isAdmin` flag, not email-based legacy checks
+
+## Configuration
 
 **Required environment variables:**
 - `MONGODB_URL`: MongoDB connection string

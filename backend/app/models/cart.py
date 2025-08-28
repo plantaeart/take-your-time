@@ -2,8 +2,8 @@
 Cart model for MongoDB.
 """
 from datetime import datetime
-from typing import List, Optional
-from pydantic import BaseModel, Field
+from typing import List, Optional, Any
+from pydantic import BaseModel, Field, ConfigDict, field_serializer
 
 
 class CartItem(BaseModel):
@@ -12,6 +12,11 @@ class CartItem(BaseModel):
     quantity: int = Field(..., ge=1, description="Quantity of the product")
     addedAt: datetime = Field(default_factory=datetime.now, description="When the item was added to cart")
     updatedAt: datetime = Field(default_factory=datetime.now, description="When the item was last updated")
+    
+    @field_serializer('addedAt', 'updatedAt', when_used='json')
+    def serialize_datetime(self, value: datetime) -> str:
+        """Serialize datetime to ISO format."""
+        return value.isoformat()
 
 
 class CartModel(BaseModel):
@@ -21,8 +26,9 @@ class CartModel(BaseModel):
     createdAt: datetime = Field(default_factory=datetime.now)
     updatedAt: datetime = Field(default_factory=datetime.now)
     
-    class Config:
-        """Pydantic model configuration."""
-        json_encoders = {
-            datetime: lambda v: v.isoformat()
-        }
+    model_config = ConfigDict()
+    
+    @field_serializer('createdAt', 'updatedAt', when_used='json')
+    def serialize_datetime(self, value: datetime) -> str:
+        """Serialize datetime to ISO format."""
+        return value.isoformat()
