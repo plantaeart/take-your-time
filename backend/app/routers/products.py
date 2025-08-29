@@ -27,7 +27,9 @@ async def get_products(
     limit: int = Query(10, ge=1, le=100, description="Items per page"),
     category: Optional[Category] = Query(None, description="Filter by category"),
     inventoryStatus: Optional[InventoryStatus] = Query(None, description="Filter by inventory status"),
-    search: Optional[str] = Query(None, description="Search in name and description")
+    search: Optional[str] = Query(None, description="Search in name and description"),
+    sortBy: Optional[str] = Query("createdAt", description="Sort field (name, price, quantity, createdAt, updatedAt)"),
+    sortOrder: Optional[str] = Query("desc", description="Sort direction (asc, desc)")
 ):
     """Get all products with pagination and filters."""
     collection: Collection = db_manager.get_collection("products")
@@ -47,11 +49,18 @@ async def get_products(
     # Calculate skip for pagination
     skip: int = (page - 1) * limit
     
+    # Validate and set up sorting
+    validSortFields = ["name", "price", "quantity", "createdAt", "updatedAt"]
+    if sortBy not in validSortFields:
+        sortBy = "createdAt"
+    
+    sortDirection = 1 if sortOrder == "asc" else -1
+    
     # Get total count
     total: int = await collection.count_documents(filterQuery)
     
-    # Get products with pagination
-    cursor: Cursor = collection.find(filterQuery).skip(skip).limit(limit).sort("createdAt", -1)
+    # Get products with pagination and sorting
+    cursor: Cursor = collection.find(filterQuery).skip(skip).limit(limit).sort(sortBy, sortDirection)
     products: List[Dict[str, Any]] = await cursor.to_list(length=limit)
     
     # Convert to response format
