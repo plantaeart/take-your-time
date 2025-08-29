@@ -101,22 +101,17 @@ async def get_max_price():
     collection: Collection = db_manager.get_collection("products")
     
     try:
-        # Use MongoDB aggregation to find the maximum price efficiently
-        pipeline = [
-            {"$group": {"_id": None, "maxPrice": {"$max": "$price"}}}
-        ]
+        # Simple approach: sort by price descending and get the first document
+        document = await collection.find_one({}, sort=[('price', -1)])
         
-        result = await collection.aggregate(pipeline).to_list(1)
-        
-        if result and result[0]["maxPrice"] is not None:
-            import math
-            return math.ceil(result[0]["maxPrice"])
-        else:
-            # Return default if no products found
+        if document is None:
             return 1000.0
+        else:
+            max_price = document.get('price', 1000.0)
+            import math
+            return float(math.ceil(max_price))
             
     except Exception as e:
-        # Return default on any error
         return 1000.0
 
 
