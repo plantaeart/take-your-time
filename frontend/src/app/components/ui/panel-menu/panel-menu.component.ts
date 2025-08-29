@@ -55,7 +55,13 @@ import { useAuthState, useAuthActions } from '../../../hooks/auth.hooks';
                 icon: 'pi pi-user',
                 routerLink: ['/profile'],
                 id: 'panel-menu-profile-link'
-            }
+            },
+            {
+                label: 'Contact',
+                icon: 'pi pi-envelope',
+                routerLink: ['/contact'],
+                id: 'panel-menu-contact-link'
+            },
         ];
         
         // Add logout item if authenticated
@@ -94,7 +100,13 @@ import { useAuthState, useAuthActions } from '../../../hooks/auth.hooks';
                 routerLink: ['/profile'],
                 id: 'panel-menu-profile-link-collapsed',
                 title: 'Profile'
-            }
+            },
+            {
+                icon: 'pi pi-envelope',
+                routerLink: ['/contact'],
+                id: 'panel-menu-contact-link-collapsed',
+                title: 'Contact'
+            },
         ];
         
         // Add logout item if authenticated

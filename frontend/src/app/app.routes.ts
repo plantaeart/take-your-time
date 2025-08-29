@@ -5,6 +5,7 @@ import { AuthComponent } from "./components/auth/auth.component";
 import { ProfileComponent } from "./components/profile/profile.component";
 import { UserCartDetailComponent } from "./components/user/user-cart-detail/user-cart-detail.component";
 import { UserWishlistDetailComponent } from "./components/user/user-wishlist-detail/user-wishlist-detail.component";
+import { ContactFormComponent } from "./components/contact/contact-form/contact-form.component";
 import { AuthGuard, GuestGuard } from "./guards/auth.guard";
 
 export const APP_ROUTES: Routes = [
@@ -41,6 +42,11 @@ export const APP_ROUTES: Routes = [
   {
     path: "user-wishlist-detail",
     component: UserWishlistDetailComponent,
+    canActivate: [AuthGuard], // Require authentication
+  },
+  {
+    path: "contact",
+    component: ContactFormComponent,
     canActivate: [AuthGuard], // Require authentication
   },
   { 

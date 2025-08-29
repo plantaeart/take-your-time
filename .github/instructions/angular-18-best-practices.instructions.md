@@ -320,6 +320,211 @@ export const APP_CONFIG = {
 
 ---
 
+## 🎨 PrimeNG Integration Best Practices
+
+### **1. Component Selection & Usage**
+```typescript
+// ✅ Import only needed PrimeNG modules
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { CardModule } from 'primeng/card';
+import { MessageModule } from 'primeng/message';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+
+@Component({
+  standalone: true,
+  imports: [
+    CommonModule,
+    ButtonModule,
+    InputTextModule,
+    CardModule,
+    MessageModule,
+    ProgressSpinnerModule
+  ]
+})
+```
+
+### **2. Form Components**
+```html
+<!-- ✅ Use PrimeNG form components with Angular reactive forms -->
+<form [formGroup]="myForm">
+  <!-- Input with validation -->
+  <div class="p-field">
+    <label for="email">Email</label>
+    <input id="email" type="email" pInputText formControlName="email" 
+           [class.p-invalid]="isFieldInvalid('email')" />
+    <small class="p-error" *ngIf="isFieldInvalid('email')">
+      {{ getFieldError('email') }}
+    </small>
+  </div>
+  
+  <!-- Textarea -->
+  <div class="p-field">
+    <label for="message">Message</label>
+    <textarea id="message" pInputTextarea formControlName="message" 
+              rows="5" [class.p-invalid]="isFieldInvalid('message')">
+    </textarea>
+  </div>
+  
+  <!-- Submit button -->
+  <p-button type="submit" label="Submit" icon="pi pi-check" 
+            [loading]="isSubmitting()" [disabled]="myForm.invalid">
+  </p-button>
+</form>
+```
+
+### **3. Layout Components**
+```html
+<!-- ✅ Use PrimeNG layout components -->
+<p-card>
+  <ng-template pTemplate="header">
+    <h3>Card Title</h3>
+  </ng-template>
+  
+  <ng-template pTemplate="content">
+    <p>Card content goes here</p>
+  </ng-template>
+  
+  <ng-template pTemplate="footer">
+    <p-button label="Action" icon="pi pi-check"></p-button>
+  </ng-template>
+</p-card>
+
+<!-- ✅ Use Flex utilities -->
+<div class="p-d-flex p-jc-between p-ai-center">
+  <span>Content</span>
+  <p-button icon="pi pi-cog"></p-button>
+</div>
+```
+
+### **4. Message & Feedback Components**
+```html
+<!-- ✅ Use proper severity levels -->
+<p-message severity="success" text="Operation completed successfully"></p-message>
+<p-message severity="info" text="Information message"></p-message>
+<p-message severity="warn" text="Warning message"></p-message>
+<p-message severity="error" text="Error occurred"></p-message>
+
+<!-- ✅ Use messages for multiple notifications -->
+<p-messages [(value)]="messages"></p-messages>
+
+<!-- ✅ Use toast for global notifications -->
+<p-toast position="top-right"></p-toast>
+```
+
+### **5. Button Best Practices**
+```html
+<!-- ✅ Use semantic button types and icons -->
+<p-button label="Save" icon="pi pi-save" severity="success"></p-button>
+<p-button label="Cancel" icon="pi pi-times" severity="secondary"></p-button>
+<p-button label="Delete" icon="pi pi-trash" severity="danger"></p-button>
+
+<!-- ✅ Loading states -->
+<p-button label="Submit" [loading]="isLoading()" 
+          loadingIcon="pi pi-spinner pi-spin"></p-button>
+
+<!-- ✅ Icon-only buttons with tooltips -->
+<p-button icon="pi pi-pencil" [text]="true" [rounded]="true" 
+          pTooltip="Edit" tooltipPosition="top"></p-button>
+```
+
+### **6. PrimeNG CSS Classes & Utilities**
+```scss
+// ✅ Use PrimeNG spacing utilities
+.p-mt-2    // margin-top: 0.5rem
+.p-mb-3    // margin-bottom: 1rem
+.p-p-4     // padding: 1.5rem
+
+// ✅ Use PrimeNG flex utilities
+.p-d-flex           // display: flex
+.p-jc-center        // justify-content: center
+.p-ai-center        // align-items: center
+.p-flex-column      // flex-direction: column
+
+// ✅ Use PrimeNG responsive utilities
+.p-sm-12           // width: 100% on small screens
+.p-md-6            // width: 50% on medium screens
+.p-lg-4            // width: 33.33% on large screens
+```
+
+### **7. Theme Customization**
+```scss
+// ✅ Override PrimeNG CSS variables
+:root {
+  --primary-color: #667eea;
+  --primary-color-text: #ffffff;
+  --surface-card: #ffffff;
+  --text-color: #495057;
+  --text-color-secondary: #6c757d;
+}
+
+// ✅ Component-specific styling with ::ng-deep (use sparingly)
+:host ::ng-deep .p-button {
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+// ✅ Prefer CSS custom properties over ::ng-deep
+.custom-button {
+  --p-button-border-radius: 8px;
+  --p-button-font-weight: 600;
+}
+```
+
+### **8. Accessibility with PrimeNG**
+```html
+<!-- ✅ Use proper ARIA labels -->
+<p-button icon="pi pi-search" 
+          ariaLabel="Search products" 
+          [text]="true">
+</p-button>
+
+<!-- ✅ Use tooltips for icon-only buttons -->
+<p-button icon="pi pi-heart" 
+          pTooltip="Add to wishlist" 
+          tooltipPosition="top"
+          [text]="true">
+</p-button>
+
+<!-- ✅ Proper form labels -->
+<label for="product-name" class="p-sr-only">Product Name</label>
+<input id="product-name" pInputText placeholder="Product Name" />
+```
+
+### **9. Performance Optimization**
+```typescript
+// ✅ Lazy load PrimeNG modules
+const routes: Routes = [
+  {
+    path: 'admin',
+    loadChildren: () => import('./admin/admin.module').then(m => m.AdminModule)
+  }
+];
+
+// ✅ Use OnPush change detection with PrimeNG
+@Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  // ... other config
+})
+```
+
+### **10. Testing PrimeNG Components**
+```typescript
+// ✅ Test PrimeNG components with proper selectors
+describe('ContactFormComponent', () => {
+  it('should submit form when valid', () => {
+    // Use PrimeNG test helpers
+    const submitButton = fixture.debugElement.query(
+      By.css('p-button[type="submit"]')
+    );
+    
+    expect(submitButton.nativeElement).toBeTruthy();
+  });
+});
+```
+
+---
+
 ## 🎨 Styling Best Practices
 
 ### **1. Component-Scoped Styles**

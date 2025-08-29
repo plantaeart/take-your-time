@@ -1,0 +1,118 @@
+<div class="contact-form-container">
+  <!-- Contact Form Card -->
+  <p-card>
+    <ng-template pTemplate="header">
+      <div class="contact-form-header">
+        <h2>Contact Us</h2>
+        <p>Have a question or need assistance? We'd love to hear from you!</p>
+      </div>
+    </ng-template>
+
+    <ng-template pTemplate="content">
+      <!-- Contact Form -->
+      <form [formGroup]="contactForm" (ngSubmit)="onSubmit()" class="contact-form">
+        <div id="contact-form-fields-container" class="form-fields-container">
+          <!-- Email Field -->
+          <div id="contact-email-field" class="form-field email-field">
+            <div class="p-field p-mb-5">
+              <label for="contact-email-input" class="p-d-block p-mb-2">
+                <i class="pi pi-envelope p-mr-1"></i>
+                Email Address 
+                <span class="required-asterisk p-ml-1">*</span>
+              </label>
+              <input
+                id="contact-email-input"
+                type="email"
+                pInputText
+                formControlName="email"
+                placeholder="your.email@example.com"
+                [class.p-invalid]="isFieldInvalid('email')"
+                class="p-inputtext-lg w-full"
+              />
+              @if (isFieldInvalid('email')) {
+                <small id="contact-email-error" class="p-error p-d-block p-mt-1">
+                  <i class="pi pi-exclamation-circle p-mr-1"></i>
+                  {{ getFieldError('email') }}
+                </small>
+              }
+            </div>
+          </div>
+
+          <!-- Message Field -->
+          <div id="contact-message-field" class="form-field message-field">
+            <div class="p-field p-mb-5">
+              <label for="contact-message-input" class="p-d-block p-mb-2">
+                <i class="pi pi-comment p-mr-1"></i>
+                Message 
+                <span class="required-asterisk p-ml-1">*</span>
+              </label>
+              <textarea
+                id="contact-message-input"
+                pInputTextarea
+                formControlName="message"
+                placeholder="Tell us how we can help you..."
+                rows="6"
+                [class.p-invalid]="isFieldInvalid('message')"
+                class="w-full"
+                maxlength="300"
+                [autoResize]="true">
+              </textarea>
+              
+              <!-- Character Count -->
+              <div class="p-d-flex p-jc-between p-ai-center p-mt-1">
+                <small class="character-count p-text-secondary">
+                  {{ contactForm.get('message')?.value?.length || 0 }}/300 characters
+                </small>
+              </div>
+              
+              <!-- Error Message for Message Field -->
+              @if (isFieldInvalid('message')) {
+                <small id="contact-message-error" class="p-error p-d-block p-mt-1">
+                  <i class="pi pi-exclamation-circle p-mr-1"></i>
+                  {{ getFieldError('message') }}
+                </small>
+              }
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <div id="contact-submit-section" class="form-submit-section">
+            <div class="form-actions p-mt-6 p-d-flex p-jc-center">
+              <p-button
+                id="contact-form-submit-btn"
+                type="submit"
+                label="Send Message"
+                icon="pi pi-send"
+                [loading]="isSubmitting()"
+                [disabled]="contactForm.invalid || isSubmitting()"
+                size="large"
+                severity="primary">
+              </p-button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </ng-template>
+
+    <ng-template pTemplate="footer">
+      <div class="contact-form-footer p-text-center p-text-secondary">
+        <small>
+          <i class="pi pi-info-circle p-mr-1"></i>
+          We'll get back to you soon !
+        </small>
+      </div>
+    </ng-template>
+  </p-card>
+
+  <!-- Loading Overlay -->
+  @if (isSubmitting()) {
+    <div class="loading-overlay">
+      <p-progressSpinner 
+        id="contact-form-loading-spinner"
+        strokeWidth="3"
+        animationDuration="1s">
+      </p-progressSpinner>
+      <p class="loading-text p-mt-3 p-text-secondary">Sending your message...</p>
+    </div>
+  }
+</div>

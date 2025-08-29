@@ -1,0 +1,143 @@
+/* Contact Form - PrimeNG Only Styles */
+
+.contact-form-container {
+  max-width: 600px;
+  margin: 0 auto;
+  margin-bottom: 3rem;
+}
+
+.contact-form-header {
+  text-align: center;
+  margin-top: 3rem;
+  padding-top: 1rem;
+}
+
+.contact-form-header h2 {
+  color: var(--primary-color);
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.contact-form-header p {
+  color: var(--text-color-secondary);
+  margin: 0;
+  font-size: 1rem;
+}
+
+.contact-form {
+  margin-top: 1rem;
+  padding: 2rem;
+}
+
+.form-fields-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.form-field.email-field {
+  order: 1;
+}
+
+.form-field.message-field {
+  order: 2;
+}
+
+.form-submit-section {
+  order: 3;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.required-asterisk {
+  color: var(--red-500);
+  font-weight: 600;
+}
+
+.character-count {
+  font-size: 0.875rem;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.contact-form-footer {
+  font-size: 0.875rem;
+  border-top: 1px solid var(--surface-border);
+}
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.loading-text {
+  color: var(--text-color);
+  font-size: 1rem;
+  margin-top: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .contact-form-container {
+    padding: 0.75rem;
+  }
+  
+  .contact-form {
+    padding: 1.5rem;
+  }
+  
+  .form-fields-container {
+    gap: 1.25rem;
+  }
+  
+  .form-submit-section {
+    margin-top: 0.5rem;
+  }
+  
+  .contact-form-header h2 {
+    font-size: 1.5rem;
+  }
+}
+
+/* Focus and interaction states (enhanced) */
+:host ::ng-deep {
+  .p-inputtext:focus,
+  .p-inputtextarea:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(var(--primary-color-rgb), 0.2);
+  }
+  
+  .p-button {
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .p-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+  
+  .p-message .p-message-close {
+    border: none;
+    background: none;
+  }
+}
