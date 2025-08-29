@@ -323,7 +323,7 @@ backend/
 
 ### Default Admin Account
 - **Email**: `admin@admin.com`
-- **Password**: `admin`
+- **Password**: `AdminPass!@`
 - **Created automatically** on application startup
 - **Admin privileges**: Full access to user management and product operations
 

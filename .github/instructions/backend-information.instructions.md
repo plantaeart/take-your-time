@@ -89,7 +89,7 @@ backend/
 ### Admin User Creation
 - **Admin users CANNOT be created via API endpoints**
 - Admin users are created only via the `create_admin_user()` function in `user.py`
-- Default admin user: `admin@admin.com` / `admin` (created on startup)
+- Default admin user: `admin@admin.com` / `AdminPass!@` (created on startup)
 - For testing: Use database promotion to set `isAdmin=true` manually
 
 ### Authentication Security
@@ -124,7 +124,7 @@ FRONTEND_URLS=http://localhost:4200,http://127.0.0.1:4200
 
 ### Default Admin User
 - Email: `admin@admin.com`
-- Password: `admin`
+- Password: `AdminPass!@`
 - Created automatically on startup
 
 ## 🚀 Development Commands

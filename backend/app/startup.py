@@ -21,9 +21,9 @@ async def initialize_database():
     # Create product indexes
     await create_product_indexes(products_collection)
     
-    # Create default admin user (admin@admin.com / admin)
-    admin_password_hash = get_password_hash("admin")
+    # Create default admin user (admin@admin.com / AdminPass!@)
+    admin_password_hash = get_password_hash("AdminPass!@")
     await create_admin_user(users_collection, admin_password_hash)
     
     print("✅ Database initialized successfully")
-    print("🔑 Default admin user: admin@admin.com / admin")
+    print("🔑 Default admin user: admin@admin.com / AdminPass!@")
