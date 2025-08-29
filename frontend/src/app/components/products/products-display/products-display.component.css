@@ -391,3 +391,46 @@
 .no-more-products i {
   color: #22c55e;
 }
+
+/* ============================================================================
+   WISHLIST BUTTON STYLING
+   ============================================================================ */
+
+/* Wishlist button when product is NOT in wishlist (outlined heart) */
+::ng-deep .p-button.p-button-secondary.p-button-outlined[id*="product-wishlist-btn"] {
+  border-color: #64748b;
+  color: #64748b;
+  transition: all 0.2s ease;
+}
+
+::ng-deep .p-button.p-button-secondary.p-button-outlined[id*="product-wishlist-btn"]:hover {
+  border-color: #dc2626;
+  color: #dc2626;
+  background-color: #fef2f2;
+}
+
+/* Wishlist button when product IS in wishlist (filled red heart) */
+::ng-deep .p-button.p-button-danger:not(.p-button-outlined)[id*="product-wishlist-btn"] {
+  background-color: #dc2626;
+  border-color: #dc2626;
+  color: white;
+  transition: all 0.2s ease;
+}
+
+::ng-deep .p-button.p-button-danger:not(.p-button-outlined)[id*="product-wishlist-btn"]:hover {
+  background-color: #b91c1c;
+  border-color: #b91c1c;
+  transform: scale(1.05);
+}
+
+/* Heart icon styling */
+::ng-deep .p-button[id*="product-wishlist-btn"] .pi-heart,
+::ng-deep .p-button[id*="product-wishlist-btn"] .pi-heart-fill {
+  font-size: 1rem;
+  transition: transform 0.2s ease;
+}
+
+::ng-deep .p-button[id*="product-wishlist-btn"]:hover .pi-heart,
+::ng-deep .p-button[id*="product-wishlist-btn"]:hover .pi-heart-fill {
+  transform: scale(1.1);
+}

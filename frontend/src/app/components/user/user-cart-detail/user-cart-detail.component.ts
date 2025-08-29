@@ -17,6 +17,7 @@ import { useCart } from '../../../hooks/cart.hooks';
 import { useAuth } from '../../../hooks/auth.hooks';
 import { CartItem } from '../../../models/cart.model';
 import { TopPageComponent } from '../../ui/top-page/top-page.component';
+import { QuantityControlsComponent } from '../../ui/quantity-controls/quantity-controls.component';
 import { ProductService } from '../../../services/product.service';
 
 @Component({
@@ -35,7 +36,8 @@ import { ProductService } from '../../../services/product.service';
     TagModule,
     ImageModule,
     ToastModule,
-    TopPageComponent
+    TopPageComponent,
+    QuantityControlsComponent
   ],
   providers: [ConfirmationService, MessageService],
   templateUrl: './user-cart-detail.component.html',

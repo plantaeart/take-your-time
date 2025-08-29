@@ -59,7 +59,7 @@
               <!-- Product Image -->
               <div class="item-image">
                 <p-image 
-                  [src]="item.productImage || getDefaultImage()"
+                  [src]="getDefaultImage()"
                   [alt]="item.productName"
                   width="80"
                   height="80"
@@ -83,39 +83,34 @@
               <div class="item-controls">
                 <!-- Quantity Controls -->
                 <div class="item-quantity">
-                  <div class="quantity-controls">
-                    <span class="quantity-label">Qty:</span>
-                    <p-inputNumber
-                      [id]="'quantity-' + item.productId"
-                      [ngModel]="getUpdateQuantity(item.productId)"
-                      (ngModelChange)="setUpdateQuantity(item.productId, $event)"
-                      [min]="1"
-                      [max]="getMaxQuantity(item)"
-                      [showButtons]="true"
-                      buttonLayout="horizontal"
-                      size="small"
-                      [disabled]="cart.isLoading() || isLoadingProductDetails"
-                      [class]="isQuantityExceedsStock(item) ? 'quantity-error' : ''"
-                      inputStyleClass="quantity-input">
-                    </p-inputNumber>
-                    <p-button 
-                      icon="pi pi-check"
-                      severity="success"
-                      size="small"
-                      [text]="true"
-                      [disabled]="getUpdateQuantity(item.productId) === item.quantity || isQuantityExceedsStock(item) || cart.isLoading() || isLoadingProductDetails"
-                      pTooltip="Update quantity"
-                      (click)="updateItemQuantity(item)">
-                    </p-button>
-                  </div>
+                  <app-quantity-controls
+                    [productId]="item.productId"
+                    [currentQuantity]="getUpdateQuantity(item.productId)"
+                    [maxQuantity]="getMaxQuantity(item)"
+                    [minQuantity]="1"
+                    [disabled]="cart.isLoading() || isLoadingProductDetails"
+                    [hasError]="isQuantityExceedsStock(item)"
+                    label="Qty:"
+                    size="small"
+                    (quantityChange)="setUpdateQuantity(item.productId, $event)">
+                  </app-quantity-controls>
+                </div>
+                  <p-button 
+                    icon="pi pi-check"
+                    severity="success"
+                    size="small"
+                    [text]="true"
+                    [disabled]="getUpdateQuantity(item.productId) === item.quantity || isQuantityExceedsStock(item) || cart.isLoading() || isLoadingProductDetails"
+                    pTooltip="Update quantity"
+                    (click)="updateItemQuantity(item)">
+                  </p-button>
                   
-                  <div class="quantity-info">
-                    @if (isLoadingProductDetails) {
-                      <small class="stock-info">Loading stock...</small>
-                    } @else if (item.productQuantity !== undefined) {
-                      <small class="stock-info">{{ item.productQuantity }} available</small>
-                    }
-                  </div>
+                <div class="quantity-info">
+                  @if (isLoadingProductDetails) {
+                    <small class="stock-info">Loading stock...</small>
+                  } @else if (item.productQuantity !== undefined) {
+                    <small class="stock-info">{{ item.productQuantity }} available</small>
+                  }
                 </div>
 
                 <!-- Item Total & Actions -->

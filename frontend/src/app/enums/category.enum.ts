@@ -19,4 +19,11 @@ export const CategoryColors: Record<Category, string> = {
   [Category.ELECTRONICS]: 'secondary'
 };
 
+export const CategoryHexColors: Record<Category, string> = {
+  [Category.ACCESSORIES]: '#3b82f6', // info - blue
+  [Category.FITNESS]: '#10b981',      // success - green
+  [Category.CLOTHING]: '#f59e0b',     // warning - amber
+  [Category.ELECTRONICS]: '#1e40af'  // secondary - dark blue (matches PrimeNG secondary)
+};
+
 export const CategoryValues = Object.values(Category);

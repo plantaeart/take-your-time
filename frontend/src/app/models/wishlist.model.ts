@@ -1,34 +1,29 @@
-export interface CartItem {
+export interface WishlistItem {
   productId: number;
-  quantity: number;
   addedAt: Date;
-  updatedAt: Date;
+  // Enhanced with product details for UI
   productName?: string;
   productPrice?: number;
   productImage?: string;
+  productCategory?: string;
   productQuantity?: number; // Available stock quantity
 }
 
-export interface Cart {
+export interface Wishlist {
   userId: number;
-  items: CartItem[];
+  items: WishlistItem[];
   totalItems: number;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface CartItemCreate {
+export interface WishlistItemCreate {
   productId: number;
-  quantity: number;
 }
 
-export interface CartItemUpdate {
-  quantity: number;
-}
-
-export interface CartResponse {
+export interface WishlistResponse {
   userId: number;
-  items: CartItem[];
+  items: WishlistItem[];
   totalItems: number;
   createdAt: Date;
   updatedAt: Date;

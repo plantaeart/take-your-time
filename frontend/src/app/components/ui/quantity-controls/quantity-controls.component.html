@@ -1,0 +1,19 @@
+<div [class]="getComponentClasses()">
+  @if (showLabel()) {
+    <span class="quantity-label">{{ label() }}</span>
+  }
+  
+  <p-inputNumber
+    [id]="'quantity-' + productId()"
+    [ngModel]="currentQuantity()"
+    (ngModelChange)="onQuantityChange($event)"
+    [min]="minQuantity()"
+    [max]="maxQuantity()"
+    [showButtons]="true"
+    buttonLayout="horizontal"
+    [size]="size()"
+    [disabled]="disabled()"
+    [class]="hasError() ? 'quantity-error' : ''"
+    inputStyleClass="quantity-input">
+  </p-inputNumber>
+</div>

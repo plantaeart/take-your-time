@@ -1,0 +1,64 @@
+<div class="filter-container">
+  <!-- Filter Header -->
+  <div class="filter-header">
+    <h3 class="filter-title">{{ title }}</h3>
+    <div class="filter-actions">
+      @if (hasActiveFilters()) {
+        <small class="active-count">
+          {{ getActiveFilterCount() }} filter(s) active
+        </small>
+      }
+      @if (showClearButton) {
+        <p-button 
+          label="Clear All"
+          icon="pi pi-times"
+          severity="secondary"
+          [text]="true"
+          size="small"
+          [disabled]="!hasActiveFilters()"
+          (click)="onClearFilters()">
+        </p-button>
+      }
+    </div>
+  </div>
+
+  <!-- MultiSelect Filter -->
+  <div class="filter-multiselect">
+    <p-multiSelect 
+      [options]="categoryOptions"
+      [(ngModel)]="selectedValues"
+      (onChange)="onSelectionChange($event.value)"
+      (onClear)="onClearFilters()"
+      optionLabel="label"
+      optionValue="value"
+      [placeholder]="'Select ' + title.toLowerCase()"
+      [showClear]="true"
+      [filter]="true"
+      [maxSelectedLabels]="3"
+      selectedItemsLabel="categories selected"
+      styleClass="category-multiselect">
+      
+      <!-- Custom option template with colored badges -->
+      <ng-template pTemplate="item" let-option>
+        <div class="category-option">
+          <span 
+            class="category-badge" 
+            [style.background-color]="option.color">
+          </span>
+          <span class="category-label">{{ option.label }}</span>
+        </div>
+      </ng-template>
+      
+      <!-- Custom selected item template -->
+      <ng-template pTemplate="selectedItem" let-option>
+        <div class="selected-category-item">
+          <span 
+            class="category-badge-small" 
+            [style.background-color]="option.color">
+          </span>
+          <span>{{ option.label }}</span>
+        </div>
+      </ng-template>
+    </p-multiSelect>
+  </div>
+</div>

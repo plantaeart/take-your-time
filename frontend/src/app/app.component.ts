@@ -12,6 +12,7 @@ import { filter, map } from 'rxjs/operators';
 import { signal, effect } from '@angular/core';
 import { useAuth } from './hooks/auth.hooks';
 import { useCart } from './hooks/cart.hooks';
+import { useWishlist } from './hooks/wishlist.hooks';
 import { AppInitializationService } from './services/app-initialization.service';
 import { environment } from '../environments/environment';
 
@@ -28,6 +29,7 @@ export class AppComponent {
   private currentRoute = signal<string>('');
   auth = useAuth();
   cart = useCart();
+  wishlist = useWishlist();
 
   constructor(
     private router: Router,
@@ -65,6 +67,13 @@ export class AppComponent {
   goToCart(): void {
     // Simply navigate to cart page - let the cart component handle loading
     this.router.navigate(['/user-cart-detail']);
+  }
+
+  /**
+   * Navigate to wishlist page
+   */
+  goToWishlist(): void {
+    this.router.navigate(['/user-wishlist-detail']);
   }
 
   /**

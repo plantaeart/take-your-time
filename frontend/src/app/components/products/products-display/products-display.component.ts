@@ -11,6 +11,7 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { useProductList } from '../../../hooks/product.hooks';
 import { useCart } from '../../../hooks/cart.hooks';
 import { useAuth } from '../../../hooks/auth.hooks';
+import { useWishlist } from '../../../hooks/wishlist.hooks';
 import { Product } from '../../../models/product.model';
 import { InventoryStatus } from '../../../enums/inventory-status.enum';
 import { Category, CategoryLabels, CategoryColors } from '../../../enums/category.enum';
@@ -40,6 +41,7 @@ export class ProductsDisplayComponent implements OnInit {
   productList = useProductList();
   cart = useCart();
   auth = useAuth();
+  wishlist = useWishlist();
   
   // Track quantities to add for each product
   addQuantities: { [productId: number]: number } = {};
@@ -49,6 +51,8 @@ export class ProductsDisplayComponent implements OnInit {
 
   async ngOnInit() {
     await this.productList.initialize();
+    // Initialize wishlist to check product states
+    await this.wishlist.initializeWishlist();
     // Cart will be loaded automatically when user first tries to add an item
   }
 
@@ -119,16 +123,6 @@ export class ProductsDisplayComponent implements OnInit {
   }
 
   /**
-   * Handle image error
-   */
-  onImageError(event: Event) {
-    const target = event.target as HTMLImageElement;
-    if (target) {
-      target.src = this.defaultImage;
-    }
-  }
-
-  /**
    * Handle add to cart button click
    */
   async onAddToCart(product: Product) {
@@ -153,11 +147,26 @@ export class ProductsDisplayComponent implements OnInit {
   }
 
   /**
+   * Check if product is in wishlist
+   */
+  isInWishlist(product: Product): boolean {
+    if (!product.id) return false;
+    return this.wishlist.isProductInWishlist(product.id);
+  }
+
+  /**
    * Handle add to wishlist button click
    */
-  onAddToWishlist(product: Product) {
-    console.log('Add to wishlist:', product.name);
-    // TODO: Implement wishlist functionality
+  async onAddToWishlist(product: Product) {
+    if (!product.id) return;
+
+    if (this.isInWishlist(product)) {
+      // Remove from wishlist
+      await this.wishlist.removeFromWishlist(product.id);
+    } else {
+      // Add to wishlist
+      await this.wishlist.addToWishlist(product.id);
+    }
   }
 
   /**

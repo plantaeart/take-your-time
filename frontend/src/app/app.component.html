@@ -17,6 +17,22 @@
           {{ title }}
       </div>
       <div class="p-toolbar-group-end">
+        <div class="p-overlay-badge" [style]="{'margin-right': '0.5rem'}">
+            <p-button 
+              id="app-wishlist-btn"
+              icon="pi pi-heart" 
+              [text]="true"
+              [rounded]="true"
+              size="large"
+              severity="danger"
+              (click)="goToWishlist()"
+              pTooltip="My Wishlist"
+              tooltipPosition="bottom">
+            </p-button>
+            <span class="p-badge p-badge-info">
+              {{ wishlist.totalItems() }}
+            </span>
+          </div>
           <div class="p-overlay-badge" [style]="{'margin-right': '0.5rem'}">
             <p-button 
               id="app-cart-btn"

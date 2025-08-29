@@ -1,0 +1,199 @@
+<app-top-page 
+  title="My Wishlist" 
+  subtitle="Your saved products and favorites">
+</app-top-page>
+
+<div class="wishlist-container">
+  <!-- Loading State -->
+  @if (wishlist.isLoading()) {
+    <div class="loading-state">
+      <p-card>
+        <div class="skeleton-container">
+          <p-skeleton height="2rem" class="mb-2"></p-skeleton>
+          <p-skeleton height="4rem" class="mb-3"></p-skeleton>
+          <p-skeleton height="2rem" width="50%"></p-skeleton>
+        </div>
+      </p-card>
+    </div>
+  }
+
+  <!-- Empty Wishlist State -->
+  @else if (wishlist.isEmpty()) {
+    <div class="empty-wishlist">
+      <p-card>
+        <div class="empty-content">
+          <i class="pi pi-heart empty-icon"></i>
+          <h3>Your wishlist is empty</h3>
+          <p>Discover products you love and add them to your wishlist!</p>
+          <p-button 
+            label="Browse Products" 
+            icon="pi pi-shopping-bag"
+            (click)="goToProducts()">
+          </p-button>
+        </div>
+      </p-card>
+    </div>
+  }
+
+  <!-- Wishlist Items -->
+  @else {
+    <div class="wishlist-content">
+      <!-- Wishlist Header -->
+      <div class="wishlist-header">
+        <h2>Wishlist Items ({{ wishlist.totalItems() }})</h2>
+        <p-button 
+          label="Clear Wishlist"
+          icon="pi pi-trash" 
+          severity="danger"
+          [outlined]="true"
+          size="small"
+          (click)="clearWishlist()">
+        </p-button>
+      </div>
+
+      <!-- Category Filter -->
+      @if (categoryFilters.length > 0) {
+        <div class="filter-section">
+          <app-filter
+            title="Filter by Category"
+            [items]="categoryFilters"
+            [allowMultiple]="true"
+            [showClearButton]="true"
+            (filterChange)="onCategoryFilterChange($event)"
+            (clearFilters)="onClearCategoryFilters()">
+          </app-filter>
+        </div>
+      }
+
+      <!-- Wishlist Items List -->
+      <div class="wishlist-items">
+        @for (item of getFilteredWishlistItems(); track item.productId) {
+          <p-card class="wishlist-item">
+            <div class="item-content">
+              <!-- Product Image -->
+              <div class="item-image">
+                <p-image 
+                  [src]="getDefaultImage()"
+                  [alt]="item.productName"
+                  width="80"
+                  height="80"
+                  [preview]="true">
+                </p-image>
+              </div>
+
+              <!-- Product Details -->
+              <div class="item-details">
+                <h4 class="item-name">{{ item.productName }}</h4>
+                <div class="item-price">{{ formatPrice(item.productPrice) }}</div>
+                <div class="item-meta">
+                  @if (item.productCategory) {
+                    <p-tag 
+                      [value]="formatCategoryLabel(item.productCategory)" 
+                      [severity]="getCategoryTagSeverity(item.productCategory)"
+                      class="category-tag">
+                    </p-tag>
+                  }
+                  <small>Added: {{ item.addedAt | date:'short' }}</small>
+                  @if (item.productQuantity !== undefined) {
+                    <small class="stock-info">{{ item.productQuantity }} available</small>
+                  }
+                </div>
+              </div>
+
+              <!-- Controls Wrapper - All horizontal in same parent -->
+              <div class="item-controls">
+                <!-- Cart Status Display -->
+                @if (isInCart(item.productId)) {
+                  <div [id]="'wishlist-cart-status-' + item.productId" class="cart-status">
+                    <p-tag 
+                      value="In Cart" 
+                      severity="success" 
+                      icon="pi pi-shopping-cart"
+                      class="in-cart-tag">
+                    </p-tag>
+                    <small class="cart-quantity">Qty: {{ getCartQuantity(item.productId) }}</small>
+                  </div>
+                }
+                
+                <!-- Quantity Controls -->
+                <app-quantity-controls
+                  [productId]="item.productId"
+                  [currentQuantity]="getAddToCartQuantity(item.productId)"
+                  [maxQuantity]="getMaxQuantity(item)"
+                  [minQuantity]="1"
+                  [disabled]="isLoadingProductDetails || getMaxQuantity(item) === 0"
+                  [hasError]="isQuantityExceedsStock(item)"
+                  label="Qty:"
+                  size="small"
+                  (quantityChange)="setAddToCartQuantity(item.productId, $event)">
+                </app-quantity-controls>
+                
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                  <p-button 
+                    [label]="isAllInCart(item) ? 'All in Cart' : 'Add to Cart'"
+                    icon="pi pi-shopping-cart"
+                    [severity]="isAllInCart(item) ? 'secondary' : 'primary'"
+                    size="small"
+                    [disabled]="isQuantityExceedsStock(item) || isLoadingProductDetails || getMaxQuantity(item) === 0"
+                    (click)="addToCart(item)">
+                  </p-button>
+                  
+                  <p-button 
+                    icon="pi pi-heart-fill"
+                    severity="danger"
+                    size="small"
+                    [text]="true"
+                    pTooltip="Remove from wishlist"
+                    (click)="removeFromWishlist(item)">
+                  </p-button>
+                </div>
+              </div>
+            </div>
+          </p-card>
+        } @empty {
+          <div class="no-results">
+            <p-card>
+              <div class="empty-content">
+                <i class="pi pi-filter empty-icon"></i>
+                <h3>No items match your filters</h3>
+                <p>Try adjusting your category filters to see more items.</p>
+              </div>
+            </p-card>
+          </div>
+        }
+      </div>
+
+      <!-- Wishlist Summary -->
+      <div class="wishlist-summary">
+        <p-card>
+          <div class="summary-content">
+            <div class="summary-row">
+              <span>Total Items:</span>
+              <span>{{ getFilteredWishlistItems().length }} of {{ wishlist.totalItems() }}</span>
+            </div>
+            <div class="summary-actions">
+              <p-button 
+                label="Continue Shopping"
+                icon="pi pi-shopping-bag"
+                severity="secondary"
+                [outlined]="true"
+                (click)="goToProducts()">
+              </p-button>
+              <p-button 
+                label="View Cart"
+                icon="pi pi-shopping-cart"
+                severity="primary"
+                [disabled]="cart.isEmpty()"
+                (click)="router.navigate(['/user-cart-detail'])">
+              </p-button>
+            </div>
+          </div>
+        </p-card>
+      </div>
+    </div>
+  }
+</div>
+
+<!-- Confirmation Dialog -->
+<p-confirmDialog></p-confirmDialog>

@@ -49,10 +49,9 @@
             <div class="product-image-container">
               <img 
                 [id]="'product-image-' + product.id"
-                [src]="product.image || defaultImage" 
+                [src]="defaultImage" 
                 [alt]="product.name"
-                class="product-image"
-                (error)="onImageError($event)">
+                class="product-image">
               
               <!-- Stock Status Badge -->
               <div class="stock-badge">
@@ -98,12 +97,14 @@
             <div class="product-actions">
               <p-button 
                 [id]="'product-wishlist-btn-' + product.id"
-                icon="pi pi-heart"
-                severity="secondary"
-                [outlined]="true"
+                [icon]="isInWishlist(product) ? 'pi pi-heart-fill' : 'pi pi-heart'"
+                [severity]="isInWishlist(product) ? 'danger' : 'secondary'"
+                [outlined]="!isInWishlist(product)"
                 size="small"
-                pTooltip="Add to Wishlist"
+                [pTooltip]="isInWishlist(product) ? 'Remove from Wishlist' : 'Add to Wishlist'"
                 tooltipPosition="top"
+                [disabled]="wishlist.isLoading()"
+                [loading]="wishlist.isLoading()"
                 (onClick)="onAddToWishlist(product)">
               </p-button>
 
