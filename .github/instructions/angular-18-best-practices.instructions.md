@@ -17,6 +17,28 @@ applyTo: 'frontend/**'
 
 ## 🏗️ Project Architecture
 
+### **Component Generation**
+**Always use Angular CLI to generate components:**
+```bash
+# Generate component with proper structure
+ng generate component components/feature/component-name
+
+# Examples:
+ng generate component components/user/user-cart-detail
+ng generate component components/products/product-card
+ng generate component components/ui/loading-spinner
+
+# Short form:
+ng g c components/user/user-cart-detail
+```
+
+**Benefits of using ng generate:**
+- ✅ Proper file structure and naming conventions
+- ✅ Automatic standalone component configuration
+- ✅ Template and stylesheet files created
+- ✅ Component registration and imports handled
+- ✅ Test file generation included
+
 ### **Folder Structure**
 ```
 src/app/

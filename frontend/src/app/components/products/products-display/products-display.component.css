@@ -214,7 +214,18 @@
   flex-shrink: 0;
 }
 
-.product-actions p-button:last-child {
+.cart-section {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex: 1;
+}
+
+.quantity-controls {
+  flex-shrink: 0;
+}
+
+.cart-section p-button {
   flex: 1;
 }
 

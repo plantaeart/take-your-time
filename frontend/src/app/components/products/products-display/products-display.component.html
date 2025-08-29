@@ -107,14 +107,35 @@
                 (onClick)="onAddToWishlist(product)">
               </p-button>
 
-              <p-button 
-                [id]="'product-add-to-cart-btn-' + product.id"
-                label="Add to Cart"
-                icon="pi pi-shopping-cart"
-                size="small"
-                [disabled]="product.inventoryStatus === 'OUTOFSTOCK'"
-                (onClick)="onAddToCart(product)">
-              </p-button>
+              <!-- Quantity and Add to Cart Section -->
+              <div class="cart-section">
+                @if (canAddToCart(product)) {
+                  <div class="quantity-controls">
+                    <p-inputNumber
+                      [id]="'product-quantity-' + product.id"
+                      [ngModel]="getAddQuantity(product.id!)"
+                      (ngModelChange)="setAddQuantity(product.id!, $event)"
+                      [min]="1"
+                      [max]="getMaxAddQuantity(product)"
+                      [showButtons]="true"
+                      buttonLayout="horizontal"
+                      size="small"
+                      [disabled]="cart.isLoading()"
+                      inputStyleClass="w-3rem text-center">
+                    </p-inputNumber>
+                  </div>
+                }
+
+                <p-button 
+                  [id]="'product-add-to-cart-btn-' + product.id"
+                  [label]="canAddToCart(product) ? 'Add to Cart' : 'Out of Stock'"
+                  icon="pi pi-shopping-cart"
+                  size="small"
+                  [disabled]="!canAddToCart(product) || cart.isLoading()"
+                  [loading]="cart.isLoading()"
+                  (onClick)="onAddToCart(product)">
+                </p-button>
+              </div>
             </div>
           </ng-template>
         </p-card>

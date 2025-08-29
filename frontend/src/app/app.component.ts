@@ -9,8 +9,10 @@ import { BadgeModule } from 'primeng/badge';
 import { ToastModule } from 'primeng/toast';
 import { PanelMenuComponent } from "./components/ui/panel-menu/panel-menu.component";
 import { filter, map } from 'rxjs/operators';
-import { signal } from '@angular/core';
+import { signal, effect } from '@angular/core';
 import { useAuth } from './hooks/auth.hooks';
+import { useCart } from './hooks/cart.hooks';
+import { environment } from '../environments/environment';
 
 @Component({
   selector: "app-root",
@@ -23,8 +25,8 @@ export class AppComponent {
   title = "ALTEN SHOP";
   
   private currentRoute = signal<string>('');
-  cartItemsCount = signal<number>(0); // Default to 0, will be updated by cart service later
   auth = useAuth();
+  cart = useCart();
 
   constructor(private router: Router) {
     // Track current route
@@ -36,6 +38,22 @@ export class AppComponent {
       .subscribe(url => {
         this.currentRoute.set(url);
       });
+
+    // Simple cart management - only reset cart on logout
+    effect(() => {
+      const isAuthenticated = this.auth.isAuthenticated();
+      const isAuthInitialized = this.auth.isInitialized();
+      
+      if (isAuthInitialized && !isAuthenticated) {
+        // User is logged out - reset cart
+        this.cart.resetCart();
+      }
+      // Note: Cart will be loaded manually when user navigates to cart or adds items
+    }, { allowSignalWrites: true });
+  }
+
+  ngOnInit() {
+    // Simple initialization - no automatic cart loading
   }
 
   /**
@@ -44,6 +62,17 @@ export class AppComponent {
   isAuthRoute(): boolean {
     const route = this.currentRoute();
     return route === '/auth' || route.startsWith('/auth/');
+  }
+
+  /**
+   * Navigate to cart page
+   */
+  async goToCart(): Promise<void> {
+    // Load cart when user explicitly navigates to cart
+    if (this.auth.isAuthenticated()) {
+      await this.cart.loadCart();
+    }
+    this.router.navigate(['/user-cart-detail']);
   }
 
   /**

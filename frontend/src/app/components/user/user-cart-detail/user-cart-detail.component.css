@@ -1,0 +1,337 @@
+/* ============================================================================
+   CART CONTAINER
+   ============================================================================ */
+
+.cart-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+/* ============================================================================
+   LOADING STATE
+   ============================================================================ */
+
+.loading-state {
+  margin-bottom: 2rem;
+}
+
+.skeleton-container {
+  padding: 1rem;
+}
+
+/* ============================================================================
+   EMPTY CART STATE
+   ============================================================================ */
+
+.empty-cart {
+  margin-bottom: 2rem;
+}
+
+.empty-content {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  color: #64748b;
+  margin-bottom: 1rem;
+}
+
+.empty-content h3 {
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.empty-content p {
+  color: #6b7280;
+  margin-bottom: 2rem;
+}
+
+/* ============================================================================
+   CART CONTENT
+   ============================================================================ */
+
+.cart-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* ============================================================================
+   CART HEADER
+   ============================================================================ */
+
+.cart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.cart-header h2 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+/* ============================================================================
+   CART ITEMS LIST
+   ============================================================================ */
+
+.cart-items {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cart-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.item-content {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem;
+}
+
+/* ============================================================================
+   ITEM IMAGE
+   ============================================================================ */
+
+.item-image {
+  flex-shrink: 0;
+}
+
+.item-image img {
+  border-radius: 0.375rem;
+  object-fit: cover;
+}
+
+/* ============================================================================
+   ITEM DETAILS
+   ============================================================================ */
+
+.item-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.item-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.4;
+}
+
+.item-price {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #059669;
+  margin-bottom: 0.5rem;
+}
+
+.item-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.item-meta small {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* ============================================================================
+   ITEM QUANTITY
+   ============================================================================ */
+
+.item-quantity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.item-quantity label {
+  font-size: 0.875rem;
+  color: #374151;
+  font-weight: 500;
+}
+
+/* ============================================================================
+   ITEM ACTIONS
+   ============================================================================ */
+
+.item-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.item-total {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1f2937;
+  text-align: center;
+}
+
+/* ============================================================================
+   CART SUMMARY
+   ============================================================================ */
+
+.cart-summary {
+  margin-top: 1rem;
+}
+
+.summary-content {
+  padding: 1.5rem;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.summary-row:last-of-type {
+  border-bottom: none;
+}
+
+.total-row {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  border-top: 2px solid #e2e8f0;
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+
+.total-price {
+  color: #059669;
+}
+
+.summary-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  justify-content: flex-end;
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+/* Large screens */
+@media (min-width: 1024px) {
+  .cart-container {
+    padding: 2rem;
+  }
+  
+  .summary-actions {
+    justify-content: space-between;
+  }
+}
+
+/* Tablet */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .item-content {
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    gap: 1rem;
+  }
+  
+  .item-quantity {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  
+  .item-actions {
+    grid-column: 2;
+    grid-row: 2;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+  
+  .summary-actions {
+    flex-direction: column;
+  }
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+  .cart-container {
+    padding: 0.5rem;
+  }
+  
+  .cart-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  
+  .cart-header h2 {
+    font-size: 1.25rem;
+  }
+  
+  .item-content {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+    gap: 1rem;
+    text-align: center;
+  }
+  
+  .item-image {
+    justify-self: center;
+  }
+  
+  .item-quantity,
+  .item-actions {
+    flex-direction: row;
+    justify-content: center;
+  }
+  
+  .summary-actions {
+    flex-direction: column;
+  }
+  
+  .empty-content {
+    padding: 2rem 1rem;
+  }
+  
+  .empty-icon {
+    font-size: 3rem;
+  }
+}
+
+/* ============================================================================
+   PRIMENG OVERRIDES
+   ============================================================================ */
+
+:host ::ng-deep {
+  /* Input number styling */
+  .p-inputnumber-input {
+    text-align: center;
+  }
+  
+  /* Card styling */
+  .p-card-content {
+    padding: 0;
+  }
+  
+  /* Button adjustments */
+  .p-button-sm {
+    padding: 0.375rem 0.75rem;
+  }
+}

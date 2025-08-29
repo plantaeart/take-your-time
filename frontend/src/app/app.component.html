@@ -25,10 +25,13 @@
               [rounded]="true"
               size="large"
               severity="info"
+              (click)="goToCart()"
               pTooltip="Shopping Cart"
               tooltipPosition="bottom">
             </p-button>
-            <span class="p-badge p-badge-danger">{{ cartItemsCount() }}</span>
+            <span class="p-badge p-badge-danger">
+              {{ cart.totalItems() }}
+            </span>
           </div>
           <p-button 
             id="app-logout-btn" 

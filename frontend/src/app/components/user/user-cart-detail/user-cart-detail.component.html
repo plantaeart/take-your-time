@@ -1,0 +1,163 @@
+<app-top-page 
+  title="Shopping Cart" 
+  subtitle="Review and manage your cart items">
+</app-top-page>
+
+<div class="cart-container">
+  <!-- Loading State -->
+  @if (cart.isLoading()) {
+    <div class="loading-state">
+      <p-card>
+        <div class="skeleton-container">
+          <p-skeleton height="2rem" class="mb-2"></p-skeleton>
+          <p-skeleton height="4rem" class="mb-3"></p-skeleton>
+          <p-skeleton height="2rem" width="50%"></p-skeleton>
+        </div>
+      </p-card>
+    </div>
+  }
+
+  <!-- Empty Cart State -->
+  @else if (cart.isEmpty()) {
+    <div class="empty-cart">
+      <p-card>
+        <div class="empty-content">
+          <i class="pi pi-shopping-cart empty-icon"></i>
+          <h3>Your cart is empty</h3>
+          <p>Add some products to your cart to get started!</p>
+          <p-button 
+            label="Browse Products" 
+            icon="pi pi-shopping-bag"
+            (click)="goToProducts()">
+          </p-button>
+        </div>
+      </p-card>
+    </div>
+  }
+
+  <!-- Cart Items -->
+  @else {
+    <div class="cart-content">
+      <!-- Cart Header -->
+      <div class="cart-header">
+        <h2>Cart Items ({{ cart.totalItems() }})</h2>
+        <p-button 
+          label="Clear Cart"
+          icon="pi pi-trash" 
+          severity="danger"
+          [outlined]="true"
+          size="small"
+          (click)="clearCart()">
+        </p-button>
+      </div>
+
+      <!-- Cart Items List -->
+      <div class="cart-items">
+        @for (item of cart.cartItems(); track item.productId) {
+          <p-card class="cart-item">
+            <div class="item-content">
+              <!-- Product Image -->
+              <div class="item-image">
+                <p-image 
+                  [src]="item.productImage || getDefaultImage()"
+                  [alt]="item.productName"
+                  width="80"
+                  height="80"
+                  [preview]="true">
+                </p-image>
+              </div>
+
+              <!-- Product Details -->
+              <div class="item-details">
+                <h4 class="item-name">{{ item.productName }}</h4>
+                <div class="item-price">{{ formatPrice(item.productPrice) }}</div>
+                <div class="item-meta">
+                  <small>Added: {{ item.addedAt | date:'short' }}</small>
+                  @if (item.updatedAt !== item.addedAt) {
+                    <small>Updated: {{ item.updatedAt | date:'short' }}</small>
+                  }
+                </div>
+              </div>
+
+              <!-- Quantity Controls -->
+              <div class="item-quantity">
+                <label [for]="'quantity-' + item.productId">Qty:</label>
+                <p-inputNumber
+                  [id]="'quantity-' + item.productId"
+                  [ngModel]="getUpdateQuantity(item.productId)"
+                  (ngModelChange)="setUpdateQuantity(item.productId, $event)"
+                  [min]="1"
+                  [showButtons]="true"
+                  buttonLayout="horizontal"
+                  size="small"
+                  [disabled]="cart.isLoading()"
+                  inputStyleClass="w-4rem text-center">
+                </p-inputNumber>
+                
+                @if (getUpdateQuantity(item.productId) !== item.quantity) {
+                  <p-button 
+                    icon="pi pi-check"
+                    severity="success"
+                    size="small"
+                    [outlined]="true"
+                    pTooltip="Update quantity"
+                    (click)="updateItemQuantity(item)">
+                  </p-button>
+                }
+              </div>
+
+              <!-- Item Actions -->
+              <div class="item-actions">
+                <div class="item-total">
+                  {{ formatPrice((item.productPrice || 0) * item.quantity) }}
+                </div>
+                <p-button 
+                  icon="pi pi-trash"
+                  severity="danger"
+                  size="small"
+                  [outlined]="true"
+                  pTooltip="Remove item"
+                  (click)="removeItem(item)">
+                </p-button>
+              </div>
+            </div>
+          </p-card>
+        }
+      </div>
+
+      <!-- Cart Summary -->
+      <div class="cart-summary">
+        <p-card>
+          <div class="summary-content">
+            <div class="summary-row">
+              <span>Total Items:</span>
+              <span>{{ cart.totalItems() }}</span>
+            </div>
+            <div class="summary-row total-row">
+              <span>Total Price:</span>
+              <span class="total-price">{{ formatPrice(calculateTotal()) }}</span>
+            </div>
+            <div class="summary-actions">
+              <p-button 
+                label="Continue Shopping"
+                icon="pi pi-shopping-bag"
+                severity="secondary"
+                [outlined]="true"
+                (click)="goToProducts()">
+              </p-button>
+              <p-button 
+                label="Proceed to Checkout"
+                icon="pi pi-credit-card"
+                severity="success"
+                [disabled]="cart.isEmpty()">
+              </p-button>
+            </div>
+          </div>
+        </p-card>
+      </div>
+    </div>
+  }
+</div>
+
+<!-- Confirmation Dialog -->
+<p-confirmDialog></p-confirmDialog>

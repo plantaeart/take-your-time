@@ -3,6 +3,7 @@ import { ProductsDisplayComponent } from "./components/products/products-display
 import { HomeComponent } from "./components/home/home/home.component";
 import { AuthComponent } from "./components/auth/auth.component";
 import { ProfileComponent } from "./components/profile/profile.component";
+import { UserCartDetailComponent } from "./components/user/user-cart-detail/user-cart-detail.component";
 import { AuthGuard, GuestGuard } from "./guards/auth.guard";
 
 export const APP_ROUTES: Routes = [
@@ -30,6 +31,11 @@ export const APP_ROUTES: Routes = [
     path: "products",
     redirectTo: "products/list",
     pathMatch: "full"
+  },
+  {
+    path: "user-cart-detail",
+    component: UserCartDetailComponent,
+    canActivate: [AuthGuard], // Require authentication
   },
   { 
     path: "", 
