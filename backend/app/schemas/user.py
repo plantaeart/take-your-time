@@ -25,10 +25,10 @@ class UserCreate(BaseModel):
         if not re.search(r'[A-Z]', v):
             raise ValueError('Password must contain at least 1 uppercase letter')
         
-        # Check for at least 2 special characters
+        # Check for at least 1 special character
         special_chars = re.findall(r'[!@#$%^&*(),.?":{}|<>]', v)
-        if len(special_chars) < 2:
-            raise ValueError('Password must contain at least 2 special characters (!@#$%^&*(),.?":{}|<>)')
+        if len(special_chars) < 1:
+            raise ValueError('Password must contain at least 1 special character (!@#$%^&*(),.?":{}|<>)')
         
         return v
 
@@ -69,10 +69,10 @@ class UserUpdate(BaseModel):
         if not re.search(r'[A-Z]', v):
             raise ValueError('Password must contain at least 1 uppercase letter')
         
-        # Check for at least 2 special characters
+        # Check for at least 1 special character
         special_chars = re.findall(r'[!@#$%^&*(),.?":{}|<>]', v)
-        if len(special_chars) < 2:
-            raise ValueError('Password must contain at least 2 special characters (!@#$%^&*(),.?":{}|<>)')
+        if len(special_chars) < 1:
+            raise ValueError('Password must contain at least 1 special character (!@#$%^&*(),.?":{}|<>)')
         
         return v
 
