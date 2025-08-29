@@ -16,16 +16,26 @@ export function useCart() {
     isLoading: cartStore.isLoading,
 
     // Actions
+    initializeCart: () => cartStore.initializeCart(),
     loadCart: () => cartStore.loadCart(),
+    refreshCartFromDatabase: () => cartStore.refreshCartFromDatabase(),
     addToCart: (productId: number, quantity: number = 1) => cartStore.addToCart(productId, quantity),
     updateCartItem: (productId: number, quantity: number) => cartStore.updateCartItem(productId, quantity),
     removeFromCart: (productId: number) => cartStore.removeFromCart(productId),
     clearCart: () => cartStore.clearCart(),
+    updateCartItemsWithProductData: (updates: Array<{ productId: number; productQuantity: number }>) => 
+      cartStore.updateCartItemsWithProductData(updates),
 
     // Helpers
     getCartItem: (productId: number) => cartStore.getCartItem(productId),
     isProductInCart: (productId: number) => cartStore.isProductInCart(productId),
     getProductQuantityInCart: (productId: number) => cartStore.getProductQuantityInCart(productId),
-    resetCart: () => cartStore.resetCart()
+    resetCart: () => cartStore.resetCart(),
+    
+    // Utility to check if cart has data (either from localStorage or database)
+    hasCartData: () => cartStore.cartItems().length > 0,
+    
+    // Check if cart should be refreshed from database
+    shouldRefreshFromDatabase: () => cartStore.shouldRefreshFromDatabase()
   };
 }

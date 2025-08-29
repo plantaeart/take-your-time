@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, Injector } from '@angular/core';
 import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -6,16 +6,30 @@ import { AuthStore } from '../stores/auth.store';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
-  private authStore = inject(AuthStore);
+  private authStore: AuthStore | null = null;
+
+  constructor(private injector: Injector) {}
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    // Lazy inject AuthStore to avoid circular dependency during bootstrap
+    if (!this.authStore) {
+      try {
+        this.authStore = this.injector.get(AuthStore);
+      } catch (error) {
+        // If AuthStore is not available yet, proceed without auth header
+        return next.handle(req);
+      }
+    }
+
     // Add auth token to requests - but only if auth store is initialized
     let authReq = req;
     
     try {
-      const authHeader = this.authStore.getAuthHeader();
-      if (Object.keys(authHeader).length > 0) {
-        authReq = req.clone({ setHeaders: authHeader });
+      if (this.authStore && this.authStore.isInitialized()) {
+        const authHeader = this.authStore.getAuthHeader();
+        if (Object.keys(authHeader).length > 0) {
+          authReq = req.clone({ setHeaders: authHeader });
+        }
       }
     } catch (error) {
       // If auth store is not ready, proceed without auth header
@@ -25,7 +39,7 @@ export class AuthInterceptor implements HttpInterceptor {
     return next.handle(authReq).pipe(
       catchError((error: HttpErrorResponse) => {
         // Handle 401 errors (unauthorized) - but only if auth store is ready
-        if (error.status === 401) {
+        if (error.status === 401 && this.authStore && this.authStore.isInitialized()) {
           try {
             this.authStore.handleSessionExpired();
           } catch (authError) {

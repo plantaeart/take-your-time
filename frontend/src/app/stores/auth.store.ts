@@ -52,19 +52,24 @@ export class AuthStore {
         // Setup token expiration timer for existing token
         this.setupTokenExpirationTimer(storedToken);
         
+        // Mark as initialized BEFORE validating to ensure interceptor works
+        this._isInitialized.set(true);
+        
         if (environment.debug) {
           console.log('Auth state restored from localStorage - user:', userData.username);
         }
         
-        // Validate token in background (don't block initialization)
-        this.validateSession();
+        // Validate token in background with small delay to ensure interceptor is ready
+        setTimeout(() => this.validateSession(), 100);
+      } else {
+        // Mark as initialized even if no stored auth
+        this._isInitialized.set(true);
       }
     } catch (error) {
       console.error('Error initializing auth from storage:', error);
       this.clearSession();
+      this._isInitialized.set(true);
     }
-    
-    this._isInitialized.set(true);
   }
 
   /**

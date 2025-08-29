@@ -6,6 +6,7 @@ export interface CartItem {
   productName?: string;
   productPrice?: number;
   productImage?: string;
+  productQuantity?: number; // Available stock quantity
 }
 
 export interface Cart {

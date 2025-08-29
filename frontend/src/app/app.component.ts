@@ -12,6 +12,7 @@ import { filter, map } from 'rxjs/operators';
 import { signal, effect } from '@angular/core';
 import { useAuth } from './hooks/auth.hooks';
 import { useCart } from './hooks/cart.hooks';
+import { AppInitializationService } from './services/app-initialization.service';
 import { environment } from '../environments/environment';
 
 @Component({
@@ -28,7 +29,10 @@ export class AppComponent {
   auth = useAuth();
   cart = useCart();
 
-  constructor(private router: Router) {
+  constructor(
+    private router: Router,
+    private appInitService: AppInitializationService // This will automatically handle auth-cart coordination
+  ) {
     // Track current route
     this.router.events
       .pipe(
@@ -39,17 +43,8 @@ export class AppComponent {
         this.currentRoute.set(url);
       });
 
-    // Simple cart management - only reset cart on logout
-    effect(() => {
-      const isAuthenticated = this.auth.isAuthenticated();
-      const isAuthInitialized = this.auth.isInitialized();
-      
-      if (isAuthInitialized && !isAuthenticated) {
-        // User is logged out - reset cart
-        this.cart.resetCart();
-      }
-      // Note: Cart will be loaded manually when user navigates to cart or adds items
-    }, { allowSignalWrites: true });
+    // The AppInitializationService now handles cart initialization via effects
+    // This removes the circular dependency issue
   }
 
   ngOnInit() {
@@ -67,11 +62,8 @@ export class AppComponent {
   /**
    * Navigate to cart page
    */
-  async goToCart(): Promise<void> {
-    // Load cart when user explicitly navigates to cart
-    if (this.auth.isAuthenticated()) {
-      await this.cart.loadCart();
-    }
+  goToCart(): void {
+    // Simply navigate to cart page - let the cart component handle loading
     this.router.navigate(['/user-cart-detail']);
   }
 

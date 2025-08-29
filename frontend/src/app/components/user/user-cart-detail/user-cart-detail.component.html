@@ -79,46 +79,62 @@
                 </div>
               </div>
 
-              <!-- Quantity Controls -->
-              <div class="item-quantity">
-                <label [for]="'quantity-' + item.productId">Qty:</label>
-                <p-inputNumber
-                  [id]="'quantity-' + item.productId"
-                  [ngModel]="getUpdateQuantity(item.productId)"
-                  (ngModelChange)="setUpdateQuantity(item.productId, $event)"
-                  [min]="1"
-                  [showButtons]="true"
-                  buttonLayout="horizontal"
-                  size="small"
-                  [disabled]="cart.isLoading()"
-                  inputStyleClass="w-4rem text-center">
-                </p-inputNumber>
-                
-                @if (getUpdateQuantity(item.productId) !== item.quantity) {
-                  <p-button 
-                    icon="pi pi-check"
-                    severity="success"
-                    size="small"
-                    [outlined]="true"
-                    pTooltip="Update quantity"
-                    (click)="updateItemQuantity(item)">
-                  </p-button>
-                }
-              </div>
-
-              <!-- Item Actions -->
-              <div class="item-actions">
-                <div class="item-total">
-                  {{ formatPrice((item.productPrice || 0) * item.quantity) }}
+              <!-- Controls Wrapper -->
+              <div class="item-controls">
+                <!-- Quantity Controls -->
+                <div class="item-quantity">
+                  <div class="quantity-controls">
+                    <span class="quantity-label">Qty:</span>
+                    <p-inputNumber
+                      [id]="'quantity-' + item.productId"
+                      [ngModel]="getUpdateQuantity(item.productId)"
+                      (ngModelChange)="setUpdateQuantity(item.productId, $event)"
+                      [min]="1"
+                      [max]="getMaxQuantity(item)"
+                      [showButtons]="true"
+                      buttonLayout="horizontal"
+                      size="small"
+                      [disabled]="cart.isLoading() || isLoadingProductDetails"
+                      [class]="isQuantityExceedsStock(item) ? 'quantity-error' : ''"
+                      inputStyleClass="quantity-input">
+                    </p-inputNumber>
+                    <p-button 
+                      icon="pi pi-check"
+                      severity="success"
+                      size="small"
+                      [text]="true"
+                      [disabled]="getUpdateQuantity(item.productId) === item.quantity || isQuantityExceedsStock(item) || cart.isLoading() || isLoadingProductDetails"
+                      pTooltip="Update quantity"
+                      (click)="updateItemQuantity(item)">
+                    </p-button>
+                  </div>
+                  
+                  <div class="quantity-info">
+                    @if (isLoadingProductDetails) {
+                      <small class="stock-info">Loading stock...</small>
+                    } @else if (item.productQuantity !== undefined) {
+                      <small class="stock-info">{{ item.productQuantity }} available</small>
+                    }
+                  </div>
                 </div>
-                <p-button 
-                  icon="pi pi-trash"
-                  severity="danger"
-                  size="small"
-                  [outlined]="true"
-                  pTooltip="Remove item"
-                  (click)="removeItem(item)">
-                </p-button>
+
+                <!-- Item Total & Actions -->
+                <div class="item-actions">
+                  <div class="total-and-delete">
+                    <div class="item-total">
+                      <span class="total-label">Total:</span>
+                      <span class="total-price">{{ formatPrice((item.productPrice || 0) * getUpdateQuantity(item.productId)) }}</span>
+                    </div>
+                    <p-button 
+                      icon="pi pi-trash"
+                      severity="danger"
+                      size="small"
+                      [text]="true"
+                      pTooltip="Remove item"
+                      (click)="removeItem(item)">
+                    </p-button>
+                  </div>
+                </div>
               </div>
             </div>
           </p-card>
