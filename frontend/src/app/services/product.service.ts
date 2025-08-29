@@ -139,6 +139,23 @@ export class ProductService {
   }
 
   /**
+   * Get maximum price from all products
+   * Simple API call to get the highest product price for filter initialization
+   */
+  async getMaxPrice(): Promise<number> {
+    try {
+      const response: AxiosResponse<number> = await axios.get(
+        `${this.baseUrl}/api/products/max-price`
+      );
+      
+      return response.data || 1000; // Fallback to default
+    } catch (error) {
+      console.warn('Failed to fetch max price, using default:', error);
+      return 1000; // Fallback to default
+    }
+  }
+
+  /**
    * Build query parameters for API requests
    * Filters out undefined/null values
    */
@@ -154,6 +171,10 @@ export class ProductService {
     if (params.category !== undefined) queryParams.category = params.category;
     if (params.inventoryStatus !== undefined) queryParams.inventoryStatus = params.inventoryStatus;
     if (params.search !== undefined && params.search.trim()) queryParams.search = params.search.trim();
+    if (params.sortBy !== undefined) queryParams.sortBy = params.sortBy;
+    if (params.sortOrder !== undefined) queryParams.sortOrder = params.sortOrder;
+    if (params.priceMin !== undefined) queryParams.priceMin = params.priceMin;
+    if (params.priceMax !== undefined) queryParams.priceMax = params.priceMax;
 
     return queryParams;
   }

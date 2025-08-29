@@ -3,11 +3,11 @@
    ============================================================================ */
 
 .filter-container {
-  border: 1px solid #e2e8f0;
-  border-radius: 0.5rem;
-  padding: 1rem;
-  background: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--border-radius);
+  padding: 0.5rem;
+  background: var(--surface-card);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* ============================================================================
@@ -18,16 +18,24 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--surface-border);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-radius: var(--border-radius);
+  padding: 0.5rem;
+  margin: -0.5rem -0.5rem 0.75rem -0.5rem;
+}
+
+.filter-header:hover {
+  background-color: var(--surface-hover);
 }
 
 .filter-title {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.125rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--text-color);
 }
 
 .filter-actions {
@@ -37,27 +45,77 @@
 }
 
 .active-count {
-  color: #6b7280;
+  color: var(--text-color-secondary);
   font-size: 0.875rem;
   font-weight: 500;
   white-space: nowrap;
 }
 
 /* ============================================================================
-   FILTER ITEMS - MULTISELECT
+   FILTER CONTENT - GRID LAYOUT (3 COLUMNS)
    ============================================================================ */
 
-.filter-multiselect {
-  margin-bottom: 0.75rem;
+.filter-content {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
 }
 
-.category-multiselect {
-  width: 100%;
+/* Tablet: 2 columns */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .filter-content {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+}
+
+/* Mobile: 1 column */
+@media (max-width: 767px) {
+  .filter-content {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
 }
 
 /* ============================================================================
-   CATEGORY OPTION STYLING - MINIMAL OVERRIDE
+   FILTER SECTIONS
    ============================================================================ */
+
+.filter-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.filter-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 0.25rem;
+}
+
+/* ============================================================================
+   FIXED WIDTH INPUTS
+   ============================================================================ */
+
+.filter-select {
+  width: 15rem !important;
+  min-width: 15rem;
+}
+
+.filter-input {
+  width: 7rem !important;
+  min-width: 7rem;
+}
+
+/* ============================================================================
+   CATEGORY FILTER STYLES
+   ============================================================================ */
+
+.category-multiselect {
+  width: 15rem !important;
+  min-width: 15rem;
+}
 
 .category-option {
   display: flex;
@@ -78,7 +136,6 @@
   font-size: 0.875rem;
 }
 
-/* Selected item styling */
 .selected-category-item {
   display: flex;
   align-items: center;
@@ -95,30 +152,104 @@
 }
 
 /* ============================================================================
-   FILTER SUMMARY
+   INVENTORY STATUS FILTER STYLES
    ============================================================================ */
 
-.filter-summary {
-  margin-top: 0.5rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid #f3f4f6;
+.status-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
 }
 
-.active-count {
-  color: #3b82f6;
-  font-weight: 500;
+/* ============================================================================
+   PRICE FILTER STYLES
+   ============================================================================ */
+
+.price-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.price-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.price-display {
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.price-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.price-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.price-input-group label {
   font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
+  font-weight: 500;
+  color: var(--text-color-secondary);
+}
+
+/* ============================================================================
+   SORT FILTER STYLES (SPECIAL LAYOUT)
+   ============================================================================ */
+
+.sort-section {
+  grid-column: 1 / -1; /* Span full width */
+}
+
+.sort-select-button {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sort-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+.sort-label {
+  white-space: nowrap;
+}
+
+/* Override PrimeNG SelectButton styles */
+:host ::ng-deep .sort-select-button .p-selectbutton {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+:host ::ng-deep .sort-select-button .p-button {
+  border-radius: var(--border-radius);
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  white-space: nowrap;
 }
 
 /* ============================================================================
    RESPONSIVE DESIGN
    ============================================================================ */
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .filter-container {
-    padding: 0.75rem;
+    padding: 1rem;
   }
   
   .filter-header {
@@ -126,29 +257,39 @@
     align-items: flex-start;
     gap: 0.5rem;
   }
-}
-
-@media (max-width: 480px) {
-  .filter-container {
-    padding: 0.5rem;
+  
+  .filter-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .price-inputs {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  .filter-select,
+  .category-multiselect {
+    width: 100% !important;
+    min-width: auto;
+  }
+  
+  .filter-input {
+    width: 100% !important;
+    min-width: auto;
+  }
+  
+  .sort-section {
+    grid-column: 1;
   }
 }
 
 /* ============================================================================
-   ANIMATIONS
+   EXPANDABLE ANIMATION
    ============================================================================ */
 
-.filter-multiselect {
-  animation: fadeIn 0.3s ease-in-out;
+.filter-content {
+  transition: all 0.3s ease-in-out;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-5px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+/* Hide/show animation could be enhanced with Angular animations if needed */

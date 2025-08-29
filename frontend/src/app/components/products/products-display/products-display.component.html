@@ -1,4 +1,17 @@
 <div id="products-display-container" class="products-container">
+  <!-- Comprehensive Filters -->
+  <div id="products-display-filter-container" class="filter-container">
+    <app-filter
+      id="products-display-comprehensive-filter"
+      title="Product Filters"
+      [config]="filterConfig"
+      [products]="productList.products()"
+      [showClearButton]="true"
+      (filtersChange)="onFiltersChange($event)"
+      (clearFilters)="onClearFilters()">
+    </app-filter>
+  </div>
+
   <!-- Loading State -->
   @if (productList.isLoading()) {
     <div id="products-display-loading-grid" class="products-grid">

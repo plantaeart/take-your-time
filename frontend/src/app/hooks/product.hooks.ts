@@ -89,7 +89,10 @@ export function useProducts() {
     reset: () => store.resetStore(),
     
     /** Refresh all data */
-    refresh: () => store.refreshAll()
+    refresh: () => store.refreshAll(),
+    
+    /** Get maximum price from API for filter initialization */
+    getMaxPrice: () => store.getMaxPrice()
   };
 }
 
@@ -124,6 +127,7 @@ export function useProductList() {
     search: (term: string) => store.searchProducts(term),
     filterByCategory: (category: Category | undefined) => store.filterByCategory(category),
     refresh: () => store.refreshAll(),
+    getMaxPrice: () => store.getMaxPrice(),
     
     // Auto-initialization
     initialize: autoLoad
@@ -219,13 +223,17 @@ export function useProductFilters() {
       search: '',
       category: undefined,
       inventoryStatus: undefined,
+      sortBy: undefined,
+      sortOrder: undefined,
+      priceMin: undefined,
+      priceMax: undefined,
       page: 1
     }, true),
     
     // Computed filter info
     hasActiveFilters: computed(() => {
       const f = store.filters();
-      return !!(f.search || f.category || f.inventoryStatus);
+      return !!(f.search || f.category || f.inventoryStatus || f.sortBy || f.priceMin || f.priceMax);
     }),
     activeFiltersCount: computed(() => {
       const f = store.filters();
@@ -233,6 +241,8 @@ export function useProductFilters() {
       if (f.search) count++;
       if (f.category) count++;
       if (f.inventoryStatus) count++;
+      if (f.sortBy) count++;
+      if (f.priceMin || f.priceMax) count++;
       return count;
     })
   };

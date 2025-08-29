@@ -55,7 +55,7 @@ src/app/
 └── styles/              # Global styles
 ```
 
-### **Service-Store-Hooks Pattern**
+### **Service-Store-Hooks Pattern (REQUIRED)**
 ```typescript
 // 1. Service Layer (API Communication)
 @Injectable({ providedIn: 'root' })
@@ -70,7 +70,7 @@ export class ProductStore {
   isLoading = signal(false);
 }
 
-// 3. Hooks Layer (Component Integration)
+// 3. Hooks Layer (Component Integration) - ALWAYS USE THIS
 export function useProductList() {
   return {
     products: store.products.asReadonly(),
@@ -78,6 +78,85 @@ export function useProductList() {
   };
 }
 ```
+
+### **🚨 CRITICAL RULE: Components Must Use Hooks**
+**NEVER directly inject stores or services in components. ALWAYS use hooks.**
+
+```typescript
+// ❌ WRONG - Direct injection
+@Component({...})
+export class ProductComponent {
+  private productStore = inject(ProductStore); // DON'T DO THIS
+  private productService = inject(ProductService); // DON'T DO THIS
+}
+
+// ✅ CORRECT - Use hooks pattern
+@Component({...})
+export class ProductComponent {
+  productList = useProductList(); // ✅ Always use hooks
+  productFilters = useProductFilters(); // ✅ Always use hooks
+  cart = useCart(); // ✅ Always use hooks
+  
+  ngOnInit() {
+    this.productList.loadProducts(); // ✅ Call methods through hooks
+    const products = this.productList.products(); // ✅ Access data through hooks
+  }
+}
+```
+
+**Why hooks are required:**
+- ✅ **Consistent architecture** across all components
+- ✅ **Better testability** with mock hooks
+- ✅ **Cleaner component code** with focused APIs
+- ✅ **Easier refactoring** when store logic changes
+- ✅ **Abstraction layer** that can evolve independently
+
+### **🔧 RULE: Expand Hooks When Services Have New Methods**
+**If a service has a method that the hook doesn't expose, ADD IT TO THE HOOK.**
+
+```typescript
+// ❌ WRONG - Don't inject service directly
+@Component({...})
+export class FilterComponent {
+  private service = inject(ProductService); // DON'T DO THIS
+  
+  async getMaxPrice() {
+    return this.service.getMaxPrice(); // Even if hook doesn't have it
+  }
+}
+
+// ✅ CORRECT - Add missing method to hook first
+// 1. Add to Store
+export class ProductStore {
+  async getMaxPrice(): Promise<number> {
+    return await this.productService.getMaxPrice();
+  }
+}
+
+// 2. Add to Hook
+export function useProductList() {
+  return {
+    // ... existing methods
+    getMaxPrice: () => store.getMaxPrice() // ✅ Add new method
+  };
+}
+
+// 3. Use in Component
+@Component({...})
+export class FilterComponent {
+  private productList = useProductList(); // ✅ Use hook
+  
+  async getMaxPrice() {
+    return this.productList.getMaxPrice(); // ✅ Through hook
+  }
+}
+```
+
+**Benefits of expanding hooks:**
+- ✅ **Maintains architecture consistency** - No mixed patterns
+- ✅ **Single source of truth** - All components use same interface  
+- ✅ **Future components benefit** - Method available for reuse
+- ✅ **Testing consistency** - Mock hooks, not services
 
 ---
 
@@ -887,6 +966,8 @@ export class ProductListComponent {
 
 ### **Before Code Review**
 - [ ] All components are standalone
+- [ ] **Components use hooks pattern (NO direct store/service injection)**
+- [ ] **Hook methods expanded when new service methods needed**
 - [ ] Using signals instead of RxJS where appropriate
 - [ ] New control flow (@if, @for, @switch) used
 - [ ] Proper TypeScript typing (no `any`)

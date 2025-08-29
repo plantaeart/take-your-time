@@ -36,7 +36,11 @@ export class ProductStore {
     limit: 10,
     search: '',
     category: undefined,
-    inventoryStatus: undefined
+    inventoryStatus: undefined,
+    sortBy: undefined,
+    sortOrder: undefined,
+    priceMin: undefined,
+    priceMax: undefined
   });
 
   /** Loading states for different operations */
@@ -361,7 +365,11 @@ export class ProductStore {
       limit: 10,
       search: '',
       category: undefined,
-      inventoryStatus: undefined
+      inventoryStatus: undefined,
+      sortBy: undefined,
+      sortOrder: undefined,
+      priceMin: undefined,
+      priceMax: undefined
     });
     this._loadingStates.set({
       products: false,
@@ -393,6 +401,19 @@ export class ProductStore {
       this.loadProducts(true),
       this.loadCategories(true)
     ]);
+  }
+
+  /**
+   * Get maximum price from all products via API
+   * Simple one-time call for filter initialization
+   */
+  async getMaxPrice(): Promise<number> {
+    try {
+      return await this.productService.getMaxPrice();
+    } catch (error) {
+      console.warn('Failed to get max price from store:', error);
+      return 1000; // Fallback default
+    }
   }
 
   // ============================================================================

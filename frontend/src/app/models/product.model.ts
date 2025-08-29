@@ -159,6 +159,12 @@ export interface ProductQueryParams {
   
   /** Sort direction */
   sortOrder?: 'asc' | 'desc';
+  
+  /** Minimum price filter */
+  priceMin?: number;
+  
+  /** Maximum price filter */
+  priceMax?: number;
 }
 
 /**
