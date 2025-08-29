@@ -6,10 +6,11 @@ import { TagModule } from 'primeng/tag';
 import { ImageModule } from 'primeng/image';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TooltipModule } from 'primeng/tooltip';
-import { useProductList } from '../../hooks/product.hooks';
-import { Product } from '../../models/product.model';
-import { InventoryStatus } from '../../enums/inventory-status.enum';
-import { Category, CategoryLabels, CategoryColors } from '../../enums/category.enum';
+import { useProductList } from '../../../hooks/product.hooks';
+import { Product } from '../../../models/product.model';
+import { InventoryStatus } from '../../../enums/inventory-status.enum';
+import { Category, CategoryLabels, CategoryColors } from '../../../enums/category.enum';
+import { TopPageComponent } from '../../ui/top-page/top-page.component';
 
 type TagSeverity = "success" | "warning" | "danger" | "info" | "secondary" | "contrast";
 
@@ -23,7 +24,8 @@ type TagSeverity = "success" | "warning" | "danger" | "info" | "secondary" | "co
     TagModule,
     ImageModule,
     SkeletonModule,
-    TooltipModule
+    TooltipModule,
+    TopPageComponent
   ],
   templateUrl: './products-display.component.html',
   styleUrl: './products-display.component.css'

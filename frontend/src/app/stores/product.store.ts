@@ -114,7 +114,11 @@ export class ProductStore {
   readonly totalProducts = computed(() => this._products().length);
 
   /** Whether more products can be loaded */
-  readonly canLoadMore = computed(() => this._pagination().hasNext && !this.isLoadingMore());
+  readonly canLoadMore = computed(() => {
+    const pagination = this._pagination();
+    const currentlyLoaded = pagination.limit * pagination.currentPage;
+    return currentlyLoaded < pagination.total && !this.isLoadingMore();
+  });
 
   /** Filtered products based on current client-side filters */
   readonly filteredProducts = computed(() => {

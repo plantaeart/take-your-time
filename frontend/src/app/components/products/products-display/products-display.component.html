@@ -135,6 +135,16 @@
           </p>
         }
       </div>
+    } @else {
+      <!-- No More Products Message -->
+      @if (productList.totalProducts() > 0) {
+        <div class="show-more-container">
+          <p class="pagination-info no-more-products">
+            <i class="pi pi-check-circle"></i>
+            All products loaded ({{ productList.totalProducts() }} total)
+          </p>
+        </div>
+      }
     }
   }
 
@@ -142,9 +152,9 @@
   @if (!productList.hasProducts() && !productList.isLoading() && !productList.errorMessage()) {
     <div class="empty-state">
       <div class="empty-message">
-        <i class="pi pi-search"></i>
-        <h3>No products found</h3>
-        <p>There are no products available at the moment.</p>
+        <i class="pi pi-inbox"></i>
+        <h3>No products available yet</h3>
+        <p>We're working on adding products to our catalog. Please check back soon!</p>
         <p-button 
           label="Refresh" 
           icon="pi pi-refresh" 
@@ -155,4 +165,10 @@
       </div>
     </div>
   }
+
+  <!-- Top Page Button -->
+  <app-top-page 
+    [scrollThreshold]="300" 
+    scrollContainer=".products-container">
+  </app-top-page>
 </div>
