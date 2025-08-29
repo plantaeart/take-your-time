@@ -95,6 +95,31 @@ async def get_categories():
     return [category.value for category in Category]
 
 
+@router.get("/products/max-price", response_model=float)
+async def get_max_price():
+    """Get the maximum price from all products for filter initialization."""
+    collection: Collection = db_manager.get_collection("products")
+    
+    try:
+        # Use MongoDB aggregation to find the maximum price efficiently
+        pipeline = [
+            {"$group": {"_id": None, "maxPrice": {"$max": "$price"}}}
+        ]
+        
+        result = await collection.aggregate(pipeline).to_list(1)
+        
+        if result and result[0]["maxPrice"] is not None:
+            import math
+            return math.ceil(result[0]["maxPrice"])
+        else:
+            # Return default if no products found
+            return 1000.0
+            
+    except Exception as e:
+        # Return default on any error
+        return 1000.0
+
+
 @router.get("/products/{productId}", response_model=ProductResponse)
 async def get_product(
     productId: int = Path(..., description="Product ID")
