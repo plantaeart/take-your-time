@@ -1,24 +1,25 @@
-<p-toolbar [style]="{ height: '100px' }">
+<p-toolbar id="app-main-toolbar" [style]="{ height: '100px' }">
     <div class="p-toolbar-group-start">
-        <img src="assets/icons/icon-72x72.png" alt="logo" />
+        <img id="app-logo-img" src="assets/icons/icon-72x72.png" alt="logo" />
     </div>
-    <div class="p-toolbar-group-center">
+    <div id="app-title-container" class="p-toolbar-group-center">
         {{ title }}
     </div>
     <div class="p-toolbar-group-end">
-        <i class="pi pi-shopping-cart" style="font-size: 2rem"></i>
+        <i id="app-cart-icon" class="pi pi-shopping-cart" style="font-size: 2rem"></i>
     </div>
 </p-toolbar>
 <p-splitter 
+    id="app-main-splitter"
     [panelSizes]="[20, 80]" 
     [style]="{ height: 'calc(100vh - 100px)' }">
     <ng-template pTemplate>
-        <div class="w-full">
+        <div id="app-navigation-panel" class="w-full">
             <app-panel-menu />
         </div>
     </ng-template>
     <ng-template pTemplate>
-        <div class="w-full app-content">
+        <div id="app-content-panel" class="w-full app-content">
             <router-outlet></router-outlet>
         </div>
     </ng-template>

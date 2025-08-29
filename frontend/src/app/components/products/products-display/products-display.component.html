@@ -1,7 +1,7 @@
-<div class="products-container">
+<div id="products-display-container" class="products-container">
   <!-- Loading State -->
   @if (productList.isLoading()) {
-    <div class="products-grid">
+    <div id="products-display-loading-grid" class="products-grid">
       @for (i of [1,2,3,4,5,6,7,8]; track i) {
         <p-card class="product-card">
           <ng-template pTemplate="header">
@@ -24,12 +24,13 @@
 
   <!-- Error State -->
   @if (productList.errorMessage()) {
-    <div class="error-container">
+    <div id="products-display-error-container" class="error-container">
       <div class="error-message">
         <i class="pi pi-exclamation-triangle"></i>
         <h3>Failed to load products</h3>
         <p>{{ productList.errorMessage() }}</p>
         <p-button 
+          id="products-display-retry-btn"
           label="Try Again" 
           icon="pi pi-refresh" 
           (onClick)="productList.refresh()">
@@ -40,13 +41,14 @@
 
   <!-- Products Grid -->
   @if (productList.hasProducts() && !productList.isLoading()) {
-    <div class="products-grid">
+    <div id="products-display-grid" class="products-grid">
       @for (product of productList.products(); track product.id) {
-        <p-card class="product-card">
+        <p-card [id]="'product-card-' + product.id" class="product-card">
           <!-- Product Image -->
           <ng-template pTemplate="header">
             <div class="product-image-container">
               <img 
+                [id]="'product-image-' + product.id"
                 [src]="product.image || defaultImage" 
                 [alt]="product.name"
                 class="product-image"
@@ -55,6 +57,7 @@
               <!-- Stock Status Badge -->
               <div class="stock-badge">
                 <p-tag 
+                  [id]="'product-stock-' + product.id"
                   [value]="getStockConfig(product.inventoryStatus).label"
                   [severity]="getStockConfig(product.inventoryStatus).severity">
                 </p-tag>
@@ -94,6 +97,7 @@
           <ng-template pTemplate="footer">
             <div class="product-actions">
               <p-button 
+                [id]="'product-wishlist-btn-' + product.id"
                 icon="pi pi-heart"
                 severity="secondary"
                 [outlined]="true"
@@ -104,6 +108,7 @@
               </p-button>
 
               <p-button 
+                [id]="'product-add-to-cart-btn-' + product.id"
                 label="Add to Cart"
                 icon="pi pi-shopping-cart"
                 size="small"
@@ -118,8 +123,9 @@
 
     <!-- Show More Button -->
     @if (productList.canLoadMore()) {
-      <div class="show-more-container">
+      <div id="products-display-pagination-container" class="show-more-container">
         <p-button 
+          id="products-display-show-more-btn"
           label="Show More Products"
           icon="pi pi-angle-down"
           [loading]="productList.isLoadingMore()"
@@ -130,7 +136,7 @@
         </p-button>
         
         @if (productList.totalProducts() > 0) {
-          <p class="pagination-info">
+          <p id="products-display-pagination-info" class="pagination-info">
             Showing {{ productList.totalProducts() }} products
           </p>
         }
@@ -138,8 +144,8 @@
     } @else {
       <!-- No More Products Message -->
       @if (productList.totalProducts() > 0) {
-        <div class="show-more-container">
-          <p class="pagination-info no-more-products">
+        <div id="products-display-all-loaded-container" class="show-more-container">
+          <p id="products-display-all-loaded-message" class="pagination-info no-more-products">
             <i class="pi pi-check-circle"></i>
             All products loaded ({{ productList.totalProducts() }} total)
           </p>
@@ -150,12 +156,13 @@
 
   <!-- Empty State -->
   @if (!productList.hasProducts() && !productList.isLoading() && !productList.errorMessage()) {
-    <div class="empty-state">
+    <div id="products-display-empty-state" class="empty-state">
       <div class="empty-message">
         <i class="pi pi-inbox"></i>
         <h3>No products available yet</h3>
         <p>We're working on adding products to our catalog. Please check back soon!</p>
         <p-button 
+          id="products-display-empty-refresh-btn"
           label="Refresh" 
           icon="pi pi-refresh" 
           severity="secondary"

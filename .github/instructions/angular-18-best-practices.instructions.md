@@ -345,9 +345,87 @@ export const APP_CONFIG = {
 
 ---
 
-## 🧪 Testing Patterns
+## 🧪 Testing Best Practices
 
-### **1. Component Testing**
+### **1. Test ID Naming Convention**
+```html
+<!-- ✅ Consistent test ID format: <component-name>-<element-name>-<type> -->
+<button id="products-display-show-more-btn">Show More</button>
+<div id="product-card-container-{{ product.id }}">...</div>
+<input id="user-profile-email-input" type="email">
+<p-button id="products-display-retry-btn" label="Try Again"></p-button>
+
+<!-- ✅ Dynamic IDs for lists -->
+<div [id]="'product-card-' + product.id">
+  <button [id]="'product-add-to-cart-btn-' + product.id">Add to Cart</button>
+  <button [id]="'product-wishlist-btn-' + product.id">Wishlist</button>
+</div>
+
+<!-- ✅ State-specific IDs -->
+<div id="products-display-loading-grid">Loading...</div>
+<div id="products-display-error-container">Error...</div>
+<div id="products-display-empty-state">No products...</div>
+```
+
+### **2. Test ID Guidelines**
+- **Format**: `<component-name>-<element-name>-<type>`
+- **Component Name**: Use kebab-case component name without "Component" suffix
+- **Element Name**: Descriptive name for the element's purpose
+- **Type Suffixes**: 
+  - `-btn` (buttons)
+  - `-input` (form inputs)
+  - `-link` (navigation links)
+  - `-container` (wrapper divs)
+  - `-grid` (grid layouts)
+  - `-card` (card components)
+  - `-icon` (icons)
+  - `-img` (images)
+
+### **3. Examples by Component Type**
+```typescript
+// ✅ Navigation Components
+"app-logo-img"
+"app-cart-icon" 
+"app-navigation-panel"
+"panel-menu-home-link"
+"panel-menu-products-link"
+
+// ✅ Product Components  
+"products-display-grid"
+"products-display-show-more-btn"
+"product-card-123" // Dynamic with product ID
+"product-add-to-cart-btn-123"
+"product-wishlist-btn-123"
+
+// ✅ Form Components
+"user-profile-email-input"
+"user-profile-save-btn"
+"login-form-submit-btn"
+
+// ✅ State Components
+"products-display-loading-grid"
+"products-display-error-container"
+"products-display-empty-state"
+```
+
+### **4. Playwright Integration**
+```typescript
+// ✅ Easy element selection in Playwright tests
+await page.click('#products-display-show-more-btn');
+await page.fill('#user-profile-email-input', 'test@example.com');
+await expect(page.locator('#product-card-123')).toBeVisible();
+
+// ✅ Dynamic element testing
+const productId = '123';
+await page.click(`#product-add-to-cart-btn-${productId}`);
+await page.click(`#product-wishlist-btn-${productId}`);
+
+// ✅ State testing
+await expect(page.locator('#products-display-loading-grid')).toBeVisible();
+await expect(page.locator('#products-display-error-container')).toBeHidden();
+```
+
+### **5. Component Testing**
 ```typescript
 describe('ProductCardComponent', () => {
   let component: ProductCardComponent;
@@ -587,6 +665,8 @@ export class ProductListComponent {
 - [ ] Proper TypeScript typing (no `any`)
 - [ ] OnPush change detection strategy
 - [ ] TrackBy functions for lists
+- [ ] **Test IDs added to all interactive elements**
+- [ ] **Test ID naming convention followed**
 - [ ] Error handling implemented
 - [ ] Tests written and passing
 - [ ] Accessibility attributes added

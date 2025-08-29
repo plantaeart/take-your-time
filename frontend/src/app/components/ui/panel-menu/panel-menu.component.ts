@@ -18,12 +18,14 @@ import { MenuItem } from "primeng/api";
         {
             label: 'Home',
             icon: 'pi pi-home',
-            routerLink: ['/home']
+            routerLink: ['/home'],
+            id: 'panel-menu-home-link'
         },
         {
             label: 'Products',
             icon: 'pi pi-barcode',
-            routerLink: ['/products/list']
+            routerLink: ['/products/list'],
+            id: 'panel-menu-products-link'
         }
     ]
   }
