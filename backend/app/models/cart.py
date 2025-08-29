@@ -5,6 +5,8 @@ from datetime import datetime
 from typing import List, Optional, Any
 from pydantic import BaseModel, Field, ConfigDict, field_serializer
 
+from app.config.schema_versions import get_schema_version
+
 
 class CartItem(BaseModel):
     """Cart item model."""
@@ -12,7 +14,7 @@ class CartItem(BaseModel):
     quantity: int = Field(..., ge=1, description="Quantity of the product")
     addedAt: datetime = Field(default_factory=datetime.now, description="When the item was added to cart")
     updatedAt: datetime = Field(default_factory=datetime.now, description="When the item was last updated")
-    schemaVersion: int = Field(default=1, description="Schema version for database upgrade management")
+    schemaVersion: int = Field(default_factory=lambda: get_schema_version("carts"), description="Schema version for database upgrade management")
     
     @field_serializer('addedAt', 'updatedAt', when_used='json')
     def serialize_datetime(self, value: datetime) -> str:
@@ -26,7 +28,7 @@ class CartModel(BaseModel):
     items: List[CartItem] = Field(default_factory=list, description="List of cart items")
     createdAt: datetime = Field(default_factory=datetime.now)
     updatedAt: datetime = Field(default_factory=datetime.now)
-    schemaVersion: int = Field(default=1, description="Schema version for database upgrade management")
+    schemaVersion: int = Field(default_factory=lambda: get_schema_version("carts"), description="Schema version for database upgrade management")
     
     model_config = ConfigDict()
     

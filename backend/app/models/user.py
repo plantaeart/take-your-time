@@ -8,6 +8,8 @@ from pymongo import ASCENDING
 import secrets
 import string
 
+from app.config.schema_versions import get_schema_version
+
 
 def generate_user_id() -> int:
     """Generate a unique user ID."""
@@ -42,7 +44,7 @@ class UserModel(BaseModel):
     isAdmin: bool = Field(default=False)  # Admin flag for secure role management
     createdAt: datetime = Field(default_factory=datetime.now)
     updatedAt: datetime = Field(default_factory=datetime.now)
-    schemaVersion: int = Field(default=1, description="Schema version for database upgrade management")
+    schemaVersion: int = Field(default_factory=lambda: get_schema_version("users"), description="Schema version for database upgrade management")
     
     model_config = ConfigDict()
     

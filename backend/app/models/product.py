@@ -7,6 +7,7 @@ from bson import ObjectId
 from pymongo import ASCENDING
 from app.models.enums.category import Category
 from app.models.enums.inventoryStatus import InventoryStatus
+from app.config.schema_versions import get_schema_version
 
 def generate_product_code() -> str:
     """Generate a unique product code in format: f230fh0g3"""
@@ -57,7 +58,7 @@ class ProductModel(BaseModel):
     rating: Optional[float] = Field(None, description="Product rating (0-5), can be null")
     createdAt: datetime
     updatedAt: datetime
-    schemaVersion: int = Field(default=1, description="Schema version for database upgrade management")
+    schemaVersion: int = Field(default_factory=lambda: get_schema_version("products"), description="Schema version for database upgrade management")
 
     model_config = ConfigDict(
         populate_by_name=True,

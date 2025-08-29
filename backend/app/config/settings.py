@@ -29,6 +29,13 @@ class Settings(BaseSettings):
     # CORS
     frontend_urls: str
     
+    # Email Configuration
+    smtp_server: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_username: str
+    smtp_password: str
+    shop_email: str
+    
     @property
     def frontend_origins(self) -> List[str]:
         """Parse frontend URLs into a list."""

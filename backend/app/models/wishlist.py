@@ -5,12 +5,14 @@ from datetime import datetime
 from typing import List, Any
 from pydantic import BaseModel, Field, ConfigDict, field_serializer
 
+from app.config.schema_versions import get_schema_version
+
 
 class WishlistItem(BaseModel):
     """Wishlist item model."""
     productId: int = Field(..., description="Product ID")
     addedAt: datetime = Field(default_factory=datetime.now, description="When the item was added to wishlist")
-    schemaVersion: int = Field(default=1, description="Schema version for database upgrade management")
+    schemaVersion: int = Field(default_factory=lambda: get_schema_version("wishlists"), description="Schema version for database upgrade management")
     
     @field_serializer('addedAt', when_used='json')
     def serialize_datetime(self, value: datetime) -> str:
@@ -24,7 +26,7 @@ class WishlistModel(BaseModel):
     items: List[WishlistItem] = Field(default_factory=list, description="List of wishlist items")
     createdAt: datetime = Field(default_factory=datetime.now)
     updatedAt: datetime = Field(default_factory=datetime.now)
-    schemaVersion: int = Field(default=1, description="Schema version for database upgrade management")
+    schemaVersion: int = Field(default_factory=lambda: get_schema_version("wishlists"), description="Schema version for database upgrade management")
     
     model_config = ConfigDict()
     

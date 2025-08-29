@@ -5,6 +5,7 @@ from app.auth.password import get_password_hash
 from app.config.database import db_manager
 from app.models.user import create_admin_user, create_indexes
 from app.models.product import create_product_indexes
+from app.models.contact import create_contact_indexes
 
 
 async def initialize_database():
@@ -20,6 +21,9 @@ async def initialize_database():
     
     # Create product indexes
     await create_product_indexes(products_collection)
+    
+    # Initialize contacts collection
+    await create_contact_indexes()
     
     # Create default admin user (admin@admin.com / AdminPass!@)
     admin_password_hash = get_password_hash("AdminPass!@")
