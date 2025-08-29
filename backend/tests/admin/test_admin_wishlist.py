@@ -31,7 +31,7 @@ class TestAdminWishlistManagement:
             "username": "wishlistuser",
             "firstname": "Wishlist",
             "email": "wishlistuser@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         userResponse = client.post("/api/account", json=userData)
         userId: int = userResponse.json()["id"]
@@ -58,7 +58,7 @@ class TestAdminWishlistManagement:
             "username": "wishlistadduser",
             "firstname": "WishlistAdd",
             "email": "wishlistadd@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         userResponse = client.post("/api/account", json=userData)
         userId: int = userResponse.json()["id"]
@@ -97,7 +97,7 @@ class TestAdminWishlistManagement:
             "username": "wishlistremoveuser",
             "firstname": "WishlistRemove",
             "email": "wishlistremove@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         userResponse = client.post("/api/account", json=userData)
         userId: int = userResponse.json()["id"]
@@ -136,7 +136,7 @@ class TestAdminWishlistManagement:
             "username": "wishlistclearuser",
             "firstname": "WishlistClear",
             "email": "wishlistclear@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         userResponse = client.post("/api/account", json=userData)
         userId: int = userResponse.json()["id"]
@@ -201,7 +201,7 @@ class TestAdminWishlistManagement:
             "username": "wishlistproductnotfound",
             "firstname": "WishlistProductNotFound",
             "email": "wishlistproductnotfound@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         userResponse = client.post("/api/account", json=userData)
         userId: int = userResponse.json()["id"]
@@ -220,7 +220,7 @@ class TestAdminWishlistManagement:
             "username": "wishlistduplicateuser",
             "firstname": "WishlistDuplicate",
             "email": "wishlistduplicate@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         userResponse = client.post("/api/account", json=userData)
         userId: int = userResponse.json()["id"]
@@ -262,7 +262,7 @@ class TestAdminWishlistManagement:
                 "username": f"multiwishlistuser{i}",
                 "firstname": f"MultiWishlist{i}",
                 "email": f"multiwishlistuser{i}@example.com",
-                "password": "testpassword"
+                "password": "TestPass123!"
             }
             userResponse = client.post("/api/account", json=userData)
             userIds.append(userResponse.json()["id"])
@@ -301,7 +301,7 @@ class TestAdminWishlistManagement:
             "username": "wishlistremovenotfound",
             "firstname": "WishlistRemoveNotFound",
             "email": "wishlistremovenotfound@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         userResponse = client.post("/api/account", json=userData)
         userId: int = userResponse.json()["id"]
@@ -320,7 +320,7 @@ class TestAdminWishlistManagement:
             "username": "wishlistpermissionuser",
             "firstname": "WishlistPermission",
             "email": "wishlistpermission@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         userResponse = client.post("/api/account", json=userData, headers=adminHeaders)
         userId: int = userResponse.json()["id"]
@@ -348,7 +348,7 @@ class TestAdminWishlistManagement:
             "username": "wishlistuser1",
             "firstname": "WishlistUser1",
             "email": "wishlistuser1@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         user1Response = client.post("/api/account", json=user1Data, headers=headers)
         user1Id: int = user1Response.json()["id"]
@@ -357,7 +357,7 @@ class TestAdminWishlistManagement:
             "username": "wishlistuser2",
             "firstname": "WishlistUser2",
             "email": "wishlistuser2@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         user2Response = client.post("/api/account", json=user2Data, headers=headers)
         user2Id: int = user2Response.json()["id"]

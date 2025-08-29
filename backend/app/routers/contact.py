@@ -63,7 +63,7 @@ async def send_contact_message(
     Requires user authentication.
     """
     collection: Collection = db_manager.get_collection("contacts")
-    contact_id: int = await get_next_contact_id()
+    contact_id: int = await get_next_contact_id(collection)
     
     # Create contact record
     contact: ContactModel = ContactModel(

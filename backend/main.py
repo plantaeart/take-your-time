@@ -18,7 +18,6 @@ from app.routers.cart import router as cart_router
 from app.routers.wishlist import router as wishlist_router
 from app.routers.admin_users import router as admin_users_router
 from app.routers.contact import router as contact_router
-from app.routers.contact import router as contact_router
 from app.startup import initialize_database
 from app.version import __version__
 

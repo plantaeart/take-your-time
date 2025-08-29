@@ -190,7 +190,7 @@ class TestUserCartManagement:
         # Verify cart has items
         response = client.get("/api/cart", headers=userHeaders)
         data: Dict[str, Any] = response.json()
-        assert data["totalItems"] == 6  # 3 items × 2 each
+        assert data["totalItems"] == 6  # 3 items ÁE2 each
         assert len(data["items"]) == 3
         
         # Clear cart
@@ -294,7 +294,7 @@ class TestUserCartManagement:
             "username": "cartuser1",
             "firstname": "Cart",
             "email": "cartuser1@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         user1Response = client.post("/api/account", json=user1Data)
         
@@ -302,16 +302,16 @@ class TestUserCartManagement:
             "username": "cartuser2",
             "firstname": "Cart",
             "email": "cartuser2@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         user2Response = client.post("/api/account", json=user2Data)
         
         # Login both users to get tokens
-        loginData1: Dict[str, str] = {"username": "cartuser1@example.com", "password": "testpassword"}
+        loginData1: Dict[str, str] = {"username": "cartuser1@example.com", "password": "TestPass123!"}
         token1Response = client.post("/api/token", data=loginData1)
         user1Token: str = token1Response.json()["access_token"]
         
-        loginData2: Dict[str, str] = {"username": "cartuser2@example.com", "password": "testpassword"}
+        loginData2: Dict[str, str] = {"username": "cartuser2@example.com", "password": "TestPass123!"}
         token2Response = client.post("/api/token", data=loginData2)
         user2Token: str = token2Response.json()["access_token"]
         
@@ -356,12 +356,12 @@ class TestUserCartManagement:
             "username": "persistenceuser",
             "firstname": "Persistence",
             "email": "persistence@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         client.post("/api/account", json=userData)
         
         # Login user
-        loginData: Dict[str, str] = {"username": "persistence@example.com", "password": "testpassword"}
+        loginData: Dict[str, str] = {"username": "persistence@example.com", "password": "TestPass123!"}
         tokenResponse = client.post("/api/token", data=loginData)
         userToken: str = tokenResponse.json()["access_token"]
         userHeaders: Dict[str, str] = {"Authorization": f"Bearer {userToken}"}

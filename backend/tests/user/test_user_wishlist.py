@@ -218,7 +218,7 @@ class TestUserWishlistManagement:
             "username": "wishlistuser1",
             "firstname": "Wishlist",
             "email": "wishlistuser1@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         client.post("/api/account", json=user1Data)
         
@@ -226,16 +226,16 @@ class TestUserWishlistManagement:
             "username": "wishlistuser2",
             "firstname": "Wishlist",
             "email": "wishlistuser2@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         client.post("/api/account", json=user2Data)
         
         # Login both users to get tokens
-        loginData1: Dict[str, str] = {"username": "wishlistuser1@example.com", "password": "testpassword"}
+        loginData1: Dict[str, str] = {"username": "wishlistuser1@example.com", "password": "TestPass123!"}
         token1Response = client.post("/api/token", data=loginData1)
         user1Token: str = token1Response.json()["access_token"]
         
-        loginData2: Dict[str, str] = {"username": "wishlistuser2@example.com", "password": "testpassword"}
+        loginData2: Dict[str, str] = {"username": "wishlistuser2@example.com", "password": "TestPass123!"}
         token2Response = client.post("/api/token", data=loginData2)
         user2Token: str = token2Response.json()["access_token"]
         
@@ -279,12 +279,12 @@ class TestUserWishlistManagement:
             "username": "wishlistpersistenceuser",
             "firstname": "Persistence",
             "email": "wishlistpersistence@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         client.post("/api/account", json=userData)
         
         # Login user
-        loginData: Dict[str, str] = {"username": "wishlistpersistence@example.com", "password": "testpassword"}
+        loginData: Dict[str, str] = {"username": "wishlistpersistence@example.com", "password": "TestPass123!"}
         tokenResponse = client.post("/api/token", data=loginData)
         userToken: str = tokenResponse.json()["access_token"]
         userHeaders: Dict[str, str] = {"Authorization": f"Bearer {userToken}"}

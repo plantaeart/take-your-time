@@ -68,6 +68,7 @@ def setup_test_environment(mock_db_manager):
     import app.routers.admin_users
     import app.routers.cart
     import app.routers.wishlist
+    import app.routers.contact
     import app.auth.dependencies
     import app.auth.blacklist
     
@@ -76,6 +77,7 @@ def setup_test_environment(mock_db_manager):
     app.routers.admin_users.db_manager = mock_db_manager
     app.routers.cart.db_manager = mock_db_manager
     app.routers.wishlist.db_manager = mock_db_manager
+    app.routers.contact.db_manager = mock_db_manager
     app.auth.dependencies.db_manager = mock_db_manager
     app.auth.blacklist.db_manager = mock_db_manager
     
@@ -88,6 +90,7 @@ def setup_test_environment(mock_db_manager):
     app.routers.admin_users.db_manager = original_db_manager
     app.routers.cart.db_manager = original_db_manager
     app.routers.wishlist.db_manager = original_db_manager
+    app.routers.contact.db_manager = original_db_manager
     app.auth.dependencies.db_manager = original_db_manager
     app.auth.blacklist.db_manager = original_db_manager
     
@@ -122,7 +125,7 @@ def admin_token(client):
         "username": "testadmin",
         "firstname": "Test",
         "email": "testadmin@example.com",
-        "password": "adminpassword"
+        "password": "AdminPass123!"
     }
     
     # Register user first
@@ -147,7 +150,7 @@ def admin_token(client):
     # Login admin
     loginData = {
         "username": "testadmin@example.com",
-        "password": "adminpassword"
+        "password": "AdminPass123!"
     }
     response = client.post("/api/token", data=loginData)
     return response.json()["access_token"]
@@ -161,7 +164,7 @@ def user_token(client):
         "username": "testuser",
         "firstname": "Test",
         "email": "testuser@example.com", 
-        "password": "userpassword"
+        "password": "UserPass123!"
     }
     
     # Register user
@@ -170,7 +173,7 @@ def user_token(client):
     # Login user
     loginData = {
         "username": "testuser@example.com",
-        "password": "userpassword"
+        "password": "UserPass123!"
     }
     response = client.post("/api/token", data=loginData)
     return response.json()["access_token"]
@@ -184,7 +187,7 @@ def second_user_token(client):
         "username": "testuser2",
         "firstname": "Test2",
         "email": "testuser2@example.com",
-        "password": "userpassword2"
+        "password": "UserPass456!"
     }
     
     # Register user
@@ -193,7 +196,13 @@ def second_user_token(client):
     # Login user
     loginData = {
         "username": "testuser2@example.com",
-        "password": "userpassword2"
+        "password": "UserPass456!"
     }
     response = client.post("/api/token", data=loginData)
     return response.json()["access_token"]
+
+
+@pytest.fixture
+def authenticated_headers(user_token):
+    """Get authentication headers for API requests."""
+    return {"Authorization": f"Bearer {user_token}"}

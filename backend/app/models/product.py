@@ -16,10 +16,11 @@ def generate_product_code() -> str:
     return ''.join(random.choice(characters) for _ in range(9))
 
 def generate_internal_reference() -> str:
-    """Generate a unique internal reference in format: REF-123-456"""
-    # Generate two 3-digit numbers
-    part1 = ''.join(random.choice(string.digits) for _ in range(3))
-    part2 = ''.join(random.choice(string.digits) for _ in range(3))
+    """Generate a unique internal reference in format: REF-A1B-C2D"""
+    # Generate two 3-character alphanumeric codes
+    characters = string.ascii_uppercase + string.digits
+    part1 = ''.join(random.choice(characters) for _ in range(3))
+    part2 = ''.join(random.choice(characters) for _ in range(3))
     return f"REF-{part1}-{part2}"
 
 async def get_next_product_id(collection) -> int:

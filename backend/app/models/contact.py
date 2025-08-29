@@ -35,8 +35,8 @@ class ContactModel:
         self.messageId = messageId
         self.errorMessage = errorMessage
         self.schemaVersion = schemaVersion
-        self.createdAt = createdAt or datetime.utcnow()
-        self.updatedAt = updatedAt or datetime.utcnow()
+        self.createdAt = createdAt or datetime.now()
+        self.updatedAt = updatedAt or datetime.now()
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert model to dictionary for MongoDB storage."""
@@ -63,12 +63,13 @@ class ContactModel:
         self.status = status
         self.messageId = message_id
         self.errorMessage = error_message
-        self.updatedAt = datetime.utcnow()
+        self.updatedAt = datetime.now()
 
 
-async def get_next_contact_id() -> int:
+async def get_next_contact_id(collection: Optional[Collection] = None) -> int:
     """Get the next auto-incrementing ID for contact submissions."""
-    collection: Collection = db_manager.get_collection("contacts")
+    if collection is None:
+        collection = db_manager.get_collection("contacts")
     
     # Find the highest ID
     last_contact = await collection.find_one(

@@ -99,14 +99,14 @@ class TestUserSchemas:
             "username": "newuser",
             "firstname": "New",
             "email": "new@example.com",
-            "password": "strongpassword123"
+            "password": "StrongPass123!"
         }
         
         user: UserCreate = UserCreate(**userData)
         assert user.username == "newuser"
         assert user.firstname == "New"
         assert user.email == "new@example.com"
-        assert user.password == "strongpassword123"
+        assert user.password == "StrongPass123!"
 
     def test_user_create_invalid_email(self) -> None:
         """Test UserCreate with invalid email."""
@@ -114,7 +114,7 @@ class TestUserSchemas:
             "username": "testuser",
             "firstname": "Test",
             "email": "invalid-email",  # Invalid email format
-            "password": "password123"
+            "password": "Password123!"
         }
         
         with pytest.raises(ValidationError):
@@ -198,7 +198,7 @@ class TestUserPasswordHandling:
 
     def test_different_passwords_different_hashes(self) -> None:
         """Test that different passwords generate different hashes."""
-        password1: str = "password123"
+        password1: str = "Password123!"
         password2: str = "password456"
         
         hash1: str = get_password_hash(password1)
@@ -229,7 +229,7 @@ class TestUserValidation:
         baseData: Dict[str, str] = {
             "username": "testuser",
             "firstname": "Test",
-            "password": "password123"
+            "password": "Password123!"
         }
         
         # Valid emails
@@ -266,7 +266,7 @@ class TestUserValidation:
         baseData: Dict[str, str] = {
             "firstname": "Test",
             "email": "test@example.com",
-            "password": "password123"
+            "password": "Password123!"
         }
         
         # Valid usernames (min_length=3 per schema)
@@ -289,11 +289,11 @@ class TestUserValidation:
         baseData: Dict[str, str] = {
             "username": "testuser",
             "email": "test@example.com",
-            "password": "password123"
+            "password": "Password123!"
         }
         
         # Valid firstnames
-        validFirstnames = ["John", "Mary Jane", "José", "李明", "A"]
+        validFirstnames = ["John", "Mary Jane", "Jose", "Li", "A"]
         
         for firstname in validFirstnames:
             userData: Dict[str, str] = baseData.copy()

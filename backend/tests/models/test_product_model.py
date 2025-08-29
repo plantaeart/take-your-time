@@ -148,9 +148,9 @@ class TestProductAutoGeneration:
         assert len(refParts[1]) == 3
         assert len(refParts[2]) == 3
         
-        # Should contain only digits after REF-
-        assert refParts[1].isdigit()
-        assert refParts[2].isdigit()
+        # Should contain only alphanumeric characters after REF-
+        assert refParts[1].isalnum()
+        assert refParts[2].isalnum()
         
         # Multiple calls should generate different references
         ref2: str = generate_internal_reference()

@@ -40,7 +40,7 @@ class TestAdminUserManagement:
                 "username": f"testuser{i}",
                 "firstname": f"Test{i}",
                 "email": f"testuser{i}@example.com",
-                "password": "testpassword"
+                "password": "TestPass123!"
             }
             client.post("/api/account", json=userData)
         
@@ -59,7 +59,7 @@ class TestAdminUserManagement:
             "username": "activefilteruser",
             "firstname": "ActiveFilter",
             "email": "activefilter@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         response = client.post("/api/account", json=userData)
         userId: int = response.json()["id"]
@@ -80,7 +80,7 @@ class TestAdminUserManagement:
             "username": "regularuser",
             "firstname": "Regular",
             "email": "regular@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         client.post("/api/account", json=userData)
         
@@ -100,7 +100,7 @@ class TestAdminUserManagement:
             "username": "statususer",
             "firstname": "Status",
             "email": "status@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         response = client.post("/api/account", json=userData)
         userId: int = response.json()["id"]
@@ -118,7 +118,7 @@ class TestAdminUserManagement:
             "username": "forbiddenuser",
             "firstname": "Forbidden",
             "email": "forbidden@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         response = client.post("/api/account", json=userData)
         userId: int = response.json()["id"]
@@ -138,7 +138,7 @@ class TestAdminUserManagement:
             "username": "updatestatususer",
             "firstname": "UpdateStatus",
             "email": "updatestatus@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         response = client.post("/api/account", json=userData)
         userId: int = response.json()["id"]
@@ -167,7 +167,7 @@ class TestAdminUserManagement:
             "username": "promoteuser",
             "firstname": "Promote",
             "email": "promote@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         response = client.post("/api/account", json=userData)
         userId: int = response.json()["id"]
@@ -203,7 +203,7 @@ class TestAdminUserManagement:
             "username": "nodatauser",
             "firstname": "NoData",
             "email": "nodata@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         response = client.post("/api/account", json=userData)
         userId: int = response.json()["id"]
@@ -221,7 +221,7 @@ class TestAdminUserManagement:
             "username": "profileuser",
             "firstname": "Profile",
             "email": "profile@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         response = client.post("/api/account", json=userData)
         userId: int = response.json()["id"]
@@ -267,13 +267,13 @@ class TestAdminUserManagement:
             "username": "searchable_user_1",
             "firstname": "Searchable1",
             "email": "searchuser1@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         userData2: Dict[str, str] = {
             "username": "findme_user",
             "firstname": "FindMe",
             "email": "searchuser2@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         
         client.post("/api/account", json=userData1)

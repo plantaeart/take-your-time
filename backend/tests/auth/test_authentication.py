@@ -15,7 +15,7 @@ class TestAuthentication:
             "username": "testuser",
             "firstname": "Test",
             "email": "test@example.com",
-            "password": "testpassword123"
+            "password": "TestPass123!"
         }
 
         response = client.post("/api/account", json=userData)
@@ -35,7 +35,7 @@ class TestAuthentication:
             "username": "user1",
             "firstname": "User",
             "email": "duplicate@example.com",
-            "password": "password123"
+            "password": "Password123!"
         }
         
         # First registration should succeed
@@ -47,7 +47,7 @@ class TestAuthentication:
             "username": "user2",
             "firstname": "User2",
             "email": "duplicate@example.com",
-            "password": "password456"
+            "password": "Password456!"
         }
         response = client.post("/api/account", json=userData2)
         assert response.status_code == 400
@@ -58,7 +58,7 @@ class TestAuthentication:
             "username": "duplicateuser",
             "firstname": "User",
             "email": "user1@example.com",
-            "password": "password123"
+            "password": "Password123!"
         }
         
         # First registration should succeed
@@ -70,7 +70,7 @@ class TestAuthentication:
             "username": "duplicateuser",
             "firstname": "User2",
             "email": "user2@example.com", 
-            "password": "password456"
+            "password": "Password456!"
         }
         response = client.post("/api/account", json=userData2)
         assert response.status_code == 400
@@ -82,14 +82,14 @@ class TestAuthentication:
             "username": "loginuser",
             "firstname": "Login",
             "email": "login@example.com",
-            "password": "loginpassword123"
+            "password": "LoginPass123!"
         }
         client.post("/api/account", json=userData)
         
         # Login with OAuth2 format (form data) using /token endpoint
         loginData: Dict[str, str] = {
             "username": "login@example.com",
-            "password": "loginpassword123"
+            "password": "LoginPass123!"
         }
         response = client.post("/api/token", data=loginData)
         assert response.status_code == 200
@@ -105,14 +105,14 @@ class TestAuthentication:
             "username": "emailuser",
             "firstname": "Email",
             "email": "email@example.com",
-            "password": "emailpassword123"
+            "password": "EmailPass123!"
         }
         client.post("/api/account", json=userData)
         
         # Login with JSON format using /login endpoint
         loginData: Dict[str, str] = {
             "email": "email@example.com",
-            "password": "emailpassword123"
+            "password": "EmailPass123!"
         }
         response = client.post("/api/login", json=loginData)
         assert response.status_code == 200
@@ -125,7 +125,7 @@ class TestAuthentication:
         """Test login with invalid credentials."""
         loginData: Dict[str, str] = {
             "username": "nonexistent@example.com",
-            "password": "wrongpassword"
+            "password": "WrongPass123!"
         }
         response = client.post("/api/token", data=loginData)
         assert response.status_code == 401
@@ -137,14 +137,14 @@ class TestAuthentication:
             "username": "wrongpassuser",
             "firstname": "Wrong",
             "email": "wrongpass@example.com",
-            "password": "correctpassword123"
+            "password": "CorrectPass123!"
         }
         client.post("/api/account", json=userData)
         
         # Try login with wrong password
         loginData: Dict[str, str] = {
             "email": "wrongpass@example.com",
-            "password": "wrongpassword123"
+            "password": "WrongPass456!"
         }
         response = client.post("/api/login", json=loginData)
         assert response.status_code == 401
@@ -198,14 +198,14 @@ class TestAuthentication:
             "username": "admin",
             "firstname": "Admin",
             "email": "admin@example.com",
-            "password": "adminpassword123"
+            "password": "AdminPass123!"
         }
         client.post("/api/account", json=userData)
         
         # Login user
         loginData: Dict[str, str] = {
             "email": "admin@example.com",
-            "password": "adminpassword123"
+            "password": "AdminPass123!"
         }
         response = client.post("/api/login", json=loginData)
         assert response.status_code == 200
@@ -221,14 +221,14 @@ class TestAuthentication:
             "username": "refreshuser",
             "firstname": "Refresh", 
             "email": "refresh@example.com",
-            "password": "refreshpassword123"
+            "password": "RefreshPass123!"
         }
         client.post("/api/account", json=userData)
         
         # First login
         loginData: Dict[str, str] = {
             "email": "refresh@example.com",
-            "password": "refreshpassword123"
+            "password": "RefreshPass123!"
         }
         response1 = client.post("/api/login", json=loginData)
         token1: str = response1.json()["access_token"]
@@ -250,13 +250,13 @@ class TestAuthentication:
             "username": "blacklistuser",
             "firstname": "Blacklist",
             "email": "blacklist@example.com", 
-            "password": "blacklistpassword123"
+            "password": "BlacklistPass123!"
         }
         client.post("/api/account", json=userData)
         
         loginData: Dict[str, str] = {
             "email": "blacklist@example.com",
-            "password": "blacklistpassword123"
+            "password": "BlacklistPass123!"
         }
         response = client.post("/api/login", json=loginData)
         token: str = response.json()["access_token"]
@@ -280,13 +280,13 @@ class TestAuthentication:
             "username": "multilogoutuser",
             "firstname": "Multi",
             "email": "multilogout@example.com",
-            "password": "multilogoutpassword123"
+            "password": "MultiLogoutPass123!"
         }
         client.post("/api/account", json=userData)
         
         loginData: Dict[str, str] = {
             "email": "multilogout@example.com",
-            "password": "multilogoutpassword123"
+            "password": "MultiLogoutPass123!"
         }
         response = client.post("/api/login", json=loginData)
         token: str = response.json()["access_token"]

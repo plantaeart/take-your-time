@@ -31,7 +31,7 @@ class TestAdminCartManagement:
             "username": "cartuser",
             "firstname": "Cart",
             "email": "cartuser@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         userResponse = client.post("/api/account", json=userData)
         userId: int = userResponse.json()["id"]
@@ -59,7 +59,7 @@ class TestAdminCartManagement:
             "username": "cartadduser",
             "firstname": "CartAdd",
             "email": "cartadd@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         userResponse = client.post("/api/account", json=userData)
         userId: int = userResponse.json()["id"]
@@ -103,7 +103,7 @@ class TestAdminCartManagement:
             "username": "cartupdateuser",
             "firstname": "CartUpdate",
             "email": "cartupdate@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         userResponse = client.post("/api/account", json=userData)
         userId: int = userResponse.json()["id"]
@@ -144,7 +144,7 @@ class TestAdminCartManagement:
             "username": "cartremoveuser",
             "firstname": "CartRemove",
             "email": "cartremove@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         userResponse = client.post("/api/account", json=userData)
         userId: int = userResponse.json()["id"]
@@ -184,7 +184,7 @@ class TestAdminCartManagement:
             "username": "cartclearuser",
             "firstname": "CartClear",
             "email": "cartclear@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         userResponse = client.post("/api/account", json=userData)
         userId: int = userResponse.json()["id"]
@@ -254,7 +254,7 @@ class TestAdminCartManagement:
             "username": "productnotfounduser",
             "firstname": "ProductNotFound",
             "email": "productnotfound@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         userResponse = client.post("/api/account", json=userData)
         userId: int = userResponse.json()["id"]
@@ -273,7 +273,7 @@ class TestAdminCartManagement:
             "username": "invalidquantityuser",
             "firstname": "InvalidQuantity",
             "email": "invalidquantity@example.com",
-            "password": "testpassword"
+            "password": "TestPass123!"
         }
         userResponse = client.post("/api/account", json=userData)
         userId = userResponse.json()["id"]
@@ -311,7 +311,7 @@ class TestAdminCartManagement:
                 "username": f"multiuser{i}",
                 "firstname": f"Multi{i}",
                 "email": f"multiuser{i}@example.com",
-                "password": "testpassword"
+                "password": "TestPass123!"
             }
             userResponse = client.post("/api/account", json=userData)
             userIds.append(userResponse.json()["id"])
