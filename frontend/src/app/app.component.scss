@@ -1,6 +1,31 @@
+/* ============================================================================
+   MAIN APP LAYOUT STYLES
+   ============================================================================ */
+
+.app-layout {
+  display: flex;
+  height: calc(100vh - 100px);
+  overflow: hidden;
+}
+
+.navigation-panel {
+  flex-shrink: 0; /* Don't allow shrinking */
+  height: 100%;
+  overflow: hidden;
+}
+
+.content-panel {
+  flex: 1; /* Take remaining space */
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: #f8f9fa;
+}
+
+/* Legacy support for existing content */
 .app-content {
-    overflow-y: auto; /* Allow vertical scrolling */
-    overflow-x: hidden; /* Hide horizontal scroll */
-    height: 100%;
-    padding: 0; /* Remove any default padding */
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: 100%;
+  padding: 0;
 }

@@ -1,0 +1,43 @@
+<div class="panel-menu-container" [style.width]="menuWidth()">
+  <!-- Toggle Button -->
+  <div class="toggle-header">
+    <button 
+      id="panel-menu-toggle-btn"
+      class="toggle-button"
+      [class.collapsed]="isCollapsed()"
+      (click)="toggleMenu()"
+      type="button"
+      [attr.aria-label]="isCollapsed() ? 'Expand menu' : 'Collapse menu'"
+      pTooltip="Toggle menu"
+      tooltipPosition="right">
+      <i [class]="'pi ' + toggleIcon()"></i>
+      @if (!isCollapsed()) {
+        <span class="toggle-text">Menu</span>
+      }
+    </button>
+  </div>
+
+  <!-- Panel Menu -->
+  <div class="menu-content">
+    @if (isCollapsed()) {
+      <!-- Collapsed Menu - Icons Only with Tooltips -->
+      <div class="collapsed-menu">
+        @for (item of collapsedItems; track item.routerLink) {
+          <a 
+            [id]="item.id"
+            [routerLink]="item.routerLink"
+            class="collapsed-menu-item"
+            [pTooltip]="item.title"
+            tooltipPosition="right">
+            <i [class]="item.icon"></i>
+          </a>
+        }
+      </div>
+    } @else {
+      <!-- Expanded Menu - Full Panel Menu -->
+      <p-panelMenu 
+        [model]="expandedItems" 
+        styleClass="w-full custom-panel-menu" />
+    }
+  </div>
+</div>

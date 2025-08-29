@@ -1,0 +1,247 @@
+/* ============================================================================
+   COLLAPSIBLE PANEL MENU COMPONENT STYLES
+   ============================================================================ */
+
+.panel-menu-container {
+  height: 100%;
+  background: #ffffff;
+  border-right: 1px solid #e0e0e0;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================================================
+   TOGGLE BUTTON HEADER
+   ============================================================================ */
+
+.toggle-header {
+  padding: 1rem;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.toggle-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: white;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.toggle-button:hover {
+  background: #f8f9fa;
+  border-color: #d0d0d0;
+  color: #333;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-button:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-button.collapsed {
+  justify-content: center;
+  padding: 0.75rem 0.5rem;
+}
+
+.toggle-button i {
+  font-size: 1rem;
+  transition: transform 0.2s ease;
+}
+
+.toggle-button:hover i {
+  transform: scale(1.1);
+}
+
+.toggle-text {
+  transition: opacity 0.2s ease;
+}
+
+/* ============================================================================
+   MENU CONTENT AREA
+   ============================================================================ */
+
+.menu-content {
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ============================================================================
+   COLLAPSED MENU STYLES
+   ============================================================================ */
+
+.collapsed-menu {
+  padding: 1rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.collapsed-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 48px;
+  border-radius: 8px;
+  color: #666;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.collapsed-menu-item:hover {
+  background: #f0f4ff;
+  color: #667eea;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+}
+
+.collapsed-menu-item i {
+  font-size: 1.25rem;
+  transition: transform 0.2s ease;
+}
+
+.collapsed-menu-item:hover i {
+  transform: scale(1.1);
+}
+
+/* Active state for collapsed menu items */
+.collapsed-menu-item:global(.router-link-active) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.collapsed-menu-item:global(.router-link-active):hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+/* ============================================================================
+   EXPANDED MENU STYLES (PrimeNG Panel Menu Customization)
+   ============================================================================ */
+
+:host ::ng-deep .custom-panel-menu {
+  border: none;
+  background: transparent;
+}
+
+:host ::ng-deep .custom-panel-menu .p-panelmenu-panel {
+  margin-bottom: 0.5rem;
+}
+
+:host ::ng-deep .custom-panel-menu .p-panelmenu-header {
+  border: none;
+  background: transparent;
+}
+
+:host ::ng-deep .custom-panel-menu .p-panelmenu-header-link {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  margin: 0.25rem;
+  padding: 0.75rem 1rem;
+  transition: all 0.2s ease !important;
+  color: #666;
+  background: transparent;
+  transform: translateY(0);
+}
+
+:host ::ng-deep .custom-panel-menu .p-panelmenu-header-link:hover {
+  background: #f0f4ff !important;
+  border-color: #e0e8ff !important;
+  color: #667eea !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15) !important;
+}
+
+:host ::ng-deep .custom-panel-menu .p-panelmenu-header-link:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 1px 4px rgba(102, 126, 234, 0.1) !important;
+}
+
+:host ::ng-deep .custom-panel-menu .p-panelmenu-header-link:focus {
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
+}
+
+
+:host ::ng-deep .custom-panel-menu .p-panelmenu-header-link.router-link-active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: transparent;
+}
+
+:host ::ng-deep .custom-panel-menu .p-panelmenu-header-link.router-link-active:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+:host ::ng-deep .custom-panel-menu .p-panelmenu-header-icon {
+  margin-right: 0.75rem;
+  font-size: 1.1rem;
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .panel-menu-container {
+    width: 60px !important;
+  }
+  
+  .toggle-button {
+    padding: 0.5rem;
+    justify-content: center;
+  }
+  
+  .toggle-text {
+    display: none;
+  }
+  
+  .collapsed-menu-item {
+    height: 44px;
+  }
+}
+
+/* ============================================================================
+   ANIMATIONS
+   ============================================================================ */
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.menu-content {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* ============================================================================
+   ACCESSIBILITY
+   ============================================================================ */
+
+.toggle-button:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+.collapsed-menu-item:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}

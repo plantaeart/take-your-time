@@ -9,18 +9,16 @@
         <i id="app-cart-icon" class="pi pi-shopping-cart" style="font-size: 2rem"></i>
     </div>
 </p-toolbar>
-<p-splitter 
-    id="app-main-splitter"
-    [panelSizes]="[20, 80]" 
-    [style]="{ height: 'calc(100vh - 100px)' }">
-    <ng-template pTemplate>
-        <div id="app-navigation-panel" class="w-full">
-            <app-panel-menu />
-        </div>
-    </ng-template>
-    <ng-template pTemplate>
-        <div id="app-content-panel" class="w-full app-content">
-            <router-outlet></router-outlet>
-        </div>
-    </ng-template>
-</p-splitter>
+
+<!-- Fixed Layout with Collapsible Sidebar -->
+<div class="app-layout" style="height: calc(100vh - 100px); display: flex;">
+    <!-- Navigation Panel - Fixed Width -->
+    <div id="app-navigation-panel" class="navigation-panel">
+        <app-panel-menu />
+    </div>
+    
+    <!-- Main Content - Flexible Width -->
+    <div id="app-content-panel" class="content-panel">
+        <router-outlet></router-outlet>
+    </div>
+</div>
