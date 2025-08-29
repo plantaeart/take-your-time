@@ -54,6 +54,7 @@ class ProductResponse(BaseModel):
     rating: Optional[float]  # Can be null
     createdAt: datetime
     updatedAt: datetime
+    schemaVersion: int = Field(default=1, description="Schema version for database upgrade management")
 
 
 class ProductListResponse(BaseModel):

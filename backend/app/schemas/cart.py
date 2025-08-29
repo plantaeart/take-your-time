@@ -16,6 +16,7 @@ class CartItemResponse(BaseModel):
     productName: Optional[str] = None
     productPrice: Optional[float] = None
     productImage: Optional[str] = None
+    schemaVersion: int = Field(default=1, description="Schema version for database upgrade management")
 
 
 class CartItemCreate(BaseModel):
@@ -36,3 +37,4 @@ class CartResponse(BaseModel):
     totalItems: int = Field(..., description="Total number of items in cart")
     createdAt: datetime
     updatedAt: datetime
+    schemaVersion: int = Field(default=1, description="Schema version for database upgrade management")

@@ -24,6 +24,7 @@ class UserResponse(BaseModel):
     isAdmin: bool
     createdAt: datetime
     updatedAt: datetime
+    schemaVersion: int = Field(default=1, description="Schema version for database upgrade management")
 
 
 class UserUpdate(BaseModel):
@@ -39,3 +40,4 @@ class UserUpdate(BaseModel):
 class UserInDB(UserResponse):
     """Schema for user data stored in database (includes hashed password)."""
     hashedPassword: str
+    schemaVersion: int = Field(default=1, description="Schema version for database upgrade management")

@@ -42,6 +42,7 @@ class UserModel(BaseModel):
     isAdmin: bool = Field(default=False)  # Admin flag for secure role management
     createdAt: datetime = Field(default_factory=datetime.now)
     updatedAt: datetime = Field(default_factory=datetime.now)
+    schemaVersion: int = Field(default=1, description="Schema version for database upgrade management")
     
     model_config = ConfigDict()
     

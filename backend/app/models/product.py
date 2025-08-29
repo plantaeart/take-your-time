@@ -57,6 +57,7 @@ class ProductModel(BaseModel):
     rating: Optional[float] = Field(None, description="Product rating (0-5), can be null")
     createdAt: datetime
     updatedAt: datetime
+    schemaVersion: int = Field(default=1, description="Schema version for database upgrade management")
 
     model_config = ConfigDict(
         populate_by_name=True,
