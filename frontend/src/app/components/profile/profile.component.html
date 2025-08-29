@@ -1,0 +1,52 @@
+<div class="profile-container">
+  <!-- User Info Card -->
+  @if (user()) {
+    <p-card id="profile-user-info-card" class="user-info-card">
+      <ng-template pTemplate="header">
+        <div class="profile-header">
+          <h2 id="profile-user-info-title">Your Profile</h2>
+          <p class="profile-subtitle">Manage your account information</p>
+        </div>
+      </ng-template>
+      
+      <div class="user-info-content">
+        <div class="user-detail">
+          <label>Username:</label>
+          <span id="profile-user-username">{{ user()?.username }}</span>
+        </div>
+        
+        <div class="user-detail">
+          <label>Name:</label>
+          <span id="profile-user-firstname">{{ user()?.firstname }}</span>
+        </div>
+        
+        <div class="user-detail">
+          <label>Email:</label>
+          <span id="profile-user-email">{{ user()?.email }}</span>
+        </div>
+        
+        <div class="user-detail">
+          <label>Status:</label>
+          <span class="status-badge" [class.active]="user()?.isActive">
+            {{ user()?.isActive ? 'Active' : 'Inactive' }}
+          </span>
+        </div>
+        
+        <div class="user-detail">
+          <label>Member since:</label>
+          <span id="profile-user-created">{{ user()?.createdAt | date:'mediumDate' }}</span>
+        </div>
+        
+        @if (user()?.isAdmin) {
+          <div class="user-detail">
+            <label>Role:</label>
+            <span id="profile-admin-badge" class="admin-badge">Administrator</span>
+          </div>
+        }
+      </div>
+    </p-card>
+  }
+</div>
+
+<!-- Top Page Button -->
+<app-top-page [scrollThreshold]="200"></app-top-page>

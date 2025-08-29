@@ -1,8 +1,34 @@
-<p-card header="Bienvenue" class="block m-2 text-center">
-  <p class="m-0">
-      Bienvenue sur {{ appTitle }} !
-  </p>
-</p-card>
+<div class="home-container">
+  <!-- Welcome Card -->
+  <p-card id="home-welcome-card" class="welcome-card">
+    <ng-template pTemplate="header">
+      <div class="welcome-header">
+        <h1 id="home-welcome-title">Welcome to {{ appTitle }}</h1>
+        @if (userDisplayName()) {
+          <p id="home-welcome-message" class="welcome-message">
+            Hello {{ userDisplayName() }}! Welcome back to your shopping experience.
+          </p>
+        }
+      </div>
+    </ng-template>
+    
+    <div class="welcome-content">
+      <p class="welcome-description">
+        Discover amazing products and enjoy your shopping journey with us.
+      </p>
+      
+      <div class="welcome-actions">
+        <p-button 
+          id="home-products-btn"
+          label="Browse Products" 
+          icon="pi pi-shopping-cart"
+          routerLink="/products"
+          class="action-button">
+        </p-button>
+      </div>
+    </div>
+  </p-card>
+</div>
 
 <!-- Top Page Button -->
 <app-top-page [scrollThreshold]="200"></app-top-page>

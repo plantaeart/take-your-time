@@ -1,0 +1,236 @@
+<div class="auth-container">
+  <div class="auth-card-wrapper">
+    <p-card class="auth-card">
+      <ng-template pTemplate="header">
+        <div class="auth-header">
+          <h1 class="auth-title">ALTEN SHOP</h1>
+          <p class="auth-subtitle">Welcome to your shopping experience</p>
+        </div>
+      </ng-template>
+
+      <p-tabView 
+        id="auth-tabs"
+        (onChange)="onTabChange($event)"
+        [activeIndex]="activeTab()"
+        [scrollable]="false">
+        
+        <!-- Login Tab -->
+        <p-tabPanel id="auth-login-tab" header="Sign In">
+          <form 
+            id="auth-login-form"
+            [formGroup]="loginForm" 
+            (ngSubmit)="onLogin()" 
+            class="auth-form">
+            
+            <!-- Email Field -->
+            <div class="form-field">
+              <p-floatLabel>
+                <input 
+                  id="auth-login-email-input"
+                  pInputText 
+                  formControlName="email"
+                  type="email"
+                  class="form-input"
+                  [class.ng-invalid]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched" />
+                <label for="auth-login-email-input">Email Address</label>
+              </p-floatLabel>
+              @if (getFieldError(loginForm, 'email')) {
+                <small id="auth-login-email-error" class="field-error">
+                  {{ getFieldError(loginForm, 'email') }}
+                </small>
+              }
+            </div>
+            <!-- Password Field -->
+            <div class="form-field">
+              <p-floatLabel>
+                <p-password 
+                  id="auth-login-password-input"
+                  formControlName="password"
+                  [feedback]="false"
+                  [toggleMask]="true"
+                  styleClass="w-full"
+                  inputStyleClass="w-full"
+                  [class.ng-invalid]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
+                </p-password>
+                <label for="auth-login-password-input">Password</label>
+              </p-floatLabel>
+              @if (getFieldError(loginForm, 'password')) {
+                <small id="auth-login-password-error" class="field-error">
+                  {{ getFieldError(loginForm, 'password') }}
+                </small>
+              }
+            </div>
+
+            <!-- Login Button -->
+            <p-button 
+              id="auth-login-submit-btn"
+              type="submit"
+              label="Sign In"
+              [loading]="isLoading()"
+              [disabled]="loginForm.invalid"
+              class="submit-button"
+              severity="primary">
+            </p-button>
+          </form>
+        </p-tabPanel>
+
+        <!-- Register Tab -->
+        <p-tabPanel id="auth-register-tab" header="Sign Up">
+          <form 
+            id="auth-register-form"
+            [formGroup]="registerForm" 
+            (ngSubmit)="onRegister()" 
+            class="auth-form">
+            
+            <!-- Username Field -->
+            <div class="form-field">
+              <p-floatLabel>
+                <input 
+                  id="auth-register-username-input"
+                  pInputText 
+                  formControlName="username"
+                  class="form-input"
+                  [class.ng-invalid]="registerForm.get('username')?.invalid && registerForm.get('username')?.touched" />
+                <label for="auth-register-username-input">Username</label>
+              </p-floatLabel>
+              @if (getFieldError(registerForm, 'username')) {
+                <small id="auth-register-username-error" class="field-error">
+                  {{ getFieldError(registerForm, 'username') }}
+                </small>
+              }
+            </div>
+
+            <!-- First Name Field -->
+            <div class="form-field">
+              <p-floatLabel>
+                <input 
+                  id="auth-register-firstname-input"
+                  pInputText 
+                  formControlName="firstname"
+                  class="form-input"
+                  [class.ng-invalid]="registerForm.get('firstname')?.invalid && registerForm.get('firstname')?.touched" />
+                <label for="auth-register-firstname-input">First Name</label>
+              </p-floatLabel>
+              @if (getFieldError(registerForm, 'firstname')) {
+                <small id="auth-register-firstname-error" class="field-error">
+                  {{ getFieldError(registerForm, 'firstname') }}
+                </small>
+              }
+            </div>
+
+            <!-- Email Field -->
+            <div class="form-field">
+              <p-floatLabel>
+                <input 
+                  id="auth-register-email-input"
+                  pInputText 
+                  formControlName="email"
+                  type="email"
+                  class="form-input"
+                  [class.ng-invalid]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched" />
+                <label for="auth-register-email-input">Email Address</label>
+              </p-floatLabel>
+              @if (getFieldError(registerForm, 'email')) {
+                <small id="auth-register-email-error" class="field-error">
+                  {{ getFieldError(registerForm, 'email') }}
+                </small>
+              }
+            </div>
+
+            <!-- Password Field with Strength Indicator -->
+            <div class="form-field">
+              <p-floatLabel>
+                <p-password 
+                  id="auth-register-password-input"
+                  formControlName="password"
+                  [feedback]="true"
+                  [toggleMask]="true"
+                  styleClass="w-full"
+                  inputStyleClass="w-full"
+                  [class.ng-invalid]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
+                </p-password>
+                <label for="auth-register-password-input">Password</label>
+              </p-floatLabel>
+              
+              <!-- Password Strength Indicator -->
+              @if (registerForm.get('password')?.value) {
+                <div id="auth-register-password-strength" class="password-strength">
+                  <div class="strength-indicator {{ getPasswordStrengthClass() }}">
+                    <span class="strength-text">
+                      Password Strength: {{ passwordStrength() | titlecase }}
+                    </span>
+                  </div>
+                </div>
+              }
+              
+              <!-- Password Requirements -->
+              @if (passwordErrors().length > 0) {
+                <div id="auth-register-password-requirements" class="password-requirements">
+                  @for (error of passwordErrors(); track error) {
+                    <small class="requirement-error">• {{ error }}</small>
+                  }
+                </div>
+              }
+              
+              @if (getFieldError(registerForm, 'password')) {
+                <small id="auth-register-password-error" class="field-error">
+                  {{ getFieldError(registerForm, 'password') }}
+                </small>
+              }
+            </div>
+
+            <!-- Confirm Password Field -->
+            <div class="form-field">
+              <p-floatLabel>
+                <p-password 
+                  id="auth-register-confirm-password-input"
+                  formControlName="confirmPassword"
+                  [feedback]="false"
+                  [toggleMask]="true"
+                  styleClass="w-full"
+                  inputStyleClass="w-full"
+                  [class.ng-invalid]="registerForm.get('confirmPassword')?.invalid && registerForm.get('confirmPassword')?.touched">
+                </p-password>
+                <label for="auth-register-confirm-password-input">Confirm Password</label>
+              </p-floatLabel>
+              @if (getPasswordMismatchError()) {
+                <small id="auth-register-confirm-password-error" class="field-error">
+                  {{ getPasswordMismatchError() }}
+                </small>
+              }
+            </div>
+
+            <!-- Register Button -->
+            <p-button 
+              id="auth-register-submit-btn"
+              type="submit"
+              label="Create Account"
+              [loading]="isLoading()"
+              [disabled]="registerForm.invalid"
+              class="submit-button"
+              severity="primary">
+            </p-button>
+          </form>
+        </p-tabPanel>
+      </p-tabView>
+    </p-card>
+  </div>
+
+  <!-- Loading Overlay -->
+  @if (isLoading()) {
+    <div id="auth-loading-overlay" class="loading-overlay">
+      <p-progressSpinner 
+        id="auth-loading-spinner"
+        styleClass="loading-spinner"
+        strokeWidth="4"
+        animationDuration="1s">
+      </p-progressSpinner>
+    </div>
+  }
+
+  <!-- Toast Messages for Auth -->
+  <p-toast 
+    id="auth-toast-messages"
+    position="top-right">
+  </p-toast>
+</div>

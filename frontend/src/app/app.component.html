@@ -1,24 +1,49 @@
-<p-toolbar id="app-main-toolbar" [style]="{ height: '100px' }">
-    <div class="p-toolbar-group-start">
-        <img id="app-logo-img" src="assets/icons/icon-72x72.png" alt="logo" />
-    </div>
-    <div id="app-title-container" class="p-toolbar-group-center">
-        {{ title }}
-    </div>
-    <div class="p-toolbar-group-end">
-        <i id="app-cart-icon" class="pi pi-shopping-cart" style="font-size: 2rem"></i>
-    </div>
-</p-toolbar>
+<!-- Conditional Layout Based on Authentication -->
+@if (isAuthRoute()) {
+  <!-- Full Screen Auth Layout -->
+  <router-outlet></router-outlet>
+} @else {
+  <!-- Main App Layout with Toolbar and Sidebar -->
+  <p-toolbar id="app-main-toolbar" [style]="{ height: '100px' }">
+      <div class="p-toolbar-group-start">
+          <img id="app-logo-img" src="assets/icons/icon-72x72.png" alt="logo" />
+          @if (auth.user()) {
+            <div id="app-user-welcome" class="user-welcome">
+              <span class="welcome-text">Hello, {{ auth.user()?.username }}!</span>
+            </div>
+          }
+      </div>
+      <div id="app-title-container" class="p-toolbar-group-center">
+          {{ title }}
+      </div>
+      <div class="p-toolbar-group-end">
+          <i id="app-cart-icon" class="pi pi-shopping-cart" style="font-size: 2rem; margin-right: 1rem;"></i>
+          <p-button 
+            id="app-logout-btn" 
+            icon="pi pi-sign-out" 
+            [text]="true"
+            [rounded]="true"
+            severity="secondary"
+            (click)="logout()"
+            pTooltip="Logout"
+            tooltipPosition="bottom">
+          </p-button>
+      </div>
+  </p-toolbar>
 
-<!-- Fixed Layout with Collapsible Sidebar -->
-<div class="app-layout" style="height: calc(100vh - 100px); display: flex;">
-    <!-- Navigation Panel - Fixed Width -->
-    <div id="app-navigation-panel" class="navigation-panel">
-        <app-panel-menu />
-    </div>
-    
-    <!-- Main Content - Flexible Width -->
-    <div id="app-content-panel" class="content-panel">
-        <router-outlet></router-outlet>
-    </div>
-</div>
+  <!-- Fixed Layout with Collapsible Sidebar -->
+  <div class="app-layout" style="height: calc(100vh - 100px); display: flex;">
+      <!-- Navigation Panel - Fixed Width -->
+      <div id="app-navigation-panel" class="navigation-panel">
+          <app-panel-menu />
+      </div>
+      
+      <!-- Main Content - Flexible Width -->
+      <div id="app-content-panel" class="content-panel">
+          <router-outlet></router-outlet>
+      </div>
+  </div>
+}
+
+<!-- Global Toast Messages -->
+<p-toast position="top-right"></p-toast>
