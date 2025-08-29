@@ -15,6 +15,7 @@ export class AuthStore {
   private _token = signal<string | null>(null);
   private _isLoading = signal(false);
   private _isInitialized = signal(false);
+  private tokenExpirationTimer: any = null;
 
   // Public readonly signals
   user = this._user.asReadonly();
@@ -47,6 +48,9 @@ export class AuthStore {
         const userData = JSON.parse(storedUser);
         this._token.set(storedToken);
         this._user.set(userData);
+        
+        // Setup token expiration timer for existing token
+        this.setupTokenExpirationTimer(storedToken);
         
         if (environment.debug) {
           console.log('Auth state restored from localStorage - user:', userData.username);
@@ -240,6 +244,9 @@ export class AuthStore {
     localStorage.setItem('auth_token', authResponse.access_token);
     localStorage.setItem('auth_user', JSON.stringify(authResponse.user));
     
+    // Setup automatic logout timer
+    this.setupTokenExpirationTimer(authResponse.access_token);
+    
     if (environment.debug) {
       console.log('Session data saved to localStorage - user:', authResponse.user.username);
     }
@@ -251,6 +258,9 @@ export class AuthStore {
   private clearSession(): void {
     this._token.set(null);
     this._user.set(null);
+    
+    // Clear token expiration timer
+    this.clearTokenExpirationTimer();
     
     // Clear localStorage
     localStorage.removeItem('auth_token');
@@ -267,5 +277,89 @@ export class AuthStore {
   getAuthHeader(): { Authorization: string } | {} {
     const token = this._token();
     return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
+  /**
+   * Decode JWT token payload
+   */
+  private decodeJwtPayload(token: string): any {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        return null;
+      }
+      
+      const payload = parts[1];
+      // Add padding if needed
+      const paddedPayload = payload + '='.repeat((4 - payload.length % 4) % 4);
+      const decoded = atob(paddedPayload);
+      return JSON.parse(decoded);
+    } catch (error) {
+      if (environment.debug) {
+        console.error('Failed to decode JWT token:', error);
+      }
+      return null;
+    }
+  }
+
+  /**
+   * Get token expiration time in milliseconds
+   */
+  private getTokenExpirationTime(token: string): number | null {
+    const payload = this.decodeJwtPayload(token);
+    if (!payload || !payload.exp) {
+      return null;
+    }
+    return payload.exp * 1000; // Convert to milliseconds
+  }
+
+  /**
+   * Setup automatic logout timer based on token expiration
+   */
+  private setupTokenExpirationTimer(token: string): void {
+    // Clear existing timer
+    if (this.tokenExpirationTimer) {
+      clearTimeout(this.tokenExpirationTimer);
+      this.tokenExpirationTimer = null;
+    }
+
+    const expirationTime = this.getTokenExpirationTime(token);
+    if (!expirationTime) {
+      if (environment.debug) {
+        console.warn('Could not determine token expiration time');
+      }
+      return;
+    }
+
+    const currentTime = Date.now();
+    const timeUntilExpiration = expirationTime - currentTime;
+
+    if (timeUntilExpiration <= 0) {
+      // Token already expired
+      this.handleSessionExpired();
+      return;
+    }
+
+    if (environment.debug) {
+      console.log(`Token expires in ${Math.round(timeUntilExpiration / 1000 / 60)} minutes`);
+    }
+
+    // Set timer to automatically logout when token expires
+    this.tokenExpirationTimer = setTimeout(() => {
+      if (environment.debug) {
+        console.log('Token expired - logging out automatically');
+      }
+      this.handleSessionExpired();
+    }, timeUntilExpiration);
+  }
+
+  /**
+   * Clear token expiration timer
+   */
+  private clearTokenExpirationTimer(): void {
+    if (this.tokenExpirationTimer) {
+      clearTimeout(this.tokenExpirationTimer);
+      this.tokenExpirationTimer = null;
+    }
   }
 }
