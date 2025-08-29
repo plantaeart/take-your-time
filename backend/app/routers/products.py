@@ -29,7 +29,9 @@ async def get_products(
     inventoryStatus: Optional[InventoryStatus] = Query(None, description="Filter by inventory status"),
     search: Optional[str] = Query(None, description="Search in name and description"),
     sortBy: Optional[str] = Query("createdAt", description="Sort field (name, price, quantity, createdAt, updatedAt)"),
-    sortOrder: Optional[str] = Query("desc", description="Sort direction (asc, desc)")
+    sortOrder: Optional[str] = Query("desc", description="Sort direction (asc, desc)"),
+    priceMin: Optional[float] = Query(None, ge=0, description="Minimum price filter"),
+    priceMax: Optional[float] = Query(None, ge=0, description="Maximum price filter")
 ):
     """Get all products with pagination and filters."""
     collection: Collection = db_manager.get_collection("products")
@@ -45,6 +47,15 @@ async def get_products(
             {"name": {"$regex": search, "$options": "i"}},
             {"description": {"$regex": search, "$options": "i"}}
         ]
+    
+    # Price range filtering
+    if priceMin is not None or priceMax is not None:
+        priceFilter: Dict[str, Any] = {}
+        if priceMin is not None:
+            priceFilter["$gte"] = priceMin
+        if priceMax is not None:
+            priceFilter["$lte"] = priceMax
+        filterQuery["price"] = priceFilter
     
     # Calculate skip for pagination
     skip: int = (page - 1) * limit
