@@ -4,6 +4,7 @@ Authentication tests.
 import pytest
 from typing import Dict, Any
 from fastapi.testclient import TestClient
+from app.models.enums.http_status import HTTPStatus
 
 
 class TestAuthentication:
@@ -19,7 +20,7 @@ class TestAuthentication:
         }
 
         response = client.post("/api/account", json=userData)
-        assert response.status_code == 201
+        assert response.status_code == HTTPStatus.CREATED.value
         
         responseData: Dict[str, Any] = response.json()
         assert responseData["username"] == "testuser"
@@ -40,7 +41,7 @@ class TestAuthentication:
         
         # First registration should succeed
         response = client.post("/api/account", json=userData)
-        assert response.status_code == 201
+        assert response.status_code == HTTPStatus.CREATED.value
         
         # Second registration with same email should fail
         userData2: Dict[str, str] = {
@@ -50,7 +51,7 @@ class TestAuthentication:
             "password": "Password456!"
         }
         response = client.post("/api/account", json=userData2)
-        assert response.status_code == 400
+        assert response.status_code == HTTPStatus.BAD_REQUEST.value
 
     def test_register_duplicate_username(self, client: TestClient) -> None:
         """Test registration with duplicate username fails."""
@@ -63,7 +64,7 @@ class TestAuthentication:
         
         # First registration should succeed
         response = client.post("/api/account", json=userData)
-        assert response.status_code == 201
+        assert response.status_code == HTTPStatus.CREATED.value
         
         # Second registration with same username should fail
         userData2: Dict[str, str] = {
@@ -73,7 +74,7 @@ class TestAuthentication:
             "password": "Password456!"
         }
         response = client.post("/api/account", json=userData2)
-        assert response.status_code == 400
+        assert response.status_code == HTTPStatus.BAD_REQUEST.value
 
     def test_login_oauth2_format(self, client: TestClient) -> None:
         """Test user login with OAuth2 form data format."""
@@ -92,7 +93,7 @@ class TestAuthentication:
             "password": "LoginPass123!"
         }
         response = client.post("/api/token", data=loginData)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         
         responseData: Dict[str, Any] = response.json()
         assert "access_token" in responseData
@@ -115,7 +116,7 @@ class TestAuthentication:
             "password": "EmailPass123!"
         }
         response = client.post("/api/login", json=loginData)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         
         responseData: Dict[str, Any] = response.json()
         assert "access_token" in responseData
@@ -128,7 +129,7 @@ class TestAuthentication:
             "password": "WrongPass123!"
         }
         response = client.post("/api/token", data=loginData)
-        assert response.status_code == 401
+        assert response.status_code == HTTPStatus.UNAUTHORIZED.value
 
     def test_login_wrong_password(self, client: TestClient) -> None:
         """Test login with correct email but wrong password."""
@@ -147,7 +148,7 @@ class TestAuthentication:
             "password": "WrongPass456!"
         }
         response = client.post("/api/login", json=loginData)
-        assert response.status_code == 401
+        assert response.status_code == HTTPStatus.UNAUTHORIZED.value
 
     def test_logout_functionality(self, client: TestClient, user_token: str) -> None:
         """Test user logout functionality."""
@@ -155,32 +156,32 @@ class TestAuthentication:
         
         # First verify token works
         response = client.get("/api/users/me", headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         
         # Logout
         response = client.post("/api/logout", headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         
         # Verify token is blacklisted (should not work anymore)
         response = client.get("/api/users/me", headers=headers)
-        assert response.status_code == 401
+        assert response.status_code == HTTPStatus.UNAUTHORIZED.value
 
     def test_access_protected_route_without_token(self, client: TestClient) -> None:
         """Test accessing protected route without token."""
         response = client.get("/api/users/me")
-        assert response.status_code == 401
+        assert response.status_code == HTTPStatus.UNAUTHORIZED.value
 
     def test_access_protected_route_with_invalid_token(self, client: TestClient) -> None:
         """Test accessing protected route with invalid token."""
         headers: Dict[str, str] = {"Authorization": "Bearer invalid_token"}
         response = client.get("/api/users/me", headers=headers)
-        assert response.status_code == 401
+        assert response.status_code == HTTPStatus.UNAUTHORIZED.value
 
     def test_get_current_user_info(self, client: TestClient, user_token: str) -> None:
         """Test getting current user information."""
         headers: Dict[str, str] = {"Authorization": f"Bearer {user_token}"}
         response = client.get("/api/users/me", headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         
         responseData: Dict[str, Any] = response.json()
         assert "username" in responseData
@@ -208,7 +209,7 @@ class TestAuthentication:
             "password": "AdminPass123!"
         }
         response = client.post("/api/login", json=loginData)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         
         responseData: Dict[str, Any] = response.json()
         assert "access_token" in responseData
@@ -264,14 +265,14 @@ class TestAuthentication:
         
         # Verify token works
         response = client.get("/api/users/me", headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         
         # Logout (blacklist token)
         client.post("/api/logout", headers=headers)
         
         # Try using blacklisted token
         response = client.get("/api/users/me", headers=headers)
-        assert response.status_code == 401
+        assert response.status_code == HTTPStatus.UNAUTHORIZED.value
 
     def test_multiple_logout_handling(self, client: TestClient) -> None:
         """Test multiple logout attempts with same token."""
@@ -294,8 +295,8 @@ class TestAuthentication:
         
         # First logout should succeed
         response = client.post("/api/logout", headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         
         # Second logout with same token should fail (token already blacklisted)
         response = client.post("/api/logout", headers=headers)
-        assert response.status_code == 401
+        assert response.status_code == HTTPStatus.UNAUTHORIZED.value

@@ -6,6 +6,7 @@ from typing import Dict, Any, List
 from fastapi.testclient import TestClient
 from app.models.enums.category import Category
 from app.models.enums.inventoryStatus import InventoryStatus
+from app.models.enums.http_status import HTTPStatus
 
 
 class TestAdminWishlistManagement:
@@ -14,13 +15,13 @@ class TestAdminWishlistManagement:
     def test_get_user_wishlist_admin_required(self, client: TestClient) -> None:
         """Test getting user wishlist requires admin privileges."""
         response = client.get("/api/admin/users/1/wishlist")
-        assert response.status_code == 401
+        assert response.status_code == HTTPStatus.UNAUTHORIZED.value
 
     def test_get_user_wishlist_regular_user_forbidden(self, client: TestClient, user_token: str) -> None:
         """Test regular users cannot access other users' wishlists."""
         headers: Dict[str, str] = {"Authorization": f"Bearer {user_token}"}
         response = client.get("/api/admin/users/1/wishlist", headers=headers)
-        assert response.status_code == 403
+        assert response.status_code == HTTPStatus.FORBIDDEN.value
 
     def test_get_user_wishlist_admin_success(self, client: TestClient, admin_token: str) -> None:
         """Test admin can successfully get any user's wishlist."""
@@ -38,7 +39,7 @@ class TestAdminWishlistManagement:
         
         # Get the user's wishlist (should be empty initially)
         response = client.get(f"/api/admin/users/{userId}/wishlist", headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         responseData: Dict[str, Any] = response.json()
         assert responseData["userId"] == userId
         assert len(responseData["items"]) == 0
@@ -47,7 +48,7 @@ class TestAdminWishlistManagement:
         """Test getting wishlist for non-existent user."""
         headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
         response = client.get("/api/admin/users/99999/wishlist", headers=headers)
-        assert response.status_code == 404
+        assert response.status_code == HTTPStatus.NOT_FOUND.value
 
     def test_add_item_to_user_wishlist_admin(self, client: TestClient, admin_token: str) -> None:
         """Test admin can add items to any user's wishlist."""
@@ -79,11 +80,11 @@ class TestAdminWishlistManagement:
         # Add item to user's wishlist
         itemData: Dict[str, int] = {"productId": productId}
         response = client.post(f"/api/admin/users/{userId}/wishlist/items", json=itemData, headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         
         # Verify item was added
         response = client.get(f"/api/admin/users/{userId}/wishlist", headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         responseData: Dict[str, Any] = response.json()
         assert len(responseData["items"]) == 1
         assert responseData["items"][0]["productId"] == productId
@@ -120,7 +121,7 @@ class TestAdminWishlistManagement:
         
         # Remove item from wishlist
         response = client.delete(f"/api/admin/users/{userId}/wishlist/items/{productId}", headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         
         # Verify removal
         response = client.get(f"/api/admin/users/{userId}/wishlist", headers=headers)
@@ -168,7 +169,7 @@ class TestAdminWishlistManagement:
         
         # Clear wishlist
         response = client.delete(f"/api/admin/users/{userId}/wishlist", headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         
         # Verify wishlist is empty
         response = client.get(f"/api/admin/users/{userId}/wishlist", headers=headers)
@@ -182,15 +183,15 @@ class TestAdminWishlistManagement:
         # Try adding item to non-existent user's wishlist
         itemData: Dict[str, int] = {"productId": 1}
         response = client.post("/api/admin/users/99999/wishlist/items", json=itemData, headers=headers)
-        assert response.status_code == 404
+        assert response.status_code == HTTPStatus.NOT_FOUND.value
         
         # Try removing item from non-existent user's wishlist
         response = client.delete("/api/admin/users/99999/wishlist/items/1", headers=headers)
-        assert response.status_code == 404
+        assert response.status_code == HTTPStatus.NOT_FOUND.value
         
         # Try clearing non-existent user's wishlist
         response = client.delete("/api/admin/users/99999/wishlist", headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
 
     def test_admin_wishlist_operations_product_not_found(self, client: TestClient, admin_token: str) -> None:
         """Test wishlist operations with non-existent product."""
@@ -209,7 +210,7 @@ class TestAdminWishlistManagement:
         # Try adding non-existent product to wishlist
         itemData: Dict[str, int] = {"productId": 99999}
         response = client.post(f"/api/admin/users/{userId}/wishlist/items", json=itemData, headers=headers)
-        assert response.status_code == 404
+        assert response.status_code == HTTPStatus.NOT_FOUND.value
 
     def test_admin_wishlist_duplicate_item_handling(self, client: TestClient, admin_token: str) -> None:
         """Test handling of duplicate items in wishlist."""
@@ -240,11 +241,11 @@ class TestAdminWishlistManagement:
         # Add item to wishlist
         itemData: Dict[str, int] = {"productId": productId}
         response = client.post(f"/api/admin/users/{userId}/wishlist/items", json=itemData, headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         
         # Try adding same item again (should handle gracefully)
         response = client.post(f"/api/admin/users/{userId}/wishlist/items", json=itemData, headers=headers)
-        assert response.status_code == 400
+        assert response.status_code == HTTPStatus.BAD_REQUEST.value
         
         # Verify only one item in wishlist
         response = client.get(f"/api/admin/users/{userId}/wishlist", headers=headers)
@@ -284,10 +285,10 @@ class TestAdminWishlistManagement:
             # Add to user's wishlist
             itemData: Dict[str, int] = {"productId": productId}
             response = client.post(f"/api/admin/users/{userId}/wishlist/items", json=itemData, headers=headers)       
-            assert response.status_code == 200        # Verify each wishlist has correct items
+            assert response.status_code == HTTPStatus.OK.value        # Verify each wishlist has correct items
         for i, userId in enumerate(userIds):
             response = client.get(f"/api/admin/users/{userId}/wishlist", headers=headers)
-            assert response.status_code == 200
+            assert response.status_code == HTTPStatus.OK.value
             responseData: Dict[str, Any] = response.json()
             assert len(responseData["items"]) == 1
             assert responseData["userId"] == userId
@@ -308,7 +309,7 @@ class TestAdminWishlistManagement:
         
         # Try removing non-existent item from wishlist
         response = client.delete(f"/api/admin/users/{userId}/wishlist/items/99999", headers=headers)
-        assert response.status_code == 404
+        assert response.status_code == HTTPStatus.NOT_FOUND.value
 
     def test_admin_wishlist_permissions_check(self, client: TestClient, admin_token: str, user_token: str) -> None:
         """Test admin permissions are properly checked for wishlist operations."""
@@ -327,17 +328,17 @@ class TestAdminWishlistManagement:
         
         # Regular user should not be able to access admin wishlist endpoints
         response = client.get(f"/api/admin/users/{userId}/wishlist", headers=userHeaders)
-        assert response.status_code == 403
+        assert response.status_code == HTTPStatus.FORBIDDEN.value
         
         itemData: Dict[str, int] = {"productId": 1}
         response = client.post(f"/api/admin/users/{userId}/wishlist/items", json=itemData, headers=userHeaders)
-        assert response.status_code == 403
+        assert response.status_code == HTTPStatus.FORBIDDEN.value
         
         response = client.delete(f"/api/admin/users/{userId}/wishlist/items/1", headers=userHeaders)
-        assert response.status_code == 403
+        assert response.status_code == HTTPStatus.FORBIDDEN.value
         
         response = client.delete(f"/api/admin/users/{userId}/wishlist", headers=userHeaders)
-        assert response.status_code == 403
+        assert response.status_code == HTTPStatus.FORBIDDEN.value
 
     def test_admin_wishlist_cross_user_isolation(self, client: TestClient, admin_token: str) -> None:
         """Test that user wishlists are properly isolated."""

@@ -6,6 +6,7 @@ from typing import Dict, Any
 from fastapi.testclient import TestClient
 from app.models.enums.category import Category
 from app.models.enums.inventoryStatus import InventoryStatus
+from app.models.enums.http_status import HTTPStatus
 
 
 class TestProductEndpoints:
@@ -14,7 +15,7 @@ class TestProductEndpoints:
     def test_health_endpoint(self, client: TestClient) -> None:
         """Test health check endpoint."""
         response = client.get("/health")
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         responseData: Dict[str, Any] = response.json()
         assert responseData["status"] == "healthy"
         assert "version" in responseData
@@ -22,7 +23,7 @@ class TestProductEndpoints:
     def test_get_products_empty(self, client: TestClient) -> None:
         """Test getting products when database is empty."""
         response = client.get("/api/products")
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         responseData: Dict[str, Any] = response.json()
         assert "products" in responseData
         assert "total" in responseData
@@ -30,7 +31,7 @@ class TestProductEndpoints:
     def test_get_categories(self, client: TestClient) -> None:
         """Test getting product categories."""
         response = client.get("/api/products/categories")
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         responseData = response.json()
         assert isinstance(responseData, list)
         assert len(responseData) > 0
@@ -39,7 +40,7 @@ class TestProductEndpoints:
     def test_get_single_product_not_found(self, client: TestClient) -> None:
         """Test getting non-existent product."""
         response = client.get("/api/products/999")
-        assert response.status_code == 404
+        assert response.status_code == HTTPStatus.NOT_FOUND.value
 
     def test_pagination(self, client: TestClient, admin_token: str) -> None:
         """Test products pagination."""
@@ -58,11 +59,11 @@ class TestProductEndpoints:
                 "rating": 3.0 + i * 0.5
             }
             response = client.post("/api/products", json=productData, headers=headers)
-            assert response.status_code == 201
+            assert response.status_code == HTTPStatus.CREATED.value
         
         # Test pagination
         response = client.get("/api/products?page=1&limit=3")
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         responseData: Dict[str, Any] = response.json()
         assert len(responseData["products"]) <= 3
         assert "total" in responseData
@@ -83,11 +84,11 @@ class TestProductEndpoints:
             "inventoryStatus": InventoryStatus.INSTOCK.value
         }
         response = client.post("/api/products", json=productData, headers=headers)
-        assert response.status_code == 201
+        assert response.status_code == HTTPStatus.CREATED.value
         
         # Search by name
         response = client.get("/api/products?search=Wireless")
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         responseData: Dict[str, Any] = response.json()
         assert len(responseData["products"]) > 0
         assert "Wireless" in responseData["products"][0]["name"]
@@ -122,7 +123,7 @@ class TestProductEndpoints:
         
         # Filter by electronics
         response = client.get(f"/api/products?category={Category.ELECTRONICS.value}")
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         responseData: Dict[str, Any] = response.json()
         for product in responseData["products"]:
             assert product["category"] == Category.ELECTRONICS.value
@@ -157,7 +158,7 @@ class TestProductEndpoints:
         
         # Filter by in stock
         response = client.get(f"/api/products?inventoryStatus={InventoryStatus.INSTOCK.value}")
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         responseData: Dict[str, Any] = response.json()
         for product in responseData["products"]:
             assert product["inventoryStatus"] == InventoryStatus.INSTOCK.value

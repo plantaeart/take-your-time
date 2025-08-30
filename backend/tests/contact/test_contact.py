@@ -10,6 +10,7 @@ import asyncio
 from datetime import datetime
 
 from app.models.enums.contactStatus import ContactStatus
+from app.models.enums.http_status import HTTPStatus
 
 
 class TestContactForm:
@@ -30,7 +31,7 @@ class TestContactForm:
             
             response = client.post("/api/contact/send", json=contact_data, headers=headers)
             
-            assert response.status_code == 200
+            assert response.status_code == HTTPStatus.OK.value
             data: Dict[str, Any] = response.json()
             assert data["success"] is True
             assert "sent successfully" in data["message"].lower()
@@ -50,7 +51,7 @@ class TestContactForm:
         }
         
         response = client.post("/api/contact/send", json=contact_data)
-        assert response.status_code == 401
+        assert response.status_code == HTTPStatus.UNAUTHORIZED.value
     
     def test_send_contact_message_invalid_email(self, client: TestClient, user_token: str) -> None:
         """Test contact form with invalid email format."""
@@ -62,7 +63,7 @@ class TestContactForm:
         }
         
         response = client.post("/api/contact/send", json=contact_data, headers=headers)
-        assert response.status_code == 422
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY.value
         data: Dict[str, Any] = response.json()
         assert "email" in str(data["detail"]).lower()
     
@@ -76,7 +77,7 @@ class TestContactForm:
         }
         
         response = client.post("/api/contact/send", json=contact_data, headers=headers)
-        assert response.status_code == 422
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY.value
         data: Dict[str, Any] = response.json()
         assert "message" in str(data["detail"]).lower()
     
@@ -93,7 +94,7 @@ class TestContactForm:
         }
         
         response = client.post("/api/contact/send", json=contact_data, headers=headers)
-        assert response.status_code == 422
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY.value
         data: Dict[str, Any] = response.json()
         assert "message" in str(data["detail"]).lower()
     
@@ -112,7 +113,7 @@ class TestContactForm:
             
             response = client.post("/api/contact/send", json=contact_data, headers=headers)
             
-            assert response.status_code == 500
+            assert response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR.value
             data: Dict[str, Any] = response.json()
             assert "SMTP connection failed" in data["detail"]
     
@@ -131,7 +132,7 @@ class TestContactForm:
             
             response = client.post("/api/contact/send", json=contact_data, headers=headers)
             
-            assert response.status_code == 500
+            assert response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR.value
             data: Dict[str, Any] = response.json()
             assert "unexpected error occurred" in data["detail"].lower()
 
@@ -159,12 +160,12 @@ class TestContactSubmissions:
             # Create submissions
             for msg_data in test_messages:
                 response = client.post("/api/contact/send", json=msg_data, headers=user_headers)
-                assert response.status_code == 200
+                assert response.status_code == HTTPStatus.OK.value
         
         # Now test admin retrieval
         response = client.get("/api/contact/admin/submissions", headers=headers)
         
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         data: Dict[str, Any] = response.json()
         
         assert "submissions" in data
@@ -190,7 +191,7 @@ class TestContactSubmissions:
         # Test with pagination parameters
         response = client.get("/api/contact/admin/submissions?skip=0&limit=5", headers=headers)
         
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         data: Dict[str, Any] = response.json()
         assert data["skip"] == 0
         assert data["limit"] == 5
@@ -201,14 +202,14 @@ class TestContactSubmissions:
         headers: Dict[str, str] = {"Authorization": f"Bearer {user_token}"}
         
         response = client.get("/api/contact/admin/submissions", headers=headers)
-        assert response.status_code == 403
+        assert response.status_code == HTTPStatus.FORBIDDEN.value
         data: Dict[str, Any] = response.json()
         assert "admin access required" in data["detail"].lower()
     
     def test_get_contact_submissions_auth_required(self, client: TestClient) -> None:
         """Test that submissions endpoint requires authentication."""
         response = client.get("/api/contact/admin/submissions")
-        assert response.status_code == 401
+        assert response.status_code == HTTPStatus.UNAUTHORIZED.value
 
 
 class TestEmailServiceMocking:
@@ -303,7 +304,7 @@ class TestEmailServiceMocking:
             
             # Send contact message
             response = client.post("/api/contact/send", json=contact_data, headers=headers)
-            assert response.status_code == 200
+            assert response.status_code == HTTPStatus.OK.value
         
         # Verify the submission was stored by checking with admin endpoint
         admin_headers: Dict[str, str] = {"Authorization": f"Bearer {user_token}"}  # Need admin token
@@ -329,13 +330,13 @@ class TestEmailServiceMocking:
             mock_email.return_value = (True, "Email sent successfully", "msg-status-test")
             
             response = client.post("/api/contact/send", json=contact_data, headers=headers)
-            assert response.status_code == 200
+            assert response.status_code == HTTPStatus.OK.value
             
             # Test failed case
             mock_email.return_value = (False, "SMTP error occurred", None)
             
             response = client.post("/api/contact/send", json=contact_data, headers=headers)
-            assert response.status_code == 500
+            assert response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR.value
 
 
 class TestContactFormIntegration:
@@ -357,7 +358,7 @@ class TestContactFormIntegration:
             
             # User sends message
             response = client.post("/api/contact/send", json=contact_data, headers=user_headers)
-            assert response.status_code == 200
+            assert response.status_code == HTTPStatus.OK.value
             
             user_response: Dict[str, Any] = response.json()
             assert user_response["success"] is True
@@ -365,7 +366,7 @@ class TestContactFormIntegration:
         
         # Step 2: Admin checks submissions
         response = client.get("/api/contact/admin/submissions", headers=admin_headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         
         admin_data: Dict[str, Any] = response.json()
         assert admin_data["total"] >= 1

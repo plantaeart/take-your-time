@@ -4,6 +4,7 @@ Admin user management tests.
 import pytest
 from typing import Dict, Any, List
 from fastapi.testclient import TestClient
+from app.models.enums.http_status import HTTPStatus
 
 
 class TestAdminUserManagement:
@@ -12,19 +13,19 @@ class TestAdminUserManagement:
     def test_get_users_admin_required(self, client: TestClient) -> None:
         """Test that getting users list requires admin privileges."""
         response = client.get("/api/admin/users")
-        assert response.status_code == 401
+        assert response.status_code == HTTPStatus.UNAUTHORIZED.value
 
     def test_get_users_regular_user_forbidden(self, client: TestClient, user_token: str) -> None:
         """Test that regular users cannot access users list."""
         headers: Dict[str, str] = {"Authorization": f"Bearer {user_token}"}
         response = client.get("/api/admin/users", headers=headers)
-        assert response.status_code == 403
+        assert response.status_code == HTTPStatus.FORBIDDEN.value
 
     def test_get_users_admin_success(self, client: TestClient, admin_token: str) -> None:
         """Test admin can successfully get users list."""
         headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
         response = client.get("/api/admin/users", headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         
         responseData: List[Dict[str, Any]] = response.json()
         assert isinstance(responseData, list)
@@ -46,7 +47,7 @@ class TestAdminUserManagement:
         
         # Test pagination
         response = client.get("/api/admin/users?skip=0&limit=2", headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         responseData: List[Dict[str, Any]] = response.json()
         assert len(responseData) <= 2  # Should respect limit
 
@@ -66,7 +67,7 @@ class TestAdminUserManagement:
         
         # Test active users only
         response = client.get("/api/admin/users?activeOnly=true", headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         responseData: List[Dict[str, Any]] = response.json()
         for user in responseData:
             assert user["isActive"] is True
@@ -86,7 +87,7 @@ class TestAdminUserManagement:
         
         # Get users excluding admins  
         response = client.get("/api/admin/users?excludeAdmins=true", headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         responseData: List[Dict[str, Any]] = response.json()
         for user in responseData:
             assert user["isAdmin"] is False
@@ -108,7 +109,7 @@ class TestAdminUserManagement:
         # Try updating without authentication
         statusData: Dict[str, bool] = {"isActive": False}
         response = client.put(f"/api/admin/users/{userId}", json=statusData)
-        assert response.status_code == 401
+        assert response.status_code == HTTPStatus.UNAUTHORIZED.value
 
     def test_update_user_status_regular_user_forbidden(self, client: TestClient, user_token: str, admin_token: str) -> None:
         """Test regular users cannot update user status."""
@@ -127,7 +128,7 @@ class TestAdminUserManagement:
         userHeaders: Dict[str, str] = {"Authorization": f"Bearer {user_token}"}
         statusData: Dict[str, bool] = {"isActive": False}
         response = client.put(f"/api/admin/users/{userId}", json=statusData, headers=userHeaders)
-        assert response.status_code == 403
+        assert response.status_code == HTTPStatus.FORBIDDEN.value
 
     def test_update_user_status_admin_success(self, client: TestClient, admin_token: str) -> None:
         """Test admin can successfully update user status."""
@@ -146,7 +147,7 @@ class TestAdminUserManagement:
         # Deactivate user
         statusData: Dict[str, bool] = {"isActive": False}
         response = client.put(f"/api/admin/users/{userId}", json=statusData, headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         responseData: Dict[str, Any] = response.json()
         assert responseData["isActive"] is False
         assert responseData["id"] == userId
@@ -154,7 +155,7 @@ class TestAdminUserManagement:
         # Reactivate user
         statusData = {"isActive": True}
         response = client.put(f"/api/admin/users/{userId}", json=statusData, headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         responseData = response.json()
         assert responseData["isActive"] is True
 
@@ -175,14 +176,14 @@ class TestAdminUserManagement:
         # Promote to admin
         statusData: Dict[str, bool] = {"isAdmin": True}
         response = client.put(f"/api/admin/users/{userId}", json=statusData, headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         responseData: Dict[str, Any] = response.json()
         assert responseData["isAdmin"] is True
         
         # Demote from admin
         statusData = {"isAdmin": False}
         response = client.put(f"/api/admin/users/{userId}", json=statusData, headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         responseData = response.json()
         assert responseData["isAdmin"] is False
 
@@ -192,7 +193,7 @@ class TestAdminUserManagement:
         statusData: Dict[str, bool] = {"isActive": False}
         
         response = client.put("/api/admin/users/99999", json=statusData, headers=headers)
-        assert response.status_code == 404
+        assert response.status_code == HTTPStatus.NOT_FOUND.value
 
     def test_update_user_status_no_data(self, client: TestClient, admin_token: str) -> None:
         """Test updating user status with no update data."""
@@ -210,7 +211,7 @@ class TestAdminUserManagement:
         
         # Try updating with empty data
         response = client.put(f"/api/admin/users/{userId}", json={}, headers=headers)
-        assert response.status_code == 200  # Empty update should be allowed
+        assert response.status_code == HTTPStatus.OK.value  # Empty update should be allowed
 
     def test_get_user_profile_admin_can_view_any(self, client: TestClient, admin_token: str) -> None:
         """Test admin can view any user's profile."""
@@ -243,7 +244,7 @@ class TestAdminUserManagement:
         # Try to deactivate self
         statusData: Dict[str, bool] = {"isActive": False}
         response = client.put(f"/api/admin/users/{adminUserId}", json=statusData, headers=headers)
-        assert response.status_code == 403  # Should prevent self-modification
+        assert response.status_code == HTTPStatus.FORBIDDEN.value  # Should prevent self-modification
 
     def test_admin_cannot_remove_own_admin_status(self, client: TestClient, admin_token: str) -> None:
         """Test admin cannot remove their own admin status."""
@@ -256,7 +257,7 @@ class TestAdminUserManagement:
         # Try to remove own admin status
         statusData: Dict[str, bool] = {"isAdmin": False}
         response = client.put(f"/api/admin/users/{adminUserId}", json=statusData, headers=headers)
-        assert response.status_code == 403  # Should prevent self-modification
+        assert response.status_code == HTTPStatus.FORBIDDEN.value  # Should prevent self-modification
 
     def test_search_users(self, client: TestClient, admin_token: str) -> None:
         """Test searching users by username or email."""
@@ -281,14 +282,14 @@ class TestAdminUserManagement:
         
         # Search by username
         response = client.get("/api/admin/users?search=searchable", headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         responseData: List[Dict[str, Any]] = response.json()
         found: bool = any("searchable" in user["username"] for user in responseData)
         assert found
         
         # Search by email domain
         response = client.get("/api/admin/users?search=searchuser1", headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         responseData = response.json()
         found = any("searchuser1" in user["email"] for user in responseData)
         assert found

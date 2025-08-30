@@ -6,6 +6,7 @@ from typing import Dict, Any, List
 from fastapi.testclient import TestClient
 from app.models.enums.category import Category
 from app.models.enums.inventoryStatus import InventoryStatus
+from app.models.enums.http_status import HTTPStatus
 
 
 class TestAdminCartManagement:
@@ -14,13 +15,13 @@ class TestAdminCartManagement:
     def test_get_user_cart_admin_required(self, client: TestClient) -> None:
         """Test getting user cart requires admin privileges."""
         response = client.get("/api/admin/users/1/cart")
-        assert response.status_code == 401
+        assert response.status_code == HTTPStatus.UNAUTHORIZED.value
 
     def test_get_user_cart_regular_user_forbidden(self, client: TestClient, user_token: str) -> None:
         """Test regular users cannot access other users' carts."""
         headers: Dict[str, str] = {"Authorization": f"Bearer {user_token}"}
         response = client.get("/api/admin/users/1/cart", headers=headers)
-        assert response.status_code == 403
+        assert response.status_code == HTTPStatus.FORBIDDEN.value
 
     def test_get_user_cart_admin_success(self, client: TestClient, admin_token: str) -> None:
         """Test admin can successfully get any user's cart."""
@@ -38,7 +39,7 @@ class TestAdminCartManagement:
         
         # Get the user's cart (should be empty initially)
         response = client.get(f"/api/admin/users/{userId}/cart", headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         cartData: Dict[str, Any] = response.json()
         assert cartData["userId"] == userId
         assert cartData["totalItems"] == 0
@@ -48,7 +49,7 @@ class TestAdminCartManagement:
         """Test getting cart for non-existent user."""
         headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
         response = client.get("/api/admin/users/99999/cart", headers=headers)
-        assert response.status_code == 404
+        assert response.status_code == HTTPStatus.NOT_FOUND.value
 
     def test_add_item_to_user_cart_admin(self, client: TestClient, admin_token: str) -> None:
         """Test admin can add items to any user's cart."""
@@ -83,11 +84,11 @@ class TestAdminCartManagement:
             "quantity": 2
         }
         response = client.post(f"/api/admin/users/{userId}/cart/items", json=itemData, headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         
         # Verify item was added
         response = client.get(f"/api/admin/users/{userId}/cart", headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         cartData: Dict[str, Any] = response.json()
         assert cartData["totalItems"] == 2
         assert len(cartData["items"]) == 1
@@ -127,7 +128,7 @@ class TestAdminCartManagement:
         # Update item quantity
         updateData: Dict[str, int] = {"quantity": 5}
         response = client.put(f"/api/admin/users/{userId}/cart/items/{productId}", json=updateData, headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         
         # Verify update
         response = client.get(f"/api/admin/users/{userId}/cart", headers=headers)
@@ -167,7 +168,7 @@ class TestAdminCartManagement:
         
         # Remove item from cart
         response = client.delete(f"/api/admin/users/{userId}/cart/items/{productId}", headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         
         # Verify removal
         response = client.get(f"/api/admin/users/{userId}/cart", headers=headers)
@@ -215,7 +216,7 @@ class TestAdminCartManagement:
         
         # Clear cart
         response = client.delete(f"/api/admin/users/{userId}/cart", headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         
         # Verify cart is empty
         response = client.get(f"/api/admin/users/{userId}/cart", headers=headers)
@@ -230,20 +231,20 @@ class TestAdminCartManagement:
         # Try adding item to non-existent user's cart
         itemData: Dict[str, int] = {"productId": 1, "quantity": 1}
         response = client.post("/api/admin/users/99999/cart/items", json=itemData, headers=headers)
-        assert response.status_code == 404
+        assert response.status_code == HTTPStatus.NOT_FOUND.value
         
         # Try updating item in non-existent user's cart
         updateData: Dict[str, int] = {"quantity": 2}
         response = client.put("/api/admin/users/99999/cart/items/1", json=updateData, headers=headers)
-        assert response.status_code == 404
+        assert response.status_code == HTTPStatus.NOT_FOUND.value
         
         # Try removing item from non-existent user's cart
         response = client.delete("/api/admin/users/99999/cart/items/1", headers=headers)
-        assert response.status_code == 404
+        assert response.status_code == HTTPStatus.NOT_FOUND.value
         
         # Try clearing non-existent user's cart
         response = client.delete("/api/admin/users/99999/cart", headers=headers)
-        assert response.status_code == 200  # Cart clearing returns 200 even for non-existent users
+        assert response.status_code == HTTPStatus.OK.value  # Cart clearing returns 200 even for non-existent users
 
     def test_admin_cart_operations_product_not_found(self, client: TestClient, admin_token: str) -> None:
         """Test cart operations with non-existent product."""
@@ -262,7 +263,7 @@ class TestAdminCartManagement:
         # Try adding non-existent product to cart
         itemData: Dict[str, int] = {"productId": 99999, "quantity": 1}
         response = client.post(f"/api/admin/users/{userId}/cart/items", json=itemData, headers=headers)
-        assert response.status_code == 404
+        assert response.status_code == HTTPStatus.NOT_FOUND.value
 
     def test_admin_cart_operations_invalid_quantity(self, client, admin_token):
         """Test cart operations with invalid quantity."""
@@ -293,12 +294,12 @@ class TestAdminCartManagement:
         # Try adding with zero quantity
         itemData: Dict[str, int] = {"productId": productId, "quantity": 0}
         response = client.post(f"/api/admin/users/{userId}/cart/items", json=itemData, headers=headers)
-        assert response.status_code == 422  # Validation error
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY.value  # Validation error
         
         # Try adding with negative quantity
         itemData = {"productId": productId, "quantity": -1}
         response = client.post(f"/api/admin/users/{userId}/cart/items", json=itemData, headers=headers)
-        assert response.status_code == 422  # Validation error
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY.value  # Validation error
 
     def test_admin_can_view_multiple_user_carts(self, client: TestClient, admin_token: str) -> None:
         """Test admin can manage multiple users' carts."""
@@ -333,12 +334,12 @@ class TestAdminCartManagement:
         for i, userId in enumerate(userIds):
             itemData: Dict[str, int] = {"productId": productId, "quantity": i + 2}  # 2, 3
             response = client.post(f"/api/admin/users/{userId}/cart/items", json=itemData, headers=headers)
-            assert response.status_code == 200
+            assert response.status_code == HTTPStatus.OK.value
         
         # Verify each cart has correct items
         for i, userId in enumerate(userIds):
             response = client.get(f"/api/admin/users/{userId}/cart", headers=headers)
-            assert response.status_code == 200
+            assert response.status_code == HTTPStatus.OK.value
             cartData: Dict[str, Any] = response.json()
             assert cartData["totalItems"] == i + 2
             assert cartData["items"][0]["quantity"] == i + 2

@@ -6,6 +6,7 @@ from typing import Dict, Any, List
 from fastapi.testclient import TestClient
 from app.models.enums.category import Category
 from app.models.enums.inventoryStatus import InventoryStatus
+from app.models.enums.http_status import HTTPStatus
 
 
 class TestUserWishlistManagement:
@@ -14,13 +15,13 @@ class TestUserWishlistManagement:
     def test_get_own_wishlist_requires_authentication(self, client: TestClient) -> None:
         """Test getting wishlist requires authentication."""
         response = client.get("/api/wishlist")
-        assert response.status_code == 401
+        assert response.status_code == HTTPStatus.UNAUTHORIZED.value
 
     def test_get_empty_wishlist(self, client: TestClient, user_token: str) -> None:
         """Test getting empty wishlist for authenticated user."""
         headers: Dict[str, str] = {"Authorization": f"Bearer {user_token}"}
         response = client.get("/api/wishlist", headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         data: Dict[str, Any] = response.json()
         assert "userId" in data
         assert len(data["items"]) == 0
@@ -48,11 +49,11 @@ class TestUserWishlistManagement:
         # Add item to wishlist
         itemData: Dict[str, int] = {"productId": productId}
         response = client.post("/api/wishlist/items", json=itemData, headers=userHeaders)
-        assert response.status_code == 201
+        assert response.status_code == HTTPStatus.CREATED.value
         
         # Verify item was added
         response = client.get("/api/wishlist", headers=userHeaders)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         data: Dict[str, Any] = response.json()
         assert len(data["items"]) == 1
         assert data["items"][0]["productId"] == productId
@@ -81,7 +82,7 @@ class TestUserWishlistManagement:
         for productId in productIds:
             itemData: Dict[str, int] = {"productId": productId}
             response = client.post("/api/wishlist/items", json=itemData, headers=userHeaders)
-            assert response.status_code == 201
+            assert response.status_code == HTTPStatus.CREATED.value
         
         # Verify all items are in wishlist
         response = client.get("/api/wishlist", headers=userHeaders)
@@ -117,7 +118,7 @@ class TestUserWishlistManagement:
         
         # Remove item
         response = client.delete(f"/api/wishlist/items/{productId}", headers=userHeaders)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         
         # Verify removal
         response = client.get("/api/wishlist", headers=userHeaders)
@@ -155,7 +156,7 @@ class TestUserWishlistManagement:
         
         # Clear wishlist
         response = client.delete("/api/wishlist", headers=userHeaders)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         
         # Verify wishlist is empty
         response = client.get("/api/wishlist", headers=userHeaders)
@@ -183,12 +184,12 @@ class TestUserWishlistManagement:
         # Add item first time
         itemData: Dict[str, int] = {"productId": productId}
         response = client.post("/api/wishlist/items", json=itemData, headers=userHeaders)
-        assert response.status_code == 201
+        assert response.status_code == HTTPStatus.CREATED.value
         
         # Try adding same item again
         response = client.post("/api/wishlist/items", json=itemData, headers=userHeaders)
         # Should return 400 for duplicate item
-        assert response.status_code == 400
+        assert response.status_code == HTTPStatus.BAD_REQUEST.value
         assert "already in wishlist" in response.json()["detail"].lower()
         
         # Verify only one item exists
@@ -203,11 +204,11 @@ class TestUserWishlistManagement:
         # Try adding non-existent product
         itemData: Dict[str, int] = {"productId": 99999}
         response = client.post("/api/wishlist/items", json=itemData, headers=headers)
-        assert response.status_code == 404
+        assert response.status_code == HTTPStatus.NOT_FOUND.value
         
         # Try removing non-existent item
         response = client.delete("/api/wishlist/items/99999", headers=headers)
-        assert response.status_code == 404
+        assert response.status_code == HTTPStatus.NOT_FOUND.value
 
     def test_wishlist_isolation_between_users(self, client: TestClient, admin_token: str) -> None:
         """Test that user wishlists are properly isolated."""
@@ -307,7 +308,7 @@ class TestUserWishlistManagement:
         
         # Verify wishlist has the item
         response = client.get("/api/wishlist", headers=userHeaders)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         data: Dict[str, Any] = response.json()
         assert len(data["items"]) == 1
         assert data["items"][0]["productId"] == productId
@@ -319,7 +320,7 @@ class TestUserWishlistManagement:
         
         # Verify wishlist still has the item in new session
         response = client.get("/api/wishlist", headers=newUserHeaders)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         data = response.json()
         assert len(data["items"]) == 1
         assert data["items"][0]["productId"] == productId
@@ -420,7 +421,7 @@ class TestUserWishlistManagement:
         # Should be able to add out of stock items to wishlist
         itemData: Dict[str, int] = {"productId": productId}
         response = client.post("/api/wishlist/items", json=itemData, headers=userHeaders)
-        assert response.status_code == 201
+        assert response.status_code == HTTPStatus.CREATED.value
         
         # Verify item was added
         response = client.get("/api/wishlist", headers=userHeaders)

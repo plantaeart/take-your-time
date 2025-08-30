@@ -301,6 +301,46 @@ async def delete_product(
         raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR.value, detail=format_message(ProductErrorMessages.FAILED_TO_DELETE, error=str(e)))
 
 
+@router.delete("/admin/products/bulk")
+async def bulk_delete_products(
+    productIds: List[int],
+    *,  # Force keyword-only arguments after this
+    currentAdmin: Annotated[UserModel, Depends(admin_required)]
+):
+    """Bulk delete products. Requires admin privileges."""
+    if not productIds:
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST.value, detail="Product IDs list cannot be empty")
+    
+    if len(productIds) > 100:
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST.value, detail="Cannot delete more than 100 products at once")
+    
+    collection: Collection = db_manager.get_collection("products")
+    
+    # Check which products exist
+    existingProducts: List[Dict[str, Any]] = await collection.find({"id": {"$in": productIds}}).to_list(length=len(productIds))
+    existingIds: List[int] = [product["id"] for product in existingProducts]
+    
+    if not existingIds:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND.value, detail="No products found with the provided IDs")
+    
+    try:
+        # Delete the products
+        deleteResult = await collection.delete_many({"id": {"$in": existingIds}})
+        
+        notFoundIds: List[int] = [pid for pid in productIds if pid not in existingIds]
+        
+        return {
+            "message": SuccessMessages.PRODUCTS_BULK_DELETED.value,
+            "deletedCount": deleteResult.deleted_count,
+            "deletedIds": existingIds,
+            "notFoundIds": notFoundIds,
+            "requestedCount": len(productIds)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR.value, detail=format_message(ProductErrorMessages.FAILED_TO_BULK_DELETE, error=str(e)))
+
+
 @router.patch("/products/{productId}/inventory", response_model=ProductResponse)
 async def update_inventory(
     productId: int = Path(..., description="Product ID"),

@@ -42,6 +42,7 @@ class ProductErrorMessages(Enum):
     NO_UPDATE_DATA = "No data provided for update"
     FAILED_TO_UPDATE = "Failed to update product: {error}"
     FAILED_TO_DELETE = "Failed to delete product: {error}"
+    FAILED_TO_BULK_DELETE = "Failed to bulk delete products: {error}"
     NEGATIVE_QUANTITY = "Quantity cannot be negative"
     FAILED_TO_UPDATE_INVENTORY = "Failed to update inventory: {error}"
 
@@ -88,6 +89,7 @@ class SuccessMessages(Enum):
     PRODUCT_CREATED = "Product created successfully"
     PRODUCT_UPDATED = "Product updated successfully"
     PRODUCT_DELETED = "Product deleted successfully"
+    PRODUCTS_BULK_DELETED = "Products bulk deleted successfully"
     
     # Admin Operations
     ITEM_ADDED_TO_USER_CART = "Item added to user's cart successfully"

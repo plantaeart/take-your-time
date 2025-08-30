@@ -6,6 +6,7 @@ from typing import Dict, Any, List
 from fastapi.testclient import TestClient
 from app.models.enums.category import Category
 from app.models.enums.inventoryStatus import InventoryStatus
+from app.models.enums.http_status import HTTPStatus
 
 
 class TestUserCartManagement:
@@ -14,13 +15,13 @@ class TestUserCartManagement:
     def test_get_own_cart_requires_authentication(self, client: TestClient) -> None:
         """Test getting cart requires authentication."""
         response = client.get("/api/cart")
-        assert response.status_code == 401
+        assert response.status_code == HTTPStatus.UNAUTHORIZED.value
 
     def test_get_empty_cart(self, client: TestClient, user_token: str) -> None:
         """Test getting empty cart for authenticated user."""
         headers: Dict[str, str] = {"Authorization": f"Bearer {user_token}"}
         response = client.get("/api/cart", headers=headers)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         data: Dict[str, Any] = response.json()
         assert "userId" in data
         assert data["totalItems"] == 0
@@ -52,11 +53,11 @@ class TestUserCartManagement:
             "quantity": 3
         }
         response = client.post("/api/cart/items", json=itemData, headers=userHeaders)
-        assert response.status_code == 201
+        assert response.status_code == HTTPStatus.CREATED.value
         
         # Verify item was added
         response = client.get("/api/cart", headers=userHeaders)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         data: Dict[str, Any] = response.json()
         assert data["totalItems"] == 3
         assert len(data["items"]) == 1
@@ -89,7 +90,7 @@ class TestUserCartManagement:
             quantity: int = i + 2  # 2, 3, 4
             itemData: Dict[str, int] = {"productId": productId, "quantity": quantity}
             response = client.post("/api/cart/items", json=itemData, headers=userHeaders)
-            assert response.status_code == 201
+            assert response.status_code == HTTPStatus.CREATED.value
             totalExpectedItems += quantity
         
         # Verify all items are in cart
@@ -123,7 +124,7 @@ class TestUserCartManagement:
         # Update quantity
         updateData: Dict[str, int] = {"quantity": 5}
         response = client.put(f"/api/cart/items/{productId}", json=updateData, headers=userHeaders)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         
         # Verify update
         response = client.get("/api/cart", headers=userHeaders)
@@ -155,7 +156,7 @@ class TestUserCartManagement:
         
         # Remove item
         response = client.delete(f"/api/cart/items/{productId}", headers=userHeaders)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         
         # Verify removal
         response = client.get("/api/cart", headers=userHeaders)
@@ -195,7 +196,7 @@ class TestUserCartManagement:
         
         # Clear cart
         response = client.delete("/api/cart", headers=userHeaders)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         
         # Verify cart is empty
         response = client.get("/api/cart", headers=userHeaders)
@@ -224,7 +225,7 @@ class TestUserCartManagement:
         # Add item first time
         itemData: Dict[str, int] = {"productId": productId, "quantity": 3}
         response = client.post("/api/cart/items", json=itemData, headers=userHeaders)
-        assert response.status_code == 201
+        assert response.status_code == HTTPStatus.CREATED.value
         
         # Add same item again
         itemData = {"productId": productId, "quantity": 2}
@@ -246,16 +247,16 @@ class TestUserCartManagement:
         # Try adding non-existent product
         itemData: Dict[str, int] = {"productId": 99999, "quantity": 1}
         response = client.post("/api/cart/items", json=itemData, headers=headers)
-        assert response.status_code == 404
+        assert response.status_code == HTTPStatus.NOT_FOUND.value
         
         # Try updating non-existent item
         updateData: Dict[str, int] = {"quantity": 2}
         response = client.put("/api/cart/items/99999", json=updateData, headers=headers)
-        assert response.status_code == 404
+        assert response.status_code == HTTPStatus.NOT_FOUND.value
         
         # Try removing non-existent item
         response = client.delete("/api/cart/items/99999", headers=headers)
-        assert response.status_code == 404
+        assert response.status_code == HTTPStatus.NOT_FOUND.value
 
     def test_cart_operations_with_invalid_quantity(self, client: TestClient, user_token: str, admin_token: str) -> None:
         """Test cart operations with invalid quantities."""
@@ -278,12 +279,12 @@ class TestUserCartManagement:
         # Try adding with zero quantity
         itemData: Dict[str, int] = {"productId": productId, "quantity": 0}
         response = client.post("/api/cart/items", json=itemData, headers=userHeaders)
-        assert response.status_code == 422  # Validation error
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY.value  # Validation error
         
         # Try adding with negative quantity
         itemData = {"productId": productId, "quantity": -1}
         response = client.post("/api/cart/items", json=itemData, headers=userHeaders)
-        assert response.status_code == 422  # Validation error
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY.value  # Validation error
 
     def test_cart_isolation_between_users(self, client: TestClient, admin_token: str) -> None:
         """Test that user carts are properly isolated."""
@@ -384,7 +385,7 @@ class TestUserCartManagement:
         
         # Verify cart has the item
         response = client.get("/api/cart", headers=userHeaders)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         data: Dict[str, Any] = response.json()
         assert data["totalItems"] == 2
         assert len(data["items"]) == 1
@@ -397,7 +398,7 @@ class TestUserCartManagement:
         
         # Verify cart still has the item in new session
         response = client.get("/api/cart", headers=newUserHeaders)
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK.value
         data = response.json()
         assert data["totalItems"] == 2
         assert len(data["items"]) == 1
