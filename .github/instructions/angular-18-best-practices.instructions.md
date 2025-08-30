@@ -649,6 +649,104 @@ describe('ContactFormComponent', () => {
 }
 ```
 
+### **3. PrimeNG Component Styling with ::ng-deep**
+```scss
+// ✅ Use ::ng-deep (not :deep) for PrimeNG component customization
+// Use sparingly and always scope with :host
+
+:host ::ng-deep .p-button {
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+:host ::ng-deep .p-button.p-button-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+:host ::ng-deep .p-inputtext {
+  border-radius: 6px;
+  border: 1px solid var(--surface-border);
+  padding: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+:host ::ng-deep .p-inputtext:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2);
+}
+
+:host ::ng-deep .p-dropdown {
+  border-radius: 6px;
+  border: 1px solid var(--surface-border);
+}
+
+:host ::ng-deep .p-dropdown.p-focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2);
+}
+
+:host ::ng-deep .p-multiselect {
+  border-radius: 6px;
+  border: 1px solid var(--surface-border);
+}
+
+:host ::ng-deep .p-overlaypanel {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+:host ::ng-deep .p-paginator {
+  border-radius: 6px;
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+}
+
+:host ::ng-deep .p-checkbox .p-checkbox-box {
+  border-radius: 4px;
+  border: 2px solid var(--surface-border);
+}
+
+:host ::ng-deep .p-checkbox .p-checkbox-box.p-highlight {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+}
+```
+
+### **4. ::ng-deep Best Practices**
+```scss
+// ✅ CORRECT - Always scope with :host
+:host ::ng-deep .p-component {
+  /* styles here */
+}
+
+// ❌ WRONG - Global ::ng-deep without scoping
+::ng-deep .p-component {
+  /* Don't do this - affects entire app */
+}
+
+// ✅ PREFER - Use CSS custom properties when possible
+.custom-button {
+  --p-button-border-radius: 8px;
+  --p-button-font-weight: 600;
+}
+
+// ✅ USE SPARINGLY - Only when CSS custom properties aren't sufficient
+:host ::ng-deep .p-button {
+  border-radius: 8px;
+  font-weight: 600;
+}
+```
+
+### **5. Angular 18 Styling Rules**
+- **Always use `::ng-deep`** (not `:deep`) for component penetration
+- **Always scope with `:host`** to prevent global style pollution
+- **Prefer CSS custom properties** over `::ng-deep` when possible
+- **Use sparingly** - only when necessary for third-party components
+- **Document usage** - comment why `::ng-deep` is necessary
+- **Test thoroughly** - ensure styles don't leak to other components
+
 ---
 
 ## 🧪 Testing Best Practices

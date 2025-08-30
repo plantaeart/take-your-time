@@ -82,18 +82,19 @@
   border: 1px solid var(--surface-border);
   border-radius: 4px;
   background-color: var(--surface-card);
-  min-width: fit-content; /* Allow table to expand beyond container */
+  min-width: max-content; /* Allow table to expand beyond container */
 }
 
 .table-grid-header {
-  display: flex; /* Changed from grid to flex for horizontal layout */
+  display: grid; /* Use CSS Grid for precise alignment */
+  /* grid-template-columns set dynamically via [style.grid-template-columns] */
   gap: 0;
   padding: 1rem 0.75rem;
   background-color: var(--surface-section);
   border-bottom: 2px solid var(--surface-border);
   font-weight: 600;
   color: var(--text-color);
-  min-width: fit-content; /* Ensure header doesn't compress */
+  min-width: max-content;
   position: sticky;
   top: 0;
   z-index: 10;
@@ -103,9 +104,9 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.25rem 0.5rem;
+  padding: 0.5rem;
   border-right: 1px solid var(--surface-border);
-  flex-shrink: 0; /* Prevent columns from shrinking */
+  min-height: 3rem;
 }
 
 .table-grid-header .header-cell:last-child {
@@ -113,27 +114,49 @@
 }
 
 .table-grid-header .header-cell.select-header {
-  width: 60px;
   justify-content: center;
-  flex-shrink: 0;
+  padding: 0.5rem 0.3rem;
+  min-height: 3rem;
 }
 
 .table-grid-header .header-cell.actions-header {
-  width: 120px;
   justify-content: center;
-  flex-shrink: 0;
+  padding: 0.5rem 0.3rem;
+  min-height: 3rem;
+  font-weight: 600;
+  color: var(--text-color);
+  text-align: center;
 }
 
 .table-grid-header .header-cell.data-header {
-  min-width: 150px; /* Minimum width for data columns */
-  max-width: 300px; /* Maximum width for data columns */
-  flex: 0 0 auto; /* Don't grow, don't shrink, auto width */
+  /* Grid column sizing handled automatically */
+  overflow: hidden;
+}
+
+/* Column header content layout */
+.column-header-content {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.column-title {
+  font-weight: 600;
+  color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
 }
 
 .sort-icon {
   cursor: pointer;
   color: var(--text-color-secondary);
   transition: color 0.2s ease;
+  font-size: 0.875rem;
+  flex-shrink: 0;
 }
 
 .sort-icon:hover {
@@ -144,10 +167,102 @@
   color: var(--primary-color);
 }
 
+.filter-button {
+  flex-shrink: 0;
+}
+
+/* Select checkbox styling */
+.select-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  margin: 0;
+  accent-color: var(--primary-color);
+}
+
 .table-grid-body {
   display: flex;
   flex-direction: column;
-  min-width: fit-content; /* Allow body to expand */
+  min-width: max-content; /* Allow body to expand */
+}
+
+/* Row cell alignment - applies to row-tab component */
+:host ::ng-deep app-row-tab {
+  display: flex;
+  width: 100%;
+}
+
+:host ::ng-deep app-row-tab .table-row {
+  display: grid !important; /* Use grid to match header */
+  grid-template-columns: var(--grid-template-columns) !important; /* Use inherited grid template */
+  width: 100%;
+  align-items: center;
+  border-bottom: 1px solid var(--surface-border);
+  background-color: var(--surface-card);
+  transition: background-color 0.2s ease;
+  padding: 0 !important;
+  gap: 0 !important;
+}
+
+:host ::ng-deep app-row-tab .table-row:hover {
+  background-color: var(--surface-hover);
+}
+
+:host ::ng-deep app-row-tab .table-cell {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem !important; /* Match header cell padding exactly */
+  border-right: 1px solid var(--surface-border);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: 3rem; /* Match header cell height */
+}
+
+:host ::ng-deep app-row-tab .table-cell:last-child {
+  border-right: none;
+}
+
+/* Simplified cell styling for grid layout */
+:host ::ng-deep app-row-tab .table-cell.select-cell {
+  justify-content: center;
+  padding: 0.5rem 0.3rem !important;
+}
+
+:host ::ng-deep app-row-tab .table-cell.actions-cell {
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.3rem !important;
+}
+
+:host ::ng-deep app-row-tab .table-cell.data-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  align-items: center; /* Center align like headers */
+  padding: 0.5rem !important; /* Match header padding */
+}
+
+/* Special handling for description columns */
+:host ::ng-deep app-row-tab .table-cell.data-cell .display-field {
+  width: 100%;
+  align-items: flex-start;
+}
+
+:host ::ng-deep app-row-tab .table-cell.data-cell .display-field span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+
+/* Allow wrapping for description fields when they have more space */
+:host ::ng-deep app-row-tab .table-cell.data-cell[data-field="description"] .display-field span {
+  white-space: normal;
+  word-wrap: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2; /* Standard property for compatibility */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .empty-state {
@@ -309,12 +424,6 @@
   margin-left: 0.25rem;
 }
 
-.header-icons {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
 /* ============= FILTER POPUP STYLES ============= */
 .filter-popup-content {
   padding: 1rem;
@@ -345,4 +454,150 @@
   justify-content: flex-end;
   gap: 0.5rem;
   margin-top: 1rem;
+}
+
+/* ============= PRIMENG COMPONENT OVERRIDES ============= */
+/* Use ::ng-deep sparingly for PrimeNG component styling */
+
+:host ::ng-deep .p-paginator {
+  border-radius: 6px;
+  border: 1px solid var(--surface-border);
+  background: var(--surface-card);
+  padding: 0.75rem;
+}
+
+:host ::ng-deep .p-paginator .p-paginator-pages .p-paginator-page {
+  border-radius: 4px;
+  min-width: 2.5rem;
+  height: 2.5rem;
+}
+
+:host ::ng-deep .p-paginator .p-paginator-pages .p-paginator-page.p-highlight {
+  background: var(--primary-color);
+  color: var(--primary-color-text);
+}
+
+:host ::ng-deep .p-button {
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+:host ::ng-deep .p-button.p-button-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+:host ::ng-deep .p-button.p-button-icon-only {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+:host ::ng-deep .p-inputtext {
+  border-radius: 6px;
+  border: 1px solid var(--surface-border);
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+:host ::ng-deep .p-inputtext:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2);
+}
+
+:host ::ng-deep .p-dropdown {
+  border-radius: 6px;
+  border: 1px solid var(--surface-border);
+}
+
+:host ::ng-deep .p-dropdown:not(.p-disabled):hover {
+  border-color: var(--primary-color);
+}
+
+:host ::ng-deep .p-dropdown.p-focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2);
+}
+
+:host ::ng-deep .p-multiselect {
+  border-radius: 6px;
+  border: 1px solid var(--surface-border);
+}
+
+:host ::ng-deep .p-multiselect:not(.p-disabled):hover {
+  border-color: var(--primary-color);
+}
+
+:host ::ng-deep .p-multiselect.p-focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2);
+}
+
+:host ::ng-deep .p-overlaypanel {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--surface-border);
+}
+
+:host ::ng-deep .p-overlaypanel .p-overlaypanel-content {
+  border-radius: 8px;
+}
+
+:host ::ng-deep .p-checkbox .p-checkbox-box {
+  border-radius: 4px;
+  border: 2px solid var(--surface-border);
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+:host ::ng-deep .p-checkbox .p-checkbox-box.p-highlight {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+:host ::ng-deep .p-checkbox .p-checkbox-box .p-checkbox-icon {
+  font-size: 0.75rem;
+  color: var(--primary-color-text);
+}
+
+/* Table-specific PrimeNG overrides */
+:host ::ng-deep .p-progressspinner {
+  width: 2rem;
+  height: 2rem;
+}
+
+:host ::ng-deep .p-progressspinner .p-progressspinner-svg {
+  width: 2rem;
+  height: 2rem;
+}
+
+/* Message styling */
+:host ::ng-deep .p-message {
+  border-radius: 6px;
+  border-width: 1px;
+}
+
+:host ::ng-deep .p-message.p-message-info {
+  background: rgba(var(--blue-50));
+  border-color: var(--blue-200);
+  color: var(--blue-700);
+}
+
+:host ::ng-deep .p-message.p-message-success {
+  background: rgba(var(--green-50));
+  border-color: var(--green-200);
+  color: var(--green-700);
+}
+
+:host ::ng-deep .p-message.p-message-warn {
+  background: rgba(var(--yellow-50));
+  border-color: var(--yellow-200);
+  color: var(--yellow-700);
+}
+
+:host ::ng-deep .p-message.p-message-error {
+  background: rgba(var(--red-50));
+  border-color: var(--red-200);
+  color: var(--red-700);
 }

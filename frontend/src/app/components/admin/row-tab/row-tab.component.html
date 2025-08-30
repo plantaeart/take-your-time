@@ -62,7 +62,7 @@
 
   <!-- Data Columns -->
   @for (column of columns(); track column.field) {
-    <div class="table-cell data-cell" [style.width]="column.width">
+    <div class="table-cell data-cell" [attr.data-field]="column.field">
       @if (isEditing() && column.editable) {
         <!-- Edit Mode -->
         <div class="edit-field" [class.invalid]="!isFieldValid(column)">

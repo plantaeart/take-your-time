@@ -72,6 +72,144 @@ export class TabManagementComponent<T = any> implements OnInit {
     this.selectedItems().length > 0
   );
 
+  // Check if there are any active filters, sorting, or non-default pagination
+  hasActiveFilters = computed(() => {
+    const hasColumnFilters = Object.keys(this.columnFilters()).length > 0;
+    const hasGlobalFilter = this.globalFilterValue().trim().length > 0;
+    const hasSorting = this.sortState().field !== '';
+    const hasNonDefaultPage = this.currentPage() !== 1;
+    
+    return hasColumnFilters || hasGlobalFilter || hasSorting || hasNonDefaultPage;
+  });
+
+  // Update total records to reflect filtered data
+  filteredTotalRecords = computed(() => this.filteredData().length);
+
+  // Filtered and sorted data
+  filteredData = computed(() => {
+    let filtered = [...this.data()];
+    
+    // Apply global filter
+    const globalFilter = this.globalFilterValue().toLowerCase();
+    if (globalFilter) {
+      filtered = filtered.filter(item => {
+        return this.visibleColumns().some(column => {
+          const value = (item as any)[column.field];
+          return value?.toString().toLowerCase().includes(globalFilter);
+        });
+      });
+    }
+    
+    // Apply column filters
+    const columnFilters = this.columnFilters();
+    Object.keys(columnFilters).forEach(field => {
+      const filterValue = columnFilters[field];
+      if (filterValue !== undefined && filterValue !== null && filterValue !== '') {
+        filtered = filtered.filter(item => {
+          const itemValue = (item as any)[field];
+          
+          // Handle different filter types
+          const column = this.visibleColumns().find(col => col.field === field);
+          
+          // Handle range filters (for any field with filterType: 'range')
+          if (column?.filterType === 'range' && Array.isArray(filterValue)) {
+            const numValue = Number(itemValue);
+            return numValue >= filterValue[0] && numValue <= filterValue[1];
+          } else if (column?.type === 'boolean') {
+            return itemValue === filterValue;
+          } else if (column?.type === 'number') {
+            return itemValue === Number(filterValue);
+          } else if (column?.type === 'enum') {
+            // For enum/multiselect, filterValue might be an array
+            if (Array.isArray(filterValue)) {
+              return filterValue.includes(itemValue);
+            }
+            return itemValue === filterValue;
+          } else {
+            // Text filter - case insensitive contains
+            return itemValue?.toString().toLowerCase().includes(filterValue.toString().toLowerCase());
+          }
+        });
+      }
+    });
+    
+    // Apply sorting
+    const sort = this.sortState();
+    if (sort.field) {
+      filtered.sort((a, b) => {
+        const aValue = (a as any)[sort.field];
+        const bValue = (b as any)[sort.field];
+        
+        if (aValue === bValue) return 0;
+        
+        const comparison = aValue < bValue ? -1 : 1;
+        return sort.order === 'asc' ? comparison : -comparison;
+      });
+    }
+    
+    return filtered;
+  });
+
+  // Computed property for paginated data
+  paginatedData = computed(() => {
+    const data = this.filteredData();
+    const start = (this.currentPage() - 1) * this.rowsPerPage();
+    const end = start + this.rowsPerPage();
+    return data.slice(start, end);
+  });
+
+  // Computed property for grid template columns
+  gridTemplateColumns = computed(() => {
+    const selectWidth = this.config().actions.canBulkDelete ? '60px ' : '';
+    const actionsWidth = '120px ';
+    
+    // Define specific widths for different column types and special cases
+    const columnWidths: string[] = [];
+    this.visibleColumns().forEach(column => {
+      // Handle special cases first
+      if (column.field === 'description') {
+        // Description fields need more space regardless of type
+        columnWidths.push('max(320px, 25vw)');
+      } else if (column.displayFormat === 'currency') {
+        // Currency fields (like price) need moderate width
+        columnWidths.push('max(160px, 8vw)');
+      } else if (column.displayFormat === 'rating') {
+        // Rating fields should match other number columns
+        columnWidths.push('max(160px, 7vw)');
+      } else {
+        // Standard type-based widths
+        switch (column.type) {
+          case 'number':
+            columnWidths.push('max(160px, 7vw)');
+            break;
+          case 'text':
+            columnWidths.push('max(180px, 12vw)');
+            break;
+          case 'image':
+            columnWidths.push('max(120px, 8vw)');
+            break;
+          case 'enum':
+            columnWidths.push('max(160px, 9vw)');
+            break;
+          case 'date':
+            columnWidths.push('max(120px, 8vw)');
+            break;
+          case 'boolean':
+            columnWidths.push('max(90px, 6vw)');
+            break;
+          case 'actions':
+            columnWidths.push('max(120px, 8vw)');
+            break;
+          default:
+            columnWidths.push('max(160px, 10vw)'); // Default width for other columns
+        }
+      }
+    });
+    
+    const dataColumns = columnWidths.join(' ');
+    return selectWidth + actionsWidth + dataColumns;
+  });
+
   // Table reference for advanced operations
   @ViewChild('tableContainer') tableContainer!: TemplateRef<any>;
 
@@ -86,13 +224,88 @@ export class TabManagementComponent<T = any> implements OnInit {
   // ============= FILTER METHODS =============
   
   getFilterButtonConfig(column: ColumnConfig): FilterButtonConfig {
+    const currentValue = this.columnFilters()[column.field];
+    
+    // Use the filterType specified in the column configuration
+    const filterType = column.filterType || 'text';
+    
+    // For range filters, get min/max/step from column config or calculate dynamically
+    if (filterType === 'range') {
+      const { min, max, step } = this.getCalculatedRangeValues(column);
+      
+      return {
+        field: column.field,
+        header: column.header,
+        filterType: 'range',
+        currentValue: currentValue || [min, max],
+        min,
+        max,
+        step,
+        displayFormat: column.displayFormat
+      };
+    }
+    
+    // For other filter types, use standard configuration
     return {
       field: column.field,
       header: column.header,
-      filterType: column.filterType || 'text',
+      filterType: filterType as FilterButtonConfig['filterType'],
       options: column.options,
-      currentValue: this.columnFilters()[column.field]
+      currentValue: currentValue,
+      displayFormat: column.displayFormat
     };
+  }
+
+  /**
+   * Calculate min/max values for range filters based on actual data
+   */
+  private getCalculatedRangeValues(column: ColumnConfig): { min: number; max: number; step: number } {
+    const data = this.data();
+    
+    // Default fallbacks if no data is available
+    let min = column.filterMin ?? 0;
+    let max = column.filterMax ?? 100;
+    const step = column.filterStep ?? 1;
+    
+    // Calculate actual min/max from data if available
+    if (data.length > 0) {
+      const values = data
+        .map(item => Number((item as any)[column.field]))
+        .filter(value => !isNaN(value));
+      
+      if (values.length > 0) {
+        const dataMin = Math.min(...values);
+        const dataMax = Math.max(...values);
+        
+        // If no filterMin/filterMax configured, use data-driven values
+        if (column.filterMin === undefined) {
+          min = Math.max(0, Math.floor(dataMin)); // Never go below 0, round down
+        }
+        
+        if (column.filterMax === undefined) {
+          // Round up max to a nice number for better UX
+          if (column.displayFormat === 'currency') {
+            max = Math.ceil(dataMax / 10) * 10; // Round up to nearest 10
+          } else if (column.field === 'quantity') {
+            max = Math.ceil(dataMax / 5) * 5; // Round up to nearest 5
+          } else if (column.displayFormat === 'rating') {
+            max = 5; // Ratings are always 0-5
+          } else {
+            max = Math.ceil(dataMax);
+          }
+        }
+        
+        // If filterMin/filterMax are configured, respect them but expand if data exceeds
+        if (column.filterMin !== undefined) {
+          min = Math.min(column.filterMin, dataMin);
+        }
+        if (column.filterMax !== undefined) {
+          max = Math.max(column.filterMax, dataMax);
+        }
+      }
+    }
+    
+    return { min, max, step };
   }
 
   onFilterApply(field: string, value: any): void {
@@ -114,19 +327,42 @@ export class TabManagementComponent<T = any> implements OnInit {
     }
     
     this.columnFilters.set(newFilters);
-    this.triggerDataLoad();
+    // Reset to first page when filtering
+    this.currentPage.set(1);
   }
 
   onGlobalFilter(event: any): void {
     const value = (event.target as HTMLInputElement).value;
     this.globalFilterValue.set(value);
-    this.triggerDataLoad();
+    // Reset to first page when filtering
+    this.currentPage.set(1);
   }
 
   clearFilters(): void {
+    // Clear all filters
     this.columnFilters.set({});
     this.globalFilterValue.set('');
-    this.triggerDataLoad();
+    
+    // Clear sorting
+    this.sortState.set({ field: '', order: 'asc' });
+    
+    // Reset pagination to initial state
+    this.currentPage.set(1);
+    const paginationConfig = this.config().pagination;
+    if (paginationConfig.enabled) {
+      this.rowsPerPage.set(paginationConfig.rowsPerPage);
+    }
+    
+    // Reset data load signal to initial state
+    this.dataLoad.set({
+      page: 1,
+      size: paginationConfig?.enabled ? paginationConfig.rowsPerPage : 10,
+      sorts: [],
+      filters: {}
+    });
+    
+    // Clear selections
+    this.selectedItems.set([]);
   }
 
   // ============= SORT METHODS =============
@@ -136,7 +372,8 @@ export class TabManagementComponent<T = any> implements OnInit {
     const newOrder = currentSort.field === field && currentSort.order === 'asc' ? 'desc' : 'asc';
     
     this.sortState.set({ field, order: newOrder });
-    this.triggerDataLoad();
+    // Reset to first page when sorting
+    this.currentPage.set(1);
   }
 
   getSortIcon(field: string): string {
@@ -150,7 +387,7 @@ export class TabManagementComponent<T = any> implements OnInit {
   onPageChange(event: any): void {
     this.currentPage.set(event.page + 1); // PrimeNG uses 0-based pages
     this.rowsPerPage.set(event.rows);
-    this.triggerDataLoad();
+    // No need to trigger data load for local pagination
   }
 
   // ============= UTILITY METHODS =============
@@ -228,7 +465,7 @@ export class TabManagementComponent<T = any> implements OnInit {
   }
 
   isAllSelected(): boolean {
-    const items = this.data();
+    const items = this.filteredData();
     const selected = this.selectedItems();
     return items.length > 0 && selected.length === items.length;
   }
@@ -238,7 +475,7 @@ export class TabManagementComponent<T = any> implements OnInit {
     if (allSelected) {
       this.selectedItems.set([]);
     } else {
-      this.selectedItems.set([...this.data()]);
+      this.selectedItems.set([...this.filteredData()]);
     }
   }
 

@@ -53,6 +53,21 @@
             class="filter-dropdown">
           </p-dropdown>
         }
+        @case ('multiselect') {
+          <p-multiSelect
+            [options]="config().options || []"
+            [ngModel]="currentValue() || []"
+            (ngModelChange)="updateValue($event)"
+            [placeholder]="'Select ' + config().header.toLowerCase()"
+            optionLabel="label"
+            optionValue="value"
+            [showClear]="true"
+            [filter]="true"
+            [maxSelectedLabels]="2"
+            selectedItemsLabel="{0} items selected"
+            class="filter-multiselect">
+          </p-multiSelect>
+        }
         @case ('boolean') {
           <p-dropdown
             [options]="[
@@ -67,6 +82,22 @@
             optionValue="value"
             class="filter-dropdown">
           </p-dropdown>
+        }
+        @case ('range') {
+          <div class="range-filter">
+            <label class="range-label">
+              {{ config().header }} Range: {{ getRangeDisplay() }}
+            </label>
+            <p-slider 
+              [ngModel]="currentValue() || [config().min || 0, config().max || 100]"
+              (ngModelChange)="updateValue($event)"
+              [range]="true"
+              [min]="config().min || 0"
+              [max]="config().max || 100"
+              [step]="config().step || 1"
+              class="range-slider">
+            </p-slider>
+          </div>
         }
         @default {
           <input 

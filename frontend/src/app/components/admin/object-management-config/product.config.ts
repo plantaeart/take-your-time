@@ -1,6 +1,25 @@
 /**
  * Product Table Management Configuration
- * Following Angular 18 best practices and backend integration
+ * Following Angular 18 best practic  {
+    field: 'price',
+    header: 'Price',
+    type: 'number',
+    sortable: true,
+    filterable: true,
+    filterType: 'range', // Use range slider for price filtering
+    filterMin: 0,
+    filterMax: 100, // Will be overridden by actual max price in data
+    filterStep: 10,
+    width: '6rem',
+    editable: true,
+    required: true,
+    displayFormat: 'currency',
+    validations: [
+      { rule: 'required', message: 'Price is required' },
+      { rule: 'min', value: 0, message: 'Price must be greater than or equal to 0' }
+    ],
+    editComponent: 'currency-input'
+  },ration
  */
 
 import { TableManagementConfig, ColumnConfig, ActionConfig, SearchConfig, ExportConfig, PaginationConfig } from './table-config.interface';
@@ -16,7 +35,7 @@ const productColumns: ColumnConfig[] = [
     type: 'number',
     sortable: true,
     filterable: true,
-    filterType: 'number',
+    filterType: 'text',
     width: '8rem',
     editable: false
   },
@@ -88,7 +107,8 @@ const productColumns: ColumnConfig[] = [
     type: 'number',
     sortable: true,
     filterable: true,
-    filterType: 'number',
+    filterType: 'range',
+    filterStep: 10,
     width: '6rem',
     editable: true,
     required: true,
@@ -105,7 +125,8 @@ const productColumns: ColumnConfig[] = [
     type: 'number',
     sortable: true,
     filterable: true,
-    filterType: 'number',
+    filterType: 'range',
+    filterStep: 1,
     width: '6rem',
     editable: true,
     required: true,
@@ -141,7 +162,10 @@ const productColumns: ColumnConfig[] = [
     type: 'number',
     sortable: true,
     filterable: true,
-    filterType: 'number',
+    filterType: 'range', // Use range slider for rating filtering
+    filterMin: 0,
+    filterMax: 5,
+    filterStep: 0.1,
     width: '6rem',
     editable: true,
     displayFormat: 'rating',

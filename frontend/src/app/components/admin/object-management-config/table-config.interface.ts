@@ -4,7 +4,7 @@
  */
 
 export type ColumnType = 'text' | 'number' | 'enum' | 'date' | 'boolean' | 'image' | 'actions';
-export type FilterType = 'text' | 'number' | 'dropdown' | 'multiselect' | 'daterange' | 'boolean';
+export type FilterType = 'text' | 'number' | 'dropdown' | 'multiselect' | 'daterange' | 'boolean' | 'range';
 export type ValidationRule = 'required' | 'email' | 'min' | 'max' | 'minLength' | 'maxLength' | 'pattern';
 
 export interface ValidationConfig {
@@ -27,6 +27,10 @@ export interface ColumnConfig {
   options?: { label: string; value: any; color?: string }[]; // For enum types
   displayFormat?: string; // For formatting display values
   editComponent?: string; // Component to use for editing
+  // Range filter configuration
+  filterMin?: number; // Minimum value for range filters
+  filterMax?: number; // Maximum value for range filters
+  filterStep?: number; // Step size for range filters
 }
 
 export interface ActionConfig {

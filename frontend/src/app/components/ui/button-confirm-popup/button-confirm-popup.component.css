@@ -32,7 +32,8 @@
 }
 
 .filter-input,
-.filter-dropdown {
+.filter-dropdown,
+.filter-multiselect {
   width: 100%;
 }
 
@@ -68,4 +69,37 @@
     flex-direction: column;
     gap: 0.25rem;
   }
+}
+
+/* Range Filter Styles */
+.range-filter {
+  padding: 0.5rem 0;
+}
+
+.range-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-color);
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.range-slider {
+  width: 100%;
+  margin: 0.5rem 0;
+}
+
+:host ::ng-deep .range-slider .p-slider {
+  background: var(--surface-border);
+}
+
+:host ::ng-deep .range-slider .p-slider .p-slider-range {
+  background: var(--primary-color);
+}
+
+:host ::ng-deep .range-slider .p-slider .p-slider-handle {
+  background: var(--primary-color);
+  border: 2px solid var(--surface-card);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }

@@ -20,13 +20,15 @@
       }
 
       <!-- Clear Filters -->
-      <p-button 
-        icon="pi pi-filter-slash" 
-        [text]="true"
-        (onClick)="clearFilters()"
-        pTooltip="Clear all filters"
-        severity="secondary">
-      </p-button>
+      @if (hasActiveFilters()) {
+        <p-button 
+          icon="pi pi-filter-slash" 
+          [text]="true"
+          (onClick)="clearFilters()"
+          pTooltip="Clear all filters and sorting"
+          severity="secondary">
+        </p-button>
+      }
 
       <!-- Add New Item -->
       @if (config().actions.canAdd) {
@@ -67,10 +69,10 @@
   <div class="table-content">
     <div class="table-grid" [class.loading]="loading()">
       <!-- Column Headers -->
-      <div class="table-grid-header">
+      <div class="table-grid-header" [style.grid-template-columns]="gridTemplateColumns()">
       <!-- Select All Checkbox -->
       @if (config().actions.canBulkDelete) {
-        <div class="table-cell header-cell select-cell">
+        <div class="header-cell select-header">
           <input 
             type="checkbox" 
             [checked]="isAllSelected()"
@@ -80,45 +82,43 @@
       }
 
       <!-- Actions Column -->
-      <div class="table-cell header-cell actions-cell">
+      <div class="header-cell actions-header">
         Actions
       </div>
 
       <!-- Data Columns -->
       @for (column of visibleColumns(); track column.field) {
-        <div class="table-cell header-cell" [style.width]="column.width">
+        <div class="header-cell data-header">
           <div class="column-header-content">
-            <span>{{ column.header }}</span>
+            <span class="column-title">{{ column.header }}</span>
             
-            <div class="header-icons">
-              <!-- Sort Icon -->
-              @if (column.sortable) {
-                <i 
-                  [class]="getSortIcon(column.field)"
-                  (click)="onSort(column.field)"
-                  class="sort-icon">
-                </i>
-              }
+            <!-- Sort Icon -->
+            @if (column.sortable) {
+              <i 
+                [class]="getSortIcon(column.field)"
+                (click)="onSort(column.field)"
+                class="sort-icon">
+              </i>
+            }
 
-              <!-- Filter -->
-              @if (column.filterable) {
-                <app-button-confirm-popup
-                  [config]="getFilterButtonConfig(column)"
-                  buttonIcon="pi pi-filter"
-                  [buttonTooltip]="'Filter ' + column.header"
-                  (apply)="onFilterApply(column.field, $event)"
-                  (clear)="onFilterClear(column.field)"
-                  class="filter-button">
-                </app-button-confirm-popup>
-              }
-            </div>
+            <!-- Filter -->
+            @if (column.filterable) {
+              <app-button-confirm-popup
+                [config]="getFilterButtonConfig(column)"
+                buttonIcon="pi pi-filter"
+                [buttonTooltip]="'Filter ' + column.header"
+                (apply)="onFilterApply(column.field, $event)"
+                (clear)="onFilterClear(column.field)"
+                class="filter-button">
+              </app-button-confirm-popup>
+            }
           </div>
         </div>
       }
     </div>
 
     <!-- Table Body -->
-    <div class="table-grid-body">
+    <div class="table-grid-body" [style.--grid-template-columns]="gridTemplateColumns()">
       <!-- New Item Row -->
       @if (isCreatingNew()) {
       <app-row-tab
@@ -134,7 +134,7 @@
     }
 
     <!-- Data Rows -->
-    @for (item of data(); track getColumnValue(item, {field: config().dataKey})) {
+    @for (item of paginatedData(); track getColumnValue(item, {field: config().dataKey})) {
       <app-row-tab
         [item]="item"
         [columns]="visibleColumns()"
@@ -151,7 +151,7 @@
     }
 
     <!-- Empty State -->
-    @if (data().length === 0 && !loading()) {
+    @if (filteredData().length === 0 && !loading()) {
       <div class="empty-state">
         <i class="pi pi-inbox empty-icon"></i>
         <h4>No {{ config().objectName.toLowerCase() }}s found</h4>
@@ -171,11 +171,11 @@
   </div> <!-- table-content -->
 
   <!-- Pagination -->
-  @if (config().pagination.enabled && totalRecords() > 0) {
+  @if (config().pagination.enabled && filteredTotalRecords() > 0) {
     <div class="pagination-container">
       <p-paginator
         [rows]="rowsPerPage()"
-        [totalRecords]="totalRecords()"
+        [totalRecords]="filteredTotalRecords()"
         [rowsPerPageOptions]="config().pagination.rowsPerPageOptions"
         [showCurrentPageReport]="config().pagination.showCurrentPageReport || false"
         [currentPageReportTemplate]="config().pagination.currentPageReportTemplate || 'Showing {first} to {last} of {totalRecords} entries'"
