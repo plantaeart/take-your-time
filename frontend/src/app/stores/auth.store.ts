@@ -101,9 +101,15 @@ export class AuthStore {
       // Small delay to ensure auth state is properly set before navigation
       setTimeout(() => {
         if (environment.debug) {
-          console.log('Navigating to /home...');
+          console.log('Navigating to appropriate page...');
         }
-        this.router.navigate(['/home']);
+        // Navigate to admin dashboard if user is admin, otherwise to home
+        // This ensures admins go directly to their dashboard and don't hit user pages
+        if (response.user.isAdmin) {
+          this.router.navigate(['/admin']);
+        } else {
+          this.router.navigate(['/home']);
+        }
       }, 100);
       
       return true;
@@ -138,8 +144,12 @@ export class AuthStore {
         detail: `Hello ${response.user.firstname}, your account has been created successfully.`
       });
       
-      // Navigate to home page
-      this.router.navigate(['/home']);
+      // Navigate to appropriate page based on user role
+      if (response.user.isAdmin) {
+        this.router.navigate(['/admin']);
+      } else {
+        this.router.navigate(['/home']);
+      }
       return true;
     } catch (error: any) {
       this.messageService.add({

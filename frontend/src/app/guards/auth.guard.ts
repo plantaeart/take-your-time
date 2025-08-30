@@ -61,6 +61,36 @@ export class AdminGuard implements CanActivate {
 @Injectable({
   providedIn: 'root'
 })
+export class UserGuard implements CanActivate {
+  private authStore = inject(AuthStore);
+  private router = inject(Router);
+
+  canActivate(): boolean {
+    if (!this.authStore.isInitialized()) {
+      return true;
+    }
+
+    const isAuthenticated = this.authStore.isAuthenticated();
+    const isAdmin = this.authStore.isAdmin();
+    
+    if (!isAuthenticated) {
+      this.router.navigate(['/auth']);
+      return false;
+    }
+    
+    // If user is admin, redirect to admin dashboard
+    if (isAdmin) {
+      this.router.navigate(['/admin']);
+      return false;
+    }
+    
+    return true;
+  }
+}
+
+@Injectable({
+  providedIn: 'root'
+})
 export class GuestGuard implements CanActivate {
   private authStore = inject(AuthStore);
   private router = inject(Router);

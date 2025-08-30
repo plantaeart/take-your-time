@@ -14,6 +14,7 @@ import { useAuth } from './hooks/auth.hooks';
 import { useCart } from './hooks/cart.hooks';
 import { useWishlist } from './hooks/wishlist.hooks';
 import { AppInitializationService } from './services/app-initialization.service';
+import { SignOutButtonComponent } from './components/ui/sign-out-button/sign-out-button.component';
 import { environment } from '../environments/environment';
 
 @Component({
@@ -21,7 +22,7 @@ import { environment } from '../environments/environment';
   templateUrl: "./app.component.html",
   styleUrls: ["./app.component.scss"],
   standalone: true,
-  imports: [RouterModule, SplitterModule, ToolbarModule, ButtonModule, BadgeModule, ToastModule, PanelMenuComponent],
+  imports: [RouterModule, SplitterModule, ToolbarModule, ButtonModule, BadgeModule, ToastModule, PanelMenuComponent, SignOutButtonComponent],
 })
 export class AppComponent {
   title = "ALTEN SHOP";
@@ -54,11 +55,11 @@ export class AppComponent {
   }
 
   /**
-   * Check if current route is the auth page
+   * Check if current route is the auth page or admin dashboard
    */
   isAuthRoute(): boolean {
     const route = this.currentRoute();
-    return route === '/auth' || route.startsWith('/auth/');
+    return route === '/auth' || route.startsWith('/auth/') || route === '/admin' || route.startsWith('/admin/');
   }
 
   /**
@@ -74,12 +75,5 @@ export class AppComponent {
    */
   goToWishlist(): void {
     this.router.navigate(['/user-wishlist-detail']);
-  }
-
-  /**
-   * Logout user
-   */
-  logout(): void {
-    this.auth.logout();
   }
 }

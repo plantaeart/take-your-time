@@ -1,0 +1,60 @@
+<!-- Admin Dashboard Header -->
+<div class="admin-header">
+  <div class="admin-info">
+    <img src="assets/icons/icon-512x512.png" alt="Logo" class="admin-logo">
+    <span class="admin-email">Welcome {{ adminEmail }}</span>
+  </div>
+  <app-sign-out-button [isAdmin]="true"></app-sign-out-button>
+</div>
+
+<!-- Admin Management Tabs -->
+<div class="admin-content">
+  <p-tabView [scrollable]="true" styleClass="admin-tabs">
+    
+    <!-- Products Management Tab -->
+    <p-tabPanel header="Products" leftIcon="pi pi-box">
+      <div class="tab-content">
+        <h3>Products Management (CRUD)</h3>
+        <p>Create, Read, Update, Delete products</p>
+        <!-- TODO: Implement products CRUD component -->
+      </div>
+    </p-tabPanel>
+
+    <!-- Users Management Tab -->
+    <p-tabPanel header="Users" leftIcon="pi pi-users">
+      <div class="tab-content">
+        <h3>Users Management (RUD)</h3>
+        <p>Read, Update, Delete users</p>
+        <!-- TODO: Implement users RUD component -->
+      </div>
+    </p-tabPanel>
+
+    <!-- User Carts Management Tab -->
+    <p-tabPanel header="User Carts" leftIcon="pi pi-shopping-cart">
+      <div class="tab-content">
+        <h3>User Carts Management (CRUD)</h3>
+        <p>Create, Read, Update, Delete user carts</p>
+        <!-- TODO: Implement user carts CRUD component -->
+      </div>
+    </p-tabPanel>
+
+    <!-- User Wishlists Management Tab -->
+    <p-tabPanel header="User Wishlists" leftIcon="pi pi-heart">
+      <div class="tab-content">
+        <h3>User Wishlists Management (CRUD)</h3>
+        <p>Create, Read, Update, Delete user wishlists</p>
+        <!-- TODO: Implement user wishlists CRUD component -->
+      </div>
+    </p-tabPanel>
+
+    <!-- Contact Mails Management Tab -->
+    <p-tabPanel header="Contact Mails" leftIcon="pi pi-envelope">
+      <div class="tab-content">
+        <h3>Contact Mails Management (RUD)</h3>
+        <p>Read, Update, Delete contact mails</p>
+        <!-- TODO: Implement contact mails RUD component -->
+      </div>
+    </p-tabPanel>
+
+  </p-tabView>
+</div>

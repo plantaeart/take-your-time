@@ -34,6 +34,7 @@ import { useAuthState, useAuthActions } from '../../../hooks/auth.hooks';
     user = this.authState.user;
     userDisplayName = this.authState.userDisplayName;
     isAuthenticated = this.authState.isAuthenticated;
+    isAdmin = this.authState.isAdmin;
     
     // Menu items for expanded state
     expandedItems = computed(() => {

@@ -6,7 +6,8 @@ import { ProfileComponent } from "./components/profile/profile.component";
 import { UserCartDetailComponent } from "./components/user/user-cart-detail/user-cart-detail.component";
 import { UserWishlistDetailComponent } from "./components/user/user-wishlist-detail/user-wishlist-detail.component";
 import { ContactFormComponent } from "./components/contact/contact-form/contact-form.component";
-import { AuthGuard, GuestGuard } from "./guards/auth.guard";
+import { AdminDashboardComponent } from "./components/admin/admin-dashboard/admin-dashboard.component";
+import { AuthGuard, GuestGuard, AdminGuard, UserGuard } from "./guards/auth.guard";
 
 export const APP_ROUTES: Routes = [
   {
@@ -17,17 +18,17 @@ export const APP_ROUTES: Routes = [
   {
     path: "home",
     component: HomeComponent,
-    canActivate: [AuthGuard], // Require authentication
+    canActivate: [UserGuard], // Prevent admin access, redirect to admin dashboard
   },
   {
     path: "profile",
     component: ProfileComponent,
-    canActivate: [AuthGuard], // Require authentication
+    canActivate: [UserGuard], // Prevent admin access, redirect to admin dashboard
   },
   {
     path: "products/list",
     component: ProductsDisplayComponent,
-    canActivate: [AuthGuard], // Require authentication
+    canActivate: [UserGuard], // Prevent admin access, redirect to admin dashboard
   },
   {
     path: "products",
@@ -37,17 +38,22 @@ export const APP_ROUTES: Routes = [
   {
     path: "user-cart-detail",
     component: UserCartDetailComponent,
-    canActivate: [AuthGuard], // Require authentication
+    canActivate: [UserGuard], // Prevent admin access, redirect to admin dashboard
   },
   {
     path: "user-wishlist-detail",
     component: UserWishlistDetailComponent,
-    canActivate: [AuthGuard], // Require authentication
+    canActivate: [UserGuard], // Prevent admin access, redirect to admin dashboard
   },
   {
     path: "contact",
     component: ContactFormComponent,
-    canActivate: [AuthGuard], // Require authentication
+    canActivate: [UserGuard], // Prevent admin access, redirect to admin dashboard
+  },
+  {
+    path: "admin",
+    component: AdminDashboardComponent,
+    canActivate: [AdminGuard], // Require admin privileges
   },
   { 
     path: "", 

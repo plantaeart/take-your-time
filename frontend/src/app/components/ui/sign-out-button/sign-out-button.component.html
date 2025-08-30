@@ -1,0 +1,12 @@
+<p-button
+  id="sign-out-btn"
+  icon="pi pi-sign-out"
+  severity="secondary"
+  [outlined]="!isAdmin()"
+  [text]="!isAdmin()"
+  [rounded]="true"
+  size="large"
+  (onClick)="onSignOut()"
+  pTooltip="Sign Out"
+  tooltipPosition="bottom">
+</p-button>
