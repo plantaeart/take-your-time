@@ -3,7 +3,11 @@ import { Injectable } from '@angular/core';
 import { 
   Product, 
   ProductListResponse, 
-  ProductQueryParams 
+  ProductQueryParams,
+  ProductCreateRequest,
+  ProductUpdateRequest,
+  ProductInventoryUpdate,
+  BulkProductCreateRequest
 } from '../models/product.model';
 import { Category } from '../enums/category.enum';
 import { API_CONFIG, getApiBaseUrl } from './axios/api.config';
@@ -153,6 +157,163 @@ export class ProductService {
       console.warn('Failed to fetch max price, using default:', error);
       return 1000; // Fallback to default
     }
+  }
+
+  // ============================================================================
+  // ADMIN CRUD OPERATIONS (Authentication Required)
+  // ============================================================================
+
+  /**
+   * Create a new product (Admin only)
+   * POST /api/products
+   */
+  async createProduct(productData: ProductCreateRequest): Promise<Product> {
+    try {
+      const response: AxiosResponse<Product> = await axios.post(
+        `${this.baseUrl}${this.apiPath}`,
+        productData,
+        {
+          headers: {
+            'Authorization': `Bearer ${this.getAuthToken()}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error, 'Failed to create product');
+    }
+  }
+
+  /**
+   * Update an existing product (Admin only)
+   * PUT /api/products/{id}
+   */
+  async updateProduct(productId: number, productData: ProductUpdateRequest): Promise<Product> {
+    try {
+      const response: AxiosResponse<Product> = await axios.put(
+        `${this.baseUrl}${this.apiPath}/${productId}`,
+        productData,
+        {
+          headers: {
+            'Authorization': `Bearer ${this.getAuthToken()}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error, `Failed to update product ${productId}`);
+    }
+  }
+
+  /**
+   * Delete a product (Admin only)
+   * DELETE /api/products/{id}
+   */
+  async deleteProduct(productId: number): Promise<{ message: string }> {
+    try {
+      const response: AxiosResponse<{ message: string }> = await axios.delete(
+        `${this.baseUrl}${this.apiPath}/${productId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${this.getAuthToken()}`
+          }
+        }
+      );
+      
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error, `Failed to delete product ${productId}`);
+    }
+  }
+
+  /**
+   * Update product inventory (Admin only)
+   * PATCH /api/products/{id}/inventory
+   */
+  async updateProductInventory(productId: number, inventoryData: ProductInventoryUpdate): Promise<Product> {
+    try {
+      const response: AxiosResponse<Product> = await axios.patch(
+        `${this.baseUrl}${this.apiPath}/${productId}/inventory`,
+        inventoryData,
+        {
+          headers: {
+            'Authorization': `Bearer ${this.getAuthToken()}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error, `Failed to update inventory for product ${productId}`);
+    }
+  }
+
+  /**
+   * Bulk create products (Admin only)
+   * POST /api/admin/products/bulk
+   */
+  async bulkCreateProducts(bulkData: BulkProductCreateRequest): Promise<{ 
+    created: Product[], 
+    errors: Array<{ index: number, error: string }> 
+  }> {
+    try {
+      const response = await axios.post(
+        `${this.baseUrl}/api/admin/products/bulk`,
+        bulkData,
+        {
+          headers: {
+            'Authorization': `Bearer ${this.getAuthToken()}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error, 'Failed to bulk create products');
+    }
+  }
+
+  /**
+   * Bulk delete products (Admin only)
+   * DELETE /api/admin/products/bulk
+   */
+  async bulkDeleteProducts(productIds: number[]): Promise<{ 
+    deleted: number[], 
+    notFound: number[],
+    message: string 
+  }> {
+    try {
+      const response = await axios.request({
+        method: 'DELETE',
+        url: `${this.baseUrl}/api/admin/products/bulk`,
+        data: productIds,
+        headers: {
+          'Authorization': `Bearer ${this.getAuthToken()}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error, 'Failed to bulk delete products');
+    }
+  }
+
+  /**
+   * Get auth token from localStorage
+   */
+  private getAuthToken(): string {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      throw new Error('Authentication token not found. Please log in.');
+    }
+    return token;
   }
 
   /**

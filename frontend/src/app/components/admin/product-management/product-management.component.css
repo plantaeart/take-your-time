@@ -1,0 +1,285 @@
+.product-management {
+  height: 100%;
+  padding: 1rem;
+  background-color: var(--surface-ground);
+}
+
+.product-management .management-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.product-management .management-header h2 {
+  margin: 0;
+  color: var(--text-color);
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.product-management .management-header .header-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.product-management .management-header .global-filter-input {
+  width: 250px;
+}
+
+.product-management .product-table {
+  background: var(--surface-card);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.product-management .product-table :deep(.p-table) .p-table-thead > tr > th {
+  background: var(--surface-section);
+  border-color: var(--surface-border);
+  color: var(--text-color);
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 1rem 0.75rem;
+  position: relative;
+}
+
+.product-management .product-table :deep(.p-table) .p-table-thead > tr > th .p-column-header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.product-management .product-table :deep(.p-table) .p-table-thead > tr > th .p-column-header-content span {
+  flex: 1;
+  text-align: left;
+}
+
+.product-management .product-table :deep(.p-table) .p-table-thead > tr > th .p-column-header-content .header-icons {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.5rem;
+}
+
+.product-management .product-table :deep(.p-table) .p-table-thead > tr > th .p-column-header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.product-management .product-table :deep(.p-table) .p-table-thead > tr > th .header-icons {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.product-management .product-table :deep(.p-table) .p-table-thead > tr > th .p-column-filter {
+  margin-left: 0.5rem;
+}
+
+/* Column filter styles */
+.product-management .product-table :deep(.p-column-filter-menu-button) {
+  background: transparent;
+  border: 1px solid var(--surface-border);
+  color: var(--text-color-secondary);
+  border-radius: 4px;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0;
+  transition: all 0.2s ease;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+.product-management .product-table :deep(.p-column-filter-menu-button):hover {
+  background: var(--surface-hover);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.product-management .product-table :deep(.p-column-filter-menu-button.p-column-filter-menu-button-open),
+.product-management .product-table :deep(.p-column-filter-menu-button.p-column-filter-menu-button-active) {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: var(--primary-color-text);
+}
+
+.product-management .product-table :deep(.p-column-filter-menu-button .pi) {
+  font-size: 0.75rem;
+}
+
+/* Sort icon styles */
+.product-management .product-table :deep(.p-sortable-column-icon) {
+  color: var(--text-color-secondary);
+  margin-left: 0.25rem;
+  transition: color 0.2s ease;
+  display: inline-block;
+}
+
+.product-management .product-table :deep(.p-sortable-column-sorted .p-sortable-column-icon) {
+  color: var(--primary-color);
+}
+
+.product-management .product-table :deep(.p-sortable-column .p-sortable-column-icon) {
+  display: inline-block !important;
+  opacity: 1 !important;
+}
+
+/* Ensure header icons are properly displayed */
+.product-management .product-table :deep(.p-table) .p-table-thead > tr > th .header-icons {
+  display: flex !important;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+/* Filter overlay styles */
+.product-management .product-table :deep(.p-column-filter-overlay) {
+  min-width: 200px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.product-management .product-table :deep(.p-column-filter-overlay .p-column-filter-row-items) {
+  padding: 0.5rem;
+}
+
+.product-management .product-table :deep(.p-column-filter-overlay .p-dropdown) {
+  width: 100%;
+}
+
+.product-management .product-table :deep(.p-table) .p-table-tbody > tr {
+  border-color: var(--surface-border);
+}
+
+.product-management .product-table :deep(.p-table) .p-table-tbody > tr:hover {
+  background: var(--surface-hover);
+}
+
+.product-management .product-table :deep(.p-table) .p-table-tbody > tr > td {
+  padding: 0.75rem;
+  border-color: var(--surface-border);
+  vertical-align: middle;
+}
+
+.product-management .product-table :deep(.p-table) .new-product-row {
+  background: var(--highlight-bg) !important;
+  border: 2px solid var(--primary-color);
+}
+
+.product-management .product-table :deep(.p-table) .new-product-row td {
+  padding: 0.5rem;
+}
+
+.product-management .product-table :deep(.p-table) .editing-row {
+  background: var(--blue-50) !important;
+  border-left: 3px solid var(--blue-500);
+}
+
+.product-management .product-table .action-buttons {
+  display: flex;
+  gap: 0.25rem;
+  justify-content: center;
+}
+
+.product-management .product-table .action-buttons :deep(.p-button) {
+  padding: 0.375rem;
+  width: 2rem;
+  height: 2rem;
+}
+
+.product-management .product-table .product-thumbnail {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--surface-border);
+}
+
+.product-management .product-table .status-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  display: inline-block;
+  min-width: 80px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.product-management .product-table .text-muted {
+  color: var(--text-color-secondary);
+  font-style: italic;
+}
+
+.product-management .product-table .w-full {
+  width: 100%;
+}
+
+.product-management .product-table .text-center {
+  text-align: center;
+}
+
+.product-management .product-table .p-4 {
+  padding: 2rem;
+}
+
+/* Programmatic Pagination Controls */
+.product-management .pagination-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: var(--surface-card);
+  border-radius: 8px;
+  border: 1px solid var(--surface-border);
+  margin-bottom: 1rem;
+}
+
+.product-management .pagination-controls .p-button {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+/* Utility class for margin bottom */
+.mb-4 {
+  margin-bottom: 1.5rem;
+}
+
+/* Table Caption */
+.product-management .table-caption {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: var(--surface-section);
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.product-management .table-caption .caption-left h3 {
+  margin: 0;
+  color: var(--text-color);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.product-management .table-caption .caption-right {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Product ID styling */
+.product-management .product-table .product-id {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  color: var(--primary-color);
+  font-size: 0.875rem;
+}

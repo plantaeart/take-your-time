@@ -12,7 +12,9 @@ export const CategoryLabels: Record<Category, string> = {
   [Category.ELECTRONICS]: 'Electronics'
 };
 
-export const CategoryColors: Record<Category, string> = {
+export type PrimeNGSeverity = 'success' | 'info' | 'warning' | 'danger' | 'secondary' | 'contrast';
+
+export const CategoryColors: Record<Category, PrimeNGSeverity> = {
   [Category.ACCESSORIES]: 'info',
   [Category.FITNESS]: 'success',
   [Category.CLOTHING]: 'warning',

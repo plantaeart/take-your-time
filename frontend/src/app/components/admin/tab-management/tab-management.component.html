@@ -1,0 +1,186 @@
+<div class="table-management-container">
+  <!-- Header Actions -->
+  <div class="table-header">
+    <div class="header-left">
+      <h3>{{ config().objectName }} Management</h3>
+    </div>   
+    <div class="header-actions">
+      <!-- Global Search -->
+      @if (config().search.enabled) {
+        <span class="p-input-icon-left">
+          <i class="pi pi-search"></i>
+          <input 
+            pInputText 
+            type="text" 
+            [value]="globalFilterValue()"
+            (input)="onGlobalFilter($event)"
+            [placeholder]="config().search.placeholder || 'Search...'" 
+            class="global-filter-input" />
+        </span>
+      }
+
+      <!-- Clear Filters -->
+      <p-button 
+        icon="pi pi-filter-slash" 
+        [text]="true"
+        (onClick)="clearFilters()"
+        pTooltip="Clear all filters"
+        severity="secondary">
+      </p-button>
+
+      <!-- Add New Item -->
+      @if (config().actions.canAdd) {
+        <p-button 
+          [label]="'Add ' + config().objectName" 
+          icon="pi pi-plus" 
+          severity="success"
+          (onClick)="addNewItem()"
+          [disabled]="isCreatingNew()">
+        </p-button>
+      }
+
+      <!-- Delete Selected -->
+      @if (config().actions.canBulkDelete) {
+        <p-button 
+          label="Delete Selected" 
+          icon="pi pi-trash" 
+          severity="danger"
+          (onClick)="deleteSelectedItems()"
+          [disabled]="!hasSelectedItems()">
+        </p-button>
+      }
+
+      <!-- Export -->
+      @if (config().export.enabled) {
+        <p-button 
+          icon="pi pi-download" 
+          label="Export CSV" 
+          (click)="exportData()"
+          severity="help"
+          [outlined]="true">
+        </p-button>
+      }
+    </div>
+  </div>
+
+  <!-- Table Container -->
+  <div class="table-content">
+    <div class="table-grid" [class.loading]="loading()">
+      <!-- Column Headers -->
+      <div class="table-grid-header">
+      <!-- Select All Checkbox -->
+      @if (config().actions.canBulkDelete) {
+        <div class="table-cell header-cell select-cell">
+          <input 
+            type="checkbox" 
+            [checked]="isAllSelected()"
+            (change)="toggleSelectAll()"
+            class="select-checkbox">
+        </div>
+      }
+
+      <!-- Actions Column -->
+      <div class="table-cell header-cell actions-cell">
+        Actions
+      </div>
+
+      <!-- Data Columns -->
+      @for (column of visibleColumns(); track column.field) {
+        <div class="table-cell header-cell" [style.width]="column.width">
+          <div class="column-header-content">
+            <span>{{ column.header }}</span>
+            
+            <div class="header-icons">
+              <!-- Sort Icon -->
+              @if (column.sortable) {
+                <i 
+                  [class]="getSortIcon(column.field)"
+                  (click)="onSort(column.field)"
+                  class="sort-icon">
+                </i>
+              }
+
+              <!-- Filter -->
+              @if (column.filterable) {
+                <app-button-confirm-popup
+                  [config]="getFilterButtonConfig(column)"
+                  buttonIcon="pi pi-filter"
+                  [buttonTooltip]="'Filter ' + column.header"
+                  (apply)="onFilterApply(column.field, $event)"
+                  (clear)="onFilterClear(column.field)"
+                  class="filter-button">
+                </app-button-confirm-popup>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Table Body -->
+    <div class="table-grid-body">
+      <!-- New Item Row -->
+      @if (isCreatingNew()) {
+      <app-row-tab
+        [item]="newItem()"
+        [columns]="visibleColumns()"
+        [config]="config()"
+        [isEditing]="true"
+        [isNew]="true"
+        [showSelect]="false"
+        (save)="saveNewItem()"
+        (cancel)="cancelNewItem()">
+      </app-row-tab>
+    }
+
+    <!-- Data Rows -->
+    @for (item of data(); track getColumnValue(item, {field: config().dataKey})) {
+      <app-row-tab
+        [item]="item"
+        [columns]="visibleColumns()"
+        [config]="config()"
+        [isEditing]="isEditing(item)"
+        [isSelected]="isItemSelected(item)"
+        [showSelect]="config().actions.canBulkDelete || false"
+        (edit)="startEdit(item)"
+        (save)="saveEdit()"
+        (cancel)="cancelEdit()"
+        (delete)="deleteItem(item)"
+        (toggleSelect)="toggleSelectItem(item)">
+      </app-row-tab>
+    }
+
+    <!-- Empty State -->
+    @if (data().length === 0 && !loading()) {
+      <div class="empty-state">
+        <i class="pi pi-inbox empty-icon"></i>
+        <h4>No {{ config().objectName.toLowerCase() }}s found</h4>
+        <p>Start by adding a new {{ config().objectName.toLowerCase() }}</p>
+      </div>
+    }
+
+    <!-- Loading State -->
+    @if (loading()) {
+      <div class="loading-state">
+        <i class="pi pi-spin pi-spinner loading-icon"></i>
+        <p>Loading {{ config().objectName.toLowerCase() }}s...</p>
+      </div>
+    }
+    </div> <!-- table-grid-body -->
+    </div> <!-- table-grid -->
+  </div> <!-- table-content -->
+
+  <!-- Pagination -->
+  @if (config().pagination.enabled && totalRecords() > 0) {
+    <div class="pagination-container">
+      <p-paginator
+        [rows]="rowsPerPage()"
+        [totalRecords]="totalRecords()"
+        [rowsPerPageOptions]="config().pagination.rowsPerPageOptions"
+        [showCurrentPageReport]="config().pagination.showCurrentPageReport || false"
+        [currentPageReportTemplate]="config().pagination.currentPageReportTemplate || 'Showing {first} to {last} of {totalRecords} entries'"
+        (onPageChange)="onPageChange($event)">
+      </p-paginator>
+    </div>
+  }
+</div>

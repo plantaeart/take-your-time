@@ -2,7 +2,11 @@ import { Injectable, signal, computed } from '@angular/core';
 import { 
   Product, 
   ProductListResponse, 
-  ProductQueryParams 
+  ProductQueryParams,
+  ProductCreateRequest,
+  ProductUpdateRequest,
+  ProductInventoryUpdate,
+  BulkProductCreateRequest
 } from '../models/product.model';
 import { Category } from '../enums/category.enum';
 import { InventoryStatus } from '../enums/inventory-status.enum';
@@ -21,8 +25,24 @@ export class ProductStore {
   // REACTIVE VARIABLES (Signals)
   // ============================================================================
 
-  /** All loaded products (accumulated for pagination) */
+  /** All loaded products (for pagination) */
   private readonly _products = signal<Product[]>([]);
+
+  /** Total number of products (for pagination) */
+  private readonly _totalRecords = signal<number>(0);
+
+  /** Current pagination info */
+  private readonly _paginationInfo = signal<{
+    page: number;
+    limit: number;
+    totalPages: number;
+    hasNext: boolean;
+  }>({
+    page: 1,
+    limit: 10,
+    totalPages: 0,
+    hasNext: false
+  });
 
   /** Currently selected product */
   private readonly _selectedProduct = signal<Product | null>(null);
@@ -77,6 +97,12 @@ export class ProductStore {
 
   /** Read-only access to products */
   readonly products = this._products.asReadonly();
+
+  /** Read-only access to total records */
+  readonly totalRecords = this._totalRecords.asReadonly();
+
+  /** Read-only access to pagination info */
+  readonly paginationInfo = this._paginationInfo.asReadonly();
 
   /** Read-only access to selected product */
   readonly selectedProduct = this._selectedProduct.asReadonly();
@@ -181,6 +207,42 @@ export class ProductStore {
   // ============================================================================
   // METHODS (Actions)
   // ============================================================================
+
+  /**
+   * Load products with pagination for PrimeNG lazy loading
+   */
+  async loadProductsLazy(page: number, limit: number, filters?: ProductQueryParams): Promise<void> {
+    this._setLoading('products', true);
+    this._clearError('products');
+
+    try {
+      const queryParams: ProductQueryParams = {
+        ...filters,
+        page,
+        limit
+      };
+
+      const response: ProductListResponse = await this.productService.getProducts(queryParams);
+      
+      this._products.set(response.products);
+      this._totalRecords.set(response.total);
+      this._paginationInfo.set({
+        page: response.page,
+        limit: response.limit,
+        totalPages: response.totalPages,
+        hasNext: response.hasNext
+      });
+      this._updatePagination(response);
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load products';
+      this._setError('products', errorMessage);
+      console.error('ProductStore.loadProductsLazy error:', error);
+      throw error;
+    } finally {
+      this._setLoading('products', false);
+    }
+  }
 
   /**
    * Load products with current filters (replaces existing products)
@@ -413,6 +475,190 @@ export class ProductStore {
     } catch (error) {
       console.warn('Failed to get max price from store:', error);
       return 1000; // Fallback default
+    }
+  }
+
+  // ============================================================================
+  // ADMIN CRUD OPERATIONS
+  // ============================================================================
+
+  /**
+   * Create a new product (Admin only)
+   */
+  async createProduct(productData: ProductCreateRequest): Promise<Product> {
+    this._setLoading('products', true);
+    this._clearError('products');
+
+    try {
+      const newProduct = await this.productService.createProduct(productData);
+      
+      // Add the new product to the current list
+      const currentProducts = this._products();
+      this._products.set([newProduct, ...currentProducts]);
+      
+      return newProduct;
+    } catch (error) {
+      this._setError('products', error instanceof Error ? error.message : 'Failed to create product');
+      throw error;
+    } finally {
+      this._setLoading('products', false);
+    }
+  }
+
+  /**
+   * Update an existing product (Admin only)
+   */
+  async updateProduct(productId: number, productData: ProductUpdateRequest): Promise<Product> {
+    this._setLoading('products', true);
+    this._clearError('products');
+
+    try {
+      const updatedProduct = await this.productService.updateProduct(productId, productData);
+      
+      // Update the product in the current list
+      const currentProducts = this._products();
+      const updatedProducts = currentProducts.map(product => 
+        product.id === productId ? updatedProduct : product
+      );
+      this._products.set(updatedProducts);
+      
+      // Update selected product if it's the one being updated
+      if (this._selectedProduct()?.id === productId) {
+        this._selectedProduct.set(updatedProduct);
+      }
+      
+      return updatedProduct;
+    } catch (error) {
+      this._setError('products', error instanceof Error ? error.message : 'Failed to update product');
+      throw error;
+    } finally {
+      this._setLoading('products', false);
+    }
+  }
+
+  /**
+   * Delete a product (Admin only)
+   */
+  async deleteProduct(productId: number): Promise<{ message: string }> {
+    this._setLoading('products', true);
+    this._clearError('products');
+
+    try {
+      const result = await this.productService.deleteProduct(productId);
+      
+      // Remove the product from the current list
+      const currentProducts = this._products();
+      const filteredProducts = currentProducts.filter(product => product.id !== productId);
+      this._products.set(filteredProducts);
+      
+      // Clear selected product if it's the one being deleted
+      if (this._selectedProduct()?.id === productId) {
+        this._selectedProduct.set(null);
+      }
+      
+      return result;
+    } catch (error) {
+      this._setError('products', error instanceof Error ? error.message : 'Failed to delete product');
+      throw error;
+    } finally {
+      this._setLoading('products', false);
+    }
+  }
+
+  /**
+   * Update product inventory (Admin only)
+   */
+  async updateProductInventory(productId: number, inventoryData: ProductInventoryUpdate): Promise<Product> {
+    this._setLoading('products', true);
+    this._clearError('products');
+
+    try {
+      const updatedProduct = await this.productService.updateProductInventory(productId, inventoryData);
+      
+      // Update the product in the current list
+      const currentProducts = this._products();
+      const updatedProducts = currentProducts.map(product => 
+        product.id === productId ? updatedProduct : product
+      );
+      this._products.set(updatedProducts);
+      
+      // Update selected product if it's the one being updated
+      if (this._selectedProduct()?.id === productId) {
+        this._selectedProduct.set(updatedProduct);
+      }
+      
+      return updatedProduct;
+    } catch (error) {
+      this._setError('products', error instanceof Error ? error.message : 'Failed to update product inventory');
+      throw error;
+    } finally {
+      this._setLoading('products', false);
+    }
+  }
+
+  /**
+   * Bulk create products (Admin only)
+   */
+  async bulkCreateProducts(bulkData: BulkProductCreateRequest): Promise<{ 
+    created: Product[], 
+    errors: Array<{ index: number, error: string }> 
+  }> {
+    this._setLoading('products', true);
+    this._clearError('products');
+
+    try {
+      const result = await this.productService.bulkCreateProducts(bulkData);
+      
+      // Add the new products to the current list
+      if (result.created.length > 0) {
+        const currentProducts = this._products();
+        this._products.set([...result.created, ...currentProducts]);
+      }
+      
+      return result;
+    } catch (error) {
+      this._setError('products', error instanceof Error ? error.message : 'Failed to bulk create products');
+      throw error;
+    } finally {
+      this._setLoading('products', false);
+    }
+  }
+
+  /**
+   * Bulk delete products (Admin only)
+   */
+  async bulkDeleteProducts(productIds: number[]): Promise<{ 
+    deleted: number[], 
+    notFound: number[],
+    message: string 
+  }> {
+    this._setLoading('products', true);
+    this._clearError('products');
+
+    try {
+      const result = await this.productService.bulkDeleteProducts(productIds);
+      
+      // Remove the deleted products from the current list
+      if (result.deleted.length > 0) {
+        const currentProducts = this._products();
+        const filteredProducts = currentProducts.filter(product => 
+          !result.deleted.includes(product.id!)
+        );
+        this._products.set(filteredProducts);
+        
+        // Clear selected product if it was deleted
+        const selectedId = this._selectedProduct()?.id;
+        if (selectedId && result.deleted.includes(selectedId)) {
+          this._selectedProduct.set(null);
+        }
+      }
+      
+      return result;
+    } catch (error) {
+      this._setError('products', error instanceof Error ? error.message : 'Failed to bulk delete products');
+      throw error;
+    } finally {
+      this._setLoading('products', false);
     }
   }
 

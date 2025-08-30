@@ -66,7 +66,7 @@ export class ProductsDisplayComponent implements OnInit {
 
   async ngOnInit() {
     await this.productList.initialize();
-    console.log('Products loaded:', this.productList.products().length);
+    // Products loaded successfully
     // Initialize wishlist to check product states
     await this.wishlist.initializeWishlist();
     // Cart will be loaded automatically when user first tries to add an item
@@ -158,7 +158,7 @@ export class ProductsDisplayComponent implements OnInit {
    * Handle clear filters
    */
   onClearFilters(): void {
-    console.log('Clear filters called from products-display');
+    // Clear all applied filters
     this.productFilters.clearFilters();
   }
 

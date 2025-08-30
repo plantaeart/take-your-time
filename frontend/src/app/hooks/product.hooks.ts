@@ -2,7 +2,11 @@ import { inject, computed, effect } from '@angular/core';
 import { ProductStore } from '../stores/product.store';
 import { 
   Product, 
-  ProductQueryParams 
+  ProductQueryParams,
+  ProductCreateRequest,
+  ProductUpdateRequest,
+  ProductInventoryUpdate,
+  BulkProductCreateRequest
 } from '../models/product.model';
 import { Category } from '../enums/category.enum';
 import { InventoryStatus } from '../enums/inventory-status.enum';
@@ -26,6 +30,12 @@ export function useProducts() {
     
     /** All loaded products */
     products: store.products,
+    
+    /** Total number of records */
+    totalRecords: store.totalRecords,
+    
+    /** Pagination information */
+    paginationInfo: store.paginationInfo,
     
     /** Currently selected product */
     selectedProduct: store.selectedProduct,
@@ -61,6 +71,9 @@ export function useProducts() {
     /** Load products (with optional force refresh) */
     loadProducts: (forceRefresh = false) => store.loadProducts(forceRefresh),
     
+    /** Load products with lazy loading for PrimeNG */
+    loadProductsLazy: (page: number, limit: number, filters?: ProductQueryParams) => store.loadProductsLazy(page, limit, filters),
+    
     /** Load more products for pagination */
     loadMore: () => store.loadMoreProducts(),
     
@@ -92,7 +105,29 @@ export function useProducts() {
     refresh: () => store.refreshAll(),
     
     /** Get maximum price from API for filter initialization */
-    getMaxPrice: () => store.getMaxPrice()
+    getMaxPrice: () => store.getMaxPrice(),
+
+    // ============================================================================
+    // ADMIN CRUD OPERATIONS
+    // ============================================================================
+    
+    /** Create a new product (Admin only) */
+    createProduct: (productData: ProductCreateRequest) => store.createProduct(productData),
+    
+    /** Update an existing product (Admin only) */
+    updateProduct: (productId: number, productData: ProductUpdateRequest) => store.updateProduct(productId, productData),
+    
+    /** Delete a product (Admin only) */
+    deleteProduct: (productId: number) => store.deleteProduct(productId),
+    
+    /** Update product inventory (Admin only) */
+    updateProductInventory: (productId: number, inventoryData: ProductInventoryUpdate) => store.updateProductInventory(productId, inventoryData),
+    
+    /** Bulk create products (Admin only) */
+    bulkCreateProducts: (bulkData: BulkProductCreateRequest) => store.bulkCreateProducts(bulkData),
+    
+    /** Bulk delete products (Admin only) */
+    bulkDeleteProducts: (productIds: number[]) => store.bulkDeleteProducts(productIds)
   };
 }
 

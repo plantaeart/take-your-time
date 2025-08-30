@@ -29,7 +29,7 @@ export class TopPageComponent implements OnInit {
       container.addEventListener('scroll', () => {
         this.checkScrollPosition();
       });
-      console.log('TopPage scroll listener attached to:', container.className || container.tagName);
+      // Scroll listener attached successfully
     }
   }
 

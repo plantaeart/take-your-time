@@ -1,0 +1,170 @@
+<div class="table-row" [class.editing]="isEditing()" [class.selected]="isSelected()">
+  <!-- Select Checkbox -->
+  @if (showSelect()) {
+    <div class="table-cell select-cell">
+      <input 
+        type="checkbox" 
+        [checked]="isSelected()"
+        (change)="onToggleSelect()"
+        class="select-checkbox">
+    </div>
+  }
+
+  <!-- Actions Column -->
+  <div class="table-cell actions-cell">
+    @if (isEditing()) {
+      <!-- Edit Mode Actions -->
+      <div class="action-buttons">
+        <p-button 
+          icon="pi pi-check" 
+          severity="success"
+          size="small"
+          [text]="true"
+          (onClick)="onSave()"
+          pTooltip="Save">
+        </p-button>
+        <p-button 
+          icon="pi pi-times" 
+          severity="secondary"
+          size="small"
+          [text]="true"
+          (onClick)="onCancel()"
+          pTooltip="Cancel">
+        </p-button>
+      </div>
+    } @else {
+      <!-- View Mode Actions -->
+      <div class="action-buttons">
+        @if (canEdit()) {
+          <p-button 
+            icon="pi pi-pencil" 
+            severity="info"
+            size="small"
+            [text]="true"
+            (onClick)="onEdit()"
+            pTooltip="Edit">
+          </p-button>
+        }
+        
+        @if (canDelete()) {
+          <p-button 
+            icon="pi pi-trash" 
+            severity="danger"
+            size="small"
+            [text]="true"
+            (onClick)="onDelete()"
+            pTooltip="Delete">
+          </p-button>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Data Columns -->
+  @for (column of columns(); track column.field) {
+    <div class="table-cell data-cell" [style.width]="column.width">
+      @if (isEditing() && column.editable) {
+        <!-- Edit Mode -->
+        <div class="edit-field" [class.invalid]="!isFieldValid(column)">
+          @switch (column.editComponent) {
+            @case ('text-input') {
+              <app-text-input
+                [ngModel]="getColumnValue(column)"
+                (ngModelChange)="setColumnValue(column, $event)"
+                [placeholder]="column.header"
+                [invalid]="!isFieldValid(column)">
+              </app-text-input>
+            }
+            @case ('textarea-input') {
+              <app-textarea-input
+                [ngModel]="getColumnValue(column)"
+                (ngModelChange)="setColumnValue(column, $event)"
+                [placeholder]="column.header"
+                [invalid]="!isFieldValid(column)">
+              </app-textarea-input>
+            }
+            @case ('dropdown-input') {
+              <app-dropdown-input
+                [ngModel]="getColumnValue(column)"
+                (ngModelChange)="setColumnValue(column, $event)"
+                [options]="column.options || []"
+                [placeholder]="'Select ' + column.header"
+                [invalid]="!isFieldValid(column)">
+              </app-dropdown-input>
+            }
+            @case ('currency-input') {
+              <app-currency-input
+                [ngModel]="getColumnValue(column)"
+                (ngModelChange)="setColumnValue(column, $event)"
+                [invalid]="!isFieldValid(column)">
+              </app-currency-input>
+            }
+            @case ('number-input') {
+              <app-number-input
+                [ngModel]="getColumnValue(column)"
+                (ngModelChange)="setColumnValue(column, $event)"
+                [invalid]="!isFieldValid(column)">
+              </app-number-input>
+            }
+            @case ('rating-input') {
+              <app-rating-input
+                [ngModel]="getColumnValue(column)"
+                (ngModelChange)="setColumnValue(column, $event)"
+                [invalid]="!isFieldValid(column)">
+              </app-rating-input>
+            }
+            @default {
+              <!-- Fallback to text input -->
+              <app-text-input
+                [ngModel]="getColumnValue(column)"
+                (ngModelChange)="setColumnValue(column, $event)"
+                [placeholder]="column.header"
+                [invalid]="!isFieldValid(column)">
+              </app-text-input>
+            }
+          }
+          
+          <!-- Field Validation Error -->
+          @if (!isFieldValid(column)) {
+            <small class="field-error">
+              Field is invalid
+            </small>
+          }
+        </div>
+      } @else {
+        <!-- View Mode -->
+        <div class="display-field">
+          @switch (column.type) {
+            @case ('enum') {
+              <p-tag 
+                [value]="getDisplayValue(column)"
+                [severity]="getTagSeverity(column)">
+              </p-tag>
+            }
+            @case ('image') {
+              @if (getColumnValue(column)) {
+                <img 
+                  [src]="getColumnValue(column)" 
+                  [alt]="column.header"
+                  class="table-image">
+              } @else {
+                <span class="no-image">No image</span>
+              }
+            }
+            @case ('boolean') {
+              <i 
+                [class]="getColumnValue(column) ? 'pi pi-check text-green-500' : 'pi pi-times text-red-500'"
+                [title]="getDisplayValue(column)">
+              </i>
+            }
+            @default {
+              <span [title]="getDisplayValue(column)">
+                {{ getDisplayValue(column) }}
+              </span>
+            }
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

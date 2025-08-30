@@ -13,11 +13,11 @@
     
     <!-- Products Management Tab -->
     <p-tabPanel header="Products" leftIcon="pi pi-box">
-      <div class="tab-content">
-        <h3>Products Management (CRUD)</h3>
-        <p>Create, Read, Update, Delete products</p>
-        <!-- TODO: Implement products CRUD component -->
-      </div>
+      <app-tab-management 
+        [config]="productTableConfig"
+        [data]="productData()"
+        [loading]="isLoadingProducts()">
+      </app-tab-management>
     </p-tabPanel>
 
     <!-- Users Management Tab -->

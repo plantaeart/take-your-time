@@ -1,0 +1,99 @@
+<p-button 
+  [icon]="buttonIcon()"
+  [text]="true"
+  size="small"
+  [severity]="buttonSeverityComputed()"
+  [pTooltip]="buttonTooltip()"
+  (onClick)="togglePopup(op, $event)"
+  class="filter-button">
+</p-button>
+
+<p-overlayPanel 
+  #op 
+  [showCloseIcon]="false"
+  [dismissable]="true"
+  (onShow)="onShow()"
+  (onHide)="onHide()"
+  class="filter-overlay">
+  
+  <div class="filter-popup-content">
+    <div class="filter-header">
+      <h4>Filter {{ config().header }}</h4>
+    </div>
+    
+    <div class="filter-field">
+      @switch (config().filterType) {
+        @case ('text') {
+          <input 
+            pInputText
+            type="text" 
+            [ngModel]="currentValue()"
+            (ngModelChange)="updateValue($event)"
+            [placeholder]="'Filter by ' + config().header.toLowerCase()"
+            class="filter-input" />
+        }
+        @case ('number') {
+          <input 
+            pInputText
+            type="number" 
+            [ngModel]="currentValue()"
+            (ngModelChange)="updateValue($event)"
+            [placeholder]="'Filter by ' + config().header.toLowerCase()"
+            class="filter-input" />
+        }
+        @case ('dropdown') {
+          <p-dropdown
+            [options]="config().options || []"
+            [ngModel]="currentValue()"
+            (ngModelChange)="updateValue($event)"
+            [placeholder]="'Select ' + config().header.toLowerCase()"
+            [showClear]="true"
+            optionLabel="label"
+            optionValue="value"
+            class="filter-dropdown">
+          </p-dropdown>
+        }
+        @case ('boolean') {
+          <p-dropdown
+            [options]="[
+              { label: 'Yes', value: true },
+              { label: 'No', value: false }
+            ]"
+            [ngModel]="currentValue()"
+            (ngModelChange)="updateValue($event)"
+            [placeholder]="'Select ' + config().header.toLowerCase()"
+            [showClear]="true"
+            optionLabel="label"
+            optionValue="value"
+            class="filter-dropdown">
+          </p-dropdown>
+        }
+        @default {
+          <input 
+            pInputText
+            type="text" 
+            [ngModel]="currentValue()"
+            (ngModelChange)="updateValue($event)"
+            [placeholder]="'Filter by ' + config().header.toLowerCase()"
+            class="filter-input" />
+        }
+      }
+    </div>
+    
+    <div class="filter-actions">
+      <p-button 
+        label="Clear" 
+        severity="secondary"
+        size="small"
+        [text]="true"
+        (onClick)="onClear(op)">
+      </p-button>
+      <p-button 
+        label="Apply" 
+        severity="primary"
+        size="small"
+        (onClick)="onApply(op)">
+      </p-button>
+    </div>
+  </div>
+</p-overlayPanel>

@@ -1,0 +1,18 @@
+<p-inputNumber
+  [(ngModel)]="value"
+  [min]="min()"
+  [max]="max()"
+  [step]="step()"
+  [placeholder]="placeholder()"
+  [disabled]="disabled()"
+  [showButtons]="showButtons()"
+  [mode]="mode()"
+  [currency]="currency()"
+  [locale]="locale()"
+  [suffix]="suffix()"
+  [prefix]="prefix()"
+  (onInput)="handleInput($event)"
+  (onFocus)="handleFocus($event)"
+  (onBlur)="handleBlur($event)"
+  class="w-full">
+</p-inputNumber>

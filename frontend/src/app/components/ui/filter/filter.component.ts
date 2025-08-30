@@ -131,7 +131,7 @@ export class FilterComponent implements OnChanges {
 
   async ngOnChanges(changes: SimpleChanges) {
     if (changes['products'] && this.products) {
-      console.log('Products changed:', this.products.length);
+      // Products updated - filter components synchronized
     }
     await this.initializeOptions();
     this.initializeLegacySupport();
