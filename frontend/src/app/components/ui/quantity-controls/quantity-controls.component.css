@@ -93,47 +93,26 @@
 }
 
 /* ============================================================================
-   ERROR STATE
-   ============================================================================ */
-
-.quantity-error ::ng-deep .p-inputnumber-input,
-.quantity-controls.quantity-error ::ng-deep .p-inputnumber .p-inputnumber-input {
-  border-color: #ef4444 !important;
-  background-color: #fef2f2 !important;
-  color: #dc2626 !important;
-}
-
-.quantity-error ::ng-deep .p-inputnumber .p-inputnumber-button,
-.quantity-controls.quantity-error ::ng-deep .p-inputnumber .p-inputnumber-button {
-  border-color: #ef4444;
-  background-color: #fef2f2;
-  color: #dc2626;
-}
-
-.quantity-error ::ng-deep .p-inputnumber .p-inputnumber-button:hover,
-.quantity-controls.quantity-error ::ng-deep .p-inputnumber .p-inputnumber-button:hover {
-  background-color: #fee2e2;
-}
-
-/* ============================================================================
    DISABLED STATE
    ============================================================================ */
 
 .quantity-controls ::ng-deep .p-inputnumber-input:disabled {
-  background-color: #f9fafb;
-  color: #9ca3af;
+  background-color: #f9fafb !important;
+  color: #9ca3af !important;
+  border-color: #d1d5db !important;
   cursor: not-allowed;
 }
 
 .quantity-controls ::ng-deep .p-inputnumber .p-inputnumber-button:disabled {
-  background-color: #f9fafb;
-  color: #d1d5db;
+  background-color: #f9fafb !important;
+  color: #d1d5db !important;
+  border-color: #d1d5db !important;
   cursor: not-allowed;
 }
 
 .quantity-controls ::ng-deep .p-inputnumber .p-inputnumber-button:disabled:hover {
-  background-color: #f9fafb;
-  border-color: #d1d5db;
+  background-color: #f9fafb !important;
+  border-color: #d1d5db !important;
 }
 
 /* ============================================================================

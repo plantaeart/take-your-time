@@ -95,7 +95,7 @@
                   }
                   <small>Added: {{ item.addedAt | date:'short' }}</small>
                   @if (item.productQuantity !== undefined) {
-                    <small class="stock-info">{{ item.productQuantity }} available</small>
+                    <small [class]="getStockInfoClass(item)">{{ getStockInfoText(item) }}</small>
                   }
                 </div>
               </div>
@@ -131,11 +131,11 @@
                 <!-- Action Buttons -->
                 <div class="action-buttons">
                   <p-button 
-                    [label]="isAllInCart(item) ? 'All in Cart' : 'Add to Cart'"
+                    label="Add to Cart"
                     icon="pi pi-shopping-cart"
-                    [severity]="isAllInCart(item) ? 'secondary' : 'primary'"
+                    severity="primary"
                     size="small"
-                    [disabled]="isQuantityExceedsStock(item) || isLoadingProductDetails || getMaxQuantity(item) === 0"
+                    [disabled]="getMaxQuantity(item) === 0"
                     (click)="addToCart(item)">
                   </p-button>
                   

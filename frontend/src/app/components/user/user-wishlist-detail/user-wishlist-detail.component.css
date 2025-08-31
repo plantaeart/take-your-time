@@ -163,8 +163,19 @@
 }
 
 .stock-info {
-  color: #059669 !important;
   font-weight: 500 !important;
+}
+
+.stock-available {
+  color: #059669 !important;
+}
+
+.stock-low {
+  color: #f59e0b !important;
+}
+
+.stock-out {
+  color: #dc2626 !important;
 }
 
 /* ============================================================================
@@ -238,6 +249,24 @@
   flex-direction: row;
   gap: 0.5rem;
   width: 100%;
+}
+
+/* Enhanced disabled button styling */
+:host ::ng-deep .action-buttons .p-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+:host ::ng-deep .action-buttons .p-button[data-severity="danger"] {
+  background-color: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #dc2626 !important;
+}
+
+:host ::ng-deep .action-buttons .p-button[data-severity="secondary"]:disabled {
+  background-color: #f0fdf4 !important;
+  border-color: #bbf7d0 !important;
+  color: #16a34a !important;
 }
 
 /* ============================================================================
