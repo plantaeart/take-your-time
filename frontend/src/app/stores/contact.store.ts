@@ -1,6 +1,6 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { ContactService } from '../services/contact.service';
-import { ContactRequest, ContactResponse, ContactSubmission } from '../models/contact.model';
+import { ContactRequest, ContactResponse, ContactSubmission, ContactUpdate } from '../models/contact.model';
 
 @Injectable({
   providedIn: 'root'
@@ -63,6 +63,28 @@ export class ContactStore {
       this._error.set(errorMessage);
     } finally {
       this._isLoading.set(false);
+    }
+  }
+
+  /**
+   * Update contact submission (Admin only)
+   */
+  async updateSubmission(contactId: number, updateData: ContactUpdate): Promise<void> {
+    this._error.set(null);
+
+    try {
+      const updatedSubmission = await this.contactService.updateContactSubmission(contactId, updateData).toPromise();
+      
+      // Update the submission in the local state
+      const currentSubmissions = this._submissions();
+      const updatedSubmissions = currentSubmissions.map(submission => 
+        submission.id === contactId ? updatedSubmission! : submission
+      );
+      this._submissions.set(updatedSubmissions);
+    } catch (error: any) {
+      const errorMessage = error?.error?.detail || 'Failed to update submission.';
+      this._error.set(errorMessage);
+      throw error; // Re-throw to allow component to handle
     }
   }
 

@@ -35,7 +35,7 @@ const productColumns: ColumnConfig[] = [
     type: 'number',
     sortable: true,
     filterable: true,
-    filterType: 'text',
+    filterType: 'number',
     width: '8rem',
     editable: false
   },
@@ -216,7 +216,8 @@ const productPagination: PaginationConfig = {
   rowsPerPage: 10,
   rowsPerPageOptions: [10, 20, 50, 100],
   showCurrentPageReport: true,
-  currentPageReportTemplate: 'Showing {first} to {last} of {totalRecords} products'
+  currentPageReportTemplate: 'Showing {first} to {last} of {totalRecords} products',
+  lazy: true // Enable server-side pagination
 };
 
 // Complete Product Table Configuration

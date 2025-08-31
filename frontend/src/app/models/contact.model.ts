@@ -13,6 +13,12 @@ export interface ContactResponse {
   messageId?: string;
 }
 
+export interface AdminNoteResponse {
+  adminId: number;
+  note: string;
+  createdAt: string;
+}
+
 export interface ContactSubmission {
   id: number;
   email: string;
@@ -21,7 +27,7 @@ export interface ContactSubmission {
   status: ContactStatus;
   messageId?: string;
   errorMessage?: string;
-  schemaVersion: number;
+  adminNotes: AdminNoteResponse[];
   createdAt: string;
   updatedAt: string;
 }
@@ -31,6 +37,11 @@ export interface ContactSubmissionsResponse {
   total: number;
   skip: number;
   limit: number;
+}
+
+export interface ContactUpdate {
+  status?: ContactStatus;
+  adminNote?: string;
 }
 
 export enum ContactStatus {

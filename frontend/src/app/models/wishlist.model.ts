@@ -28,3 +28,16 @@ export interface WishlistResponse {
   createdAt: Date;
   updatedAt: Date;
 }
+
+/**
+ * Wishlist search response interface for admin search
+ */
+export interface WishlistSearchResponse {
+  wishlists: Wishlist[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}

@@ -69,6 +69,7 @@ export interface PaginationConfig {
   rowsPerPageOptions: number[];
   showCurrentPageReport?: boolean;
   currentPageReportTemplate?: string;
+  lazy?: boolean; // Enable server-side pagination (lazy loading)
 }
 
 export interface TableManagementConfig<T = any> {

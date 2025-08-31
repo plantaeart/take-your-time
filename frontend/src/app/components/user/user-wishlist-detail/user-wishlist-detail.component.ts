@@ -244,11 +244,11 @@ export class UserWishlistDetailComponent implements OnInit {
    * Get maximum allowed quantity for a product (total stock - current in cart)
    */
   getMaxQuantity(item: WishlistItem): number {
-    const totalStock = item.productQuantity || 999;
+    const totalStock = item.productQuantity ?? 0;
     const currentInCart = this.getCartQuantity(item.productId);
     const availableToAdd = totalStock - currentInCart;
     
-    // Return at least 1 if there's any stock available, otherwise 0
+    // Return at least 0 if there's any stock available, otherwise 0
     return Math.max(0, availableToAdd);
   }
 
@@ -388,5 +388,107 @@ export class UserWishlistDetailComponent implements OnInit {
    */
   isAllInCart(item: WishlistItem): boolean {
     return this.getMaxQuantity(item) === 0;
+  }
+
+  /**
+   * Get the appropriate label for the add to cart button
+   */
+  getAddToCartButtonLabel(item: WishlistItem): string {
+    const maxQuantity = this.getMaxQuantity(item);
+    
+    if (maxQuantity === 0) {
+      // Check if it's out of stock or all in cart
+      const totalStock = item.productQuantity || 0;
+      const currentInCart = this.getCartQuantity(item.productId);
+      
+      if (totalStock === 0) {
+        return 'Out of Stock';
+      } else if (currentInCart >= totalStock) {
+        return 'All in Cart';
+      } else {
+        return 'Out of Stock';
+      }
+    }
+    
+    if (this.isInCart(item.productId)) {
+      return 'Add More';
+    }
+    
+    return 'Add to Cart';
+  }
+
+  /**
+   * Get the appropriate icon for the add to cart button
+   */
+  getAddToCartButtonIcon(item: WishlistItem): string {
+    const maxQuantity = this.getMaxQuantity(item);
+    
+    if (maxQuantity === 0) {
+      const totalStock = item.productQuantity || 0;
+      if (totalStock === 0) {
+        return 'pi pi-ban';
+      } else {
+        return 'pi pi-check';
+      }
+    }
+    
+    return 'pi pi-shopping-cart';
+  }
+
+  /**
+   * Get the appropriate severity for the add to cart button
+   */
+  getAddToCartButtonSeverity(item: WishlistItem): "success" | "info" | "warning" | "danger" | "help" | "secondary" | "contrast" | undefined {
+    const maxQuantity = this.getMaxQuantity(item);
+    
+    if (maxQuantity === 0) {
+      const totalStock = item.productQuantity || 0;
+      if (totalStock === 0) {
+        return 'danger';
+      } else {
+        return 'secondary';
+      }
+    }
+    
+    if (this.isInCart(item.productId)) {
+      return 'info';
+    }
+    
+    return 'success';
+  }
+
+  /**
+   * Get stock information text
+   */
+  getStockInfoText(item: WishlistItem): string {
+    const totalStock = item.productQuantity || 0;
+    const currentInCart = this.getCartQuantity(item.productId);
+    const available = totalStock - currentInCart;
+    
+    if (totalStock === 0) {
+      return 'Out of stock';
+    } else if (available <= 0) {
+      return `All ${totalStock} in cart`;
+    } else if (currentInCart > 0) {
+      return `${available} available (${currentInCart} in cart)`;
+    } else {
+      return `${totalStock} available`;
+    }
+  }
+
+  /**
+   * Get CSS class for stock information based on availability
+   */
+  getStockInfoClass(item: WishlistItem): string {
+    const totalStock = item.productQuantity || 0;
+    const available = this.getMaxQuantity(item);
+    
+    if (totalStock === 0 || available === 0) {
+      return 'stock-info stock-out';
+    } else if (available <= 3) {
+      return 'stock-info stock-low';
+    } else {
+      return 'stock-info stock-available';
+    }
   }
 }

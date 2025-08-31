@@ -33,3 +33,16 @@ export interface CartResponse {
   createdAt: Date;
   updatedAt: Date;
 }
+
+/**
+ * Cart search response interface for admin search
+ */
+export interface CartSearchResponse {
+  carts: Cart[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}

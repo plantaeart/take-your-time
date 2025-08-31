@@ -98,3 +98,16 @@ export class PasswordValidator {
     return password === confirmPassword;
   }
 }
+
+/**
+ * User List Response - For paginated user listings
+ */
+export interface UserListResponse {
+  users: User[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}

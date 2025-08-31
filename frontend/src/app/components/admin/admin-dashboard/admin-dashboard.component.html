@@ -16,7 +16,9 @@
       <app-tab-management 
         [config]="productTableConfig"
         [data]="productData()"
-        [loading]="isLoadingProducts()">
+        [loading]="isLoadingProducts()"
+        [totalRecordsInput]="adminProductSearch.state().total"
+        (dataLoad)="onProductDataLoad($event)">
       </app-tab-management>
     </p-tabPanel>
 

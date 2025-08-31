@@ -1,4 +1,4 @@
-import { Component, OnInit, input, signal, computed, ViewChild, TemplateRef } from '@angular/core';
+import { Component, OnInit, input, signal, computed, ViewChild, TemplateRef, output, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -37,14 +37,15 @@ export class TabManagementComponent<T = any> implements OnInit {
   config = input.required<TableManagementConfig<T>>();
   data = input<T[]>([]);
   loading = input<boolean>(false);
+  totalRecordsInput = input<number>(0); // Total records from server for lazy loading
 
   // Outputs (events for parent to handle)
-  dataLoad = signal<{
+  dataLoad = output<{
     page: number;
     size: number;
     sorts: { field: string; direction: 'asc' | 'desc' }[];
     filters: FilterState;
-  }>({ page: 1, size: 10, sorts: [], filters: {} });
+  }>();
 
   // Internal state
   selectedItems = signal<T[]>([]);
@@ -53,15 +54,38 @@ export class TabManagementComponent<T = any> implements OnInit {
   editingItem = signal<T | null>(null);
   editItemData = signal<Partial<T>>({});
   globalFilterValue = signal<string>('');
-  totalRecords = signal<number>(0);
+  
+  // Computed total records - use input for lazy loading or data length for client-side
+  totalRecords = computed(() => {
+    if (this.config().pagination.lazy) {
+      return this.totalRecordsInput();
+    }
+    return this.data().length;
+  });
   
   // Filter and sort state
   columnFilters = signal<FilterState>({});
   sortState = signal<SortState>({ field: '', order: 'asc' });
   
+  // Debounce for global filter
+  private globalFilterTimeout: any;
+  
   // Pagination state
   currentPage = signal<number>(1);
   rowsPerPage = signal<number>(10);
+
+  constructor() {
+    // Reset to page 1 when filters change (better UX)
+    effect(() => {
+      const filters = this.columnFilters();
+      const globalFilter = this.globalFilterValue();
+      
+      // Only reset if we're not on page 1 and filters have changed
+      if (this.currentPage() > 1) {
+        this.currentPage.set(1);
+      }
+    }, { allowSignalWrites: true });
+  }
 
   // Computed properties
   visibleColumns = computed(() => 
@@ -82,11 +106,31 @@ export class TabManagementComponent<T = any> implements OnInit {
     return hasColumnFilters || hasGlobalFilter || hasSorting || hasNonDefaultPage;
   });
 
-  // Update total records to reflect filtered data
-  filteredTotalRecords = computed(() => this.filteredData().length);
+  // Update total records to reflect filtered data (for lazy loading) or totalRecords (for client-side)
+  filteredTotalRecords = computed(() => {
+    // For lazy loading, use the totalRecords from server
+    if (this.config().pagination.lazy) {
+      return this.totalRecords();
+    }
+    // For client-side pagination, use filtered data length
+    return this.filteredData().length;
+  });
+
+  // Debug computed property to check pagination config
+  paginationDebug = computed(() => {
+    const config = this.config().pagination;
+    const total = this.filteredTotalRecords();
+    return { enabled: config.enabled, total };
+  });
 
   // Filtered and sorted data
   filteredData = computed(() => {
+    // For lazy loading, return data as-is (server handles filtering/sorting)
+    if (this.config().pagination.lazy) {
+      return this.data();
+    }
+    
+    // Client-side filtering and sorting
     let filtered = [...this.data()];
     
     // Apply global filter
@@ -115,10 +159,10 @@ export class TabManagementComponent<T = any> implements OnInit {
           if (column?.filterType === 'range' && Array.isArray(filterValue)) {
             const numValue = Number(itemValue);
             return numValue >= filterValue[0] && numValue <= filterValue[1];
+          } else if (column?.filterType === 'number') {
+            return itemValue === Number(filterValue);
           } else if (column?.type === 'boolean') {
             return itemValue === filterValue;
-          } else if (column?.type === 'number') {
-            return itemValue === Number(filterValue);
           } else if (column?.type === 'enum') {
             // For enum/multiselect, filterValue might be an array
             if (Array.isArray(filterValue)) {
@@ -152,6 +196,12 @@ export class TabManagementComponent<T = any> implements OnInit {
 
   // Computed property for paginated data
   paginatedData = computed(() => {
+    // For lazy loading, return filtered data as-is (server handles pagination)
+    if (this.config().pagination.lazy) {
+      return this.filteredData();
+    }
+    
+    // For client-side pagination, slice the data
     const data = this.filteredData();
     const start = (this.currentPage() - 1) * this.rowsPerPage();
     const end = start + this.rowsPerPage();
@@ -218,6 +268,11 @@ export class TabManagementComponent<T = any> implements OnInit {
     const paginationConfig = this.config().pagination;
     if (paginationConfig.enabled) {
       this.rowsPerPage.set(paginationConfig.rowsPerPage);
+    }
+    
+    // Trigger initial data load for lazy loading
+    if (paginationConfig?.lazy) {
+      this.triggerDataLoad();
     }
   }
 
@@ -329,6 +384,11 @@ export class TabManagementComponent<T = any> implements OnInit {
     this.columnFilters.set(newFilters);
     // Reset to first page when filtering
     this.currentPage.set(1);
+    
+    // If lazy loading is enabled, trigger data load
+    if (this.config().pagination.lazy) {
+      this.triggerDataLoad();
+    }
   }
 
   onGlobalFilter(event: any): void {
@@ -336,6 +396,21 @@ export class TabManagementComponent<T = any> implements OnInit {
     this.globalFilterValue.set(value);
     // Reset to first page when filtering
     this.currentPage.set(1);
+    
+    // If lazy loading is enabled, use debounced trigger
+    if (this.config().pagination.lazy) {
+      this.debounceGlobalFilter();
+    }
+  }
+
+  private debounceGlobalFilter(): void {
+    if (this.globalFilterTimeout) {
+      clearTimeout(this.globalFilterTimeout);
+    }
+    
+    this.globalFilterTimeout = setTimeout(() => {
+      this.triggerDataLoad();
+    }, 500); // 500ms debounce
   }
 
   clearFilters(): void {
@@ -353,8 +428,8 @@ export class TabManagementComponent<T = any> implements OnInit {
       this.rowsPerPage.set(paginationConfig.rowsPerPage);
     }
     
-    // Reset data load signal to initial state
-    this.dataLoad.set({
+    // Emit data load event to reset state
+    this.dataLoad.emit({
       page: 1,
       size: paginationConfig?.enabled ? paginationConfig.rowsPerPage : 10,
       sorts: [],
@@ -363,6 +438,11 @@ export class TabManagementComponent<T = any> implements OnInit {
     
     // Clear selections
     this.selectedItems.set([]);
+    
+    // If lazy loading is enabled, trigger data load
+    if (this.config().pagination.lazy) {
+      this.triggerDataLoad();
+    }
   }
 
   // ============= SORT METHODS =============
@@ -374,6 +454,11 @@ export class TabManagementComponent<T = any> implements OnInit {
     this.sortState.set({ field, order: newOrder });
     // Reset to first page when sorting
     this.currentPage.set(1);
+    
+    // If lazy loading is enabled, trigger data load
+    if (this.config().pagination.lazy) {
+      this.triggerDataLoad();
+    }
   }
 
   getSortIcon(field: string): string {
@@ -385,9 +470,27 @@ export class TabManagementComponent<T = any> implements OnInit {
   // ============= PAGINATION METHODS =============
   
   onPageChange(event: any): void {
-    this.currentPage.set(event.page + 1); // PrimeNG uses 0-based pages
+    // Update the rows per page first
     this.rowsPerPage.set(event.rows);
-    // No need to trigger data load for local pagination
+    
+    // Calculate the new current page (PrimeNG uses 0-based pages, we use 1-based)
+    const newPage = event.page + 1;
+    
+    // For client-side pagination, ensure we don't go beyond available pages
+    if (!this.config().pagination.lazy) {
+      const totalRecords = this.filteredTotalRecords();
+      const maxPages = Math.ceil(totalRecords / event.rows);
+      const validPage = Math.min(newPage, Math.max(1, maxPages));
+      this.currentPage.set(validPage);
+    } else {
+      this.currentPage.set(newPage);
+    }
+    
+    // If lazy loading is enabled, trigger data load
+    if (this.config().pagination.lazy) {
+      this.triggerDataLoad();
+    }
+    // For client-side pagination, no need to trigger data load - computed properties will update automatically
   }
 
   // ============= UTILITY METHODS =============
@@ -400,11 +503,18 @@ export class TabManagementComponent<T = any> implements OnInit {
     const sortConfig = this.sortState();
     const sorts = sortConfig.field ? [{ field: sortConfig.field, direction: sortConfig.order }] : [];
     
-    this.dataLoad.set({
+    // Combine column filters with global search
+    const filters = { ...this.columnFilters() };
+    const globalSearch = this.globalFilterValue().trim();
+    if (globalSearch) {
+      filters.search = globalSearch;
+    }
+    
+    this.dataLoad.emit({
       page: this.currentPage(),
       size: this.rowsPerPage(),
       sorts,
-      filters: this.columnFilters()
+      filters
     });
   }
 

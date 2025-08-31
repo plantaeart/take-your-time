@@ -10,6 +10,7 @@
         <span class="p-input-icon-left">
           <i class="pi pi-search"></i>
           <input 
+            id="global-filter-input"
             pInputText 
             type="text" 
             [value]="globalFilterValue()"
@@ -171,11 +172,12 @@
   </div> <!-- table-content -->
 
   <!-- Pagination -->
-  @if (config().pagination.enabled && filteredTotalRecords() > 0) {
-    <div class="pagination-container">
+  @if (config().pagination.enabled) {
+    <div class="pagination-container">   
       <p-paginator
         [rows]="rowsPerPage()"
         [totalRecords]="filteredTotalRecords()"
+        [first]="(currentPage() - 1) * rowsPerPage()"
         [rowsPerPageOptions]="config().pagination.rowsPerPageOptions"
         [showCurrentPageReport]="config().pagination.showCurrentPageReport || false"
         [currentPageReportTemplate]="config().pagination.currentPageReportTemplate || 'Showing {first} to {last} of {totalRecords} entries'"
