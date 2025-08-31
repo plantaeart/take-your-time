@@ -17,6 +17,8 @@ from app.routers.auth import router as auth_router
 from app.routers.cart import router as cart_router
 from app.routers.wishlist import router as wishlist_router
 from app.routers.admin_users import router as admin_users_router
+from app.routers.admin_object_sort_filter import router as admin_search_router
+from app.routers.admin_migration import router as admin_migration_router
 from app.routers.contact import router as contact_router
 from app.startup import initialize_database
 from app.version import __version__
@@ -95,6 +97,8 @@ def create_app() -> FastAPI:
     app.include_router(products_router, prefix="/api")
     app.include_router(cart_router, prefix="/api")
     app.include_router(wishlist_router, prefix="/api")
+    app.include_router(admin_search_router, prefix="/api")
+    app.include_router(admin_migration_router, prefix="/api")
     app.include_router(admin_users_router, prefix="/api")
     app.include_router(contact_router, prefix="/api")
     

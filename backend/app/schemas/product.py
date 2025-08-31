@@ -63,3 +63,6 @@ class ProductListResponse(BaseModel):
     total: int
     page: int
     limit: int
+    totalPages: int
+    hasNext: bool
+    hasPrev: bool

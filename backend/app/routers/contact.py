@@ -5,10 +5,11 @@ Contact form API router.
 from fastapi import APIRouter, HTTPException, Depends
 from typing import Annotated, Dict, Any, Optional
 from pymongo.collection import Collection
+from datetime import datetime
 
-from app.schemas.contact import ContactRequest, ContactResponse, ContactSubmissionsResponse
+from app.schemas.contact import ContactRequest, ContactResponse, ContactSubmissionsResponse, ContactUpdate
 from app.services.email import email_service
-from app.auth.dependencies import get_current_user
+from app.auth.dependencies import get_current_user, admin_required
 from app.models.user import UserModel
 from app.models.contact import ContactModel, get_next_contact_id
 from app.models.enums.contactStatus import ContactStatus
@@ -131,4 +132,103 @@ async def send_contact_message(
         raise HTTPException(
             status_code=500,
             detail="An unexpected error occurred while sending your message. Please try again later."
+        )
+
+
+@router.put("/admin/{contactId}", response_model=ContactResponse)
+async def update_contact_submission(
+    contactId: int,
+    contact_update: ContactUpdate,
+    adminUser: Annotated[UserModel, Depends(admin_required)]
+) -> ContactResponse:
+    """
+    Update a contact form submission (Admin only).
+    
+    Allows updating status and adding admin notes.
+    """
+    collection: Collection = db_manager.get_collection("contacts")
+    
+    # Find the contact submission
+    contact_data = await collection.find_one({"id": contactId})
+    if not contact_data:
+        raise HTTPException(
+            status_code=404,
+            detail="Contact submission not found"
+        )
+    
+    # Create ContactModel from existing data
+    contact = ContactModel.from_dict(contact_data)
+    
+    # Update fields if provided
+    if contact_update.status is not None:
+        contact.status = contact_update.status
+    
+    if contact_update.adminNote is not None:
+        contact.add_admin_note(adminUser.id, contact_update.adminNote)
+    
+    # Update timestamp
+    contact.updatedAt = datetime.now()
+    
+    try:
+        # Save updated contact
+        await collection.replace_one(
+            {"id": contactId},
+            contact.to_dict()
+        )
+        
+        return ContactResponse(
+            success=True,
+            message="Contact submission updated successfully",
+            messageId=contact.messageId
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update contact submission: {str(e)}"
+        )
+
+
+@router.delete("/admin/{contactId}", response_model=ContactResponse)
+async def delete_contact_submission(
+    contactId: int,
+    adminUser: Annotated[UserModel, Depends(admin_required)]
+) -> ContactResponse:
+    """
+    Delete a contact form submission (Admin only).
+    
+    Permanently removes the contact submission from the database.
+    """
+    collection: Collection = db_manager.get_collection("contacts")
+    
+    # Check if contact exists
+    contact_data = await collection.find_one({"id": contactId})
+    if not contact_data:
+        raise HTTPException(
+            status_code=404,
+            detail="Contact submission not found"
+        )
+    
+    try:
+        # Delete the contact submission
+        result = await collection.delete_one({"id": contactId})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(
+                status_code=404,
+                detail="Contact submission not found"
+            )
+        
+        return ContactResponse(
+            success=True,
+            message="Contact submission deleted successfully",
+            messageId=None
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete contact submission: {str(e)}"
         )

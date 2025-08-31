@@ -8,11 +8,21 @@ applyTo: 'backend/**'
 
 **Comprehensive test coverage** for FastAPI + MongoDB backend with consistent patterns, proper status codes, and maintainable test structure.
 
+### 🚨 CRITICAL RULES (User Requirements)
+
+1. **API-Based Testing ONLY**: Use TestClient for HTTP requests, NEVER direct database access
+2. **No Async Tests**: Don't use `@pytest.mark.asyncio` or `async def` - follow working patterns
+3. **HTTPStatus Enum MANDATORY**: Always use `HTTPStatus.STATUS.value`, never hardcoded numbers
+4. **Complete Type Annotations**: Every variable must have type hints
+5. **Follow Working Patterns**: Base new tests on existing successful test files
+6. **Test Current Behavior**: Focus on validating current API behavior, not migration logic
+
 ### Tech Stack
 - **Framework**: FastAPI (Python 3.13)
 - **Database**: MongoDB with mongomock-motor (in-memory testing)
-- **Testing**: pytest + pytest-asyncio + TestClient
+- **Testing**: pytest + TestClient (API-based testing pattern)
 - **Validation**: Pydantic v2 + comprehensive type annotations
+- **Schema Management**: Structured upgrade system with version-specific tests
 
 ---
 
@@ -27,10 +37,19 @@ backend/tests/
 │   ├── test_admin_products.py  # Admin product management
 │   ├── test_admin_users.py     # Admin user management
 │   └── test_admin_*.py         # Other admin features
+├── admin_search/               # Admin search functionality tests
+│   ├── test_admin_search_cart.py      # Admin cart search
+│   ├── test_admin_search_products.py  # Admin product search
+│   ├── test_admin_search_users.py     # Admin user search
+│   └── test_admin_search_wishlist.py  # Admin wishlist search
 ├── auth/                       # Authentication tests
+├── contact/                    # Contact form tests
 ├── models/                     # Model validation tests
-├── user/                       # User-specific functionality tests
-└── products/                   # Product-specific tests
+├── products/                   # Product-specific tests
+├── schema_upgrade/             # Schema version upgrade tests
+│   ├── test_product_upgrade_v1_to_v2.py  # Product schema v1→v2
+│   └── test_contact_upgrade_v1_to_v2.py  # Contact schema v1→v2
+└── user/                       # User-specific functionality tests
 ```
 
 ### **Test Class Structure**
@@ -379,6 +398,113 @@ def test_bulk_delete_products_partial_success(self, client: TestClient, admin_to
 
 ---
 
+## 🔄 Schema Upgrade Testing
+
+### **Schema Version Testing Strategy**
+Schema upgrade tests focus on **API behavior validation** rather than direct database migration testing. These tests ensure that the current API correctly handles schema version 2 data structures.
+
+### **Test Categories**
+
+#### **1. Current Schema Version Validation**
+```python
+def test_create_product_with_current_schema_version(self, client: TestClient, admin_token: str) -> None:
+    """Test that new products are created with current schema version 2."""
+    headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
+    
+    productData: Dict[str, Any] = {
+        "name": "Test Product Current Schema",
+        "category": Category.ELECTRONICS.value,
+        "price": 99.99,
+        "quantity": 10
+    }
+    
+    response = client.post("/api/products", json=productData, headers=headers)
+    assert response.status_code == HTTPStatus.CREATED.value
+    
+    # Verify schema version 2 is applied
+    responseData: Dict[str, Any] = response.json()
+    assert responseData["schemaVersion"] == 2
+```
+
+#### **2. Field Auto-Generation Testing**
+```python
+def test_product_creation_auto_generates_fields(self, client: TestClient, admin_token: str) -> None:
+    """Test that product creation auto-generates required fields."""
+    headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
+    
+    response = client.post("/api/products", json=productData, headers=headers)
+    assert response.status_code == HTTPStatus.CREATED.value
+    
+    responseData: Dict[str, Any] = response.json()
+    assert "id" in responseData
+    assert "code" in responseData
+    assert "internalReference" in responseData
+    assert responseData["schemaVersion"] == 2
+    
+    # Verify auto-generated field formats
+    assert isinstance(responseData["id"], int)
+    assert len(responseData["code"]) == 9  # Product code format
+    assert responseData["internalReference"].startswith("REF-")
+```
+
+#### **3. Data Validation Testing**
+```python
+def test_api_validation_rejects_invalid_data_types(self, client: TestClient, admin_token: str) -> None:
+    """Test that API validation properly rejects invalid data types."""
+    headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
+    
+    # Invalid price type
+    productData: Dict[str, Any] = {
+        "name": "Test Product Invalid Price",
+        "price": "invalid_price",  # Should be number
+        "category": Category.ELECTRONICS.value
+    }
+    
+    response = client.post("/api/products", json=productData, headers=headers)
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY.value
+```
+
+#### **4. Enum Validation Testing**
+```python
+def test_api_validation_rejects_invalid_category(self, client: TestClient, admin_token: str) -> None:
+    """Test that API validation properly rejects invalid category values."""
+    headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
+    
+    productData: Dict[str, Any] = {
+        "name": "Test Product Invalid Category",
+        "category": "INVALID_CATEGORY",  # Should be valid enum
+        "price": 99.99
+    }
+    
+    response = client.post("/api/products", json=productData, headers=headers)
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY.value
+```
+
+### **Schema Upgrade Test Structure**
+```
+tests/schema_upgrade/
+├── test_product_upgrade_v1_to_v2.py    # Product schema v2 validation
+└── test_contact_upgrade_v1_to_v2.py     # Contact schema v2 validation
+```
+
+### **Test Naming Convention**
+- `test_create_*_with_current_schema_version` - Schema version validation
+- `test_*_auto_generates_fields` - Auto-generation testing  
+- `test_api_validation_rejects_*` - Data validation testing
+- `test_*_schema_version_consistency` - Cross-operation validation
+- `test_multiple_*_have_unique_generated_fields` - Uniqueness testing
+
+### **Key Testing Principles**
+- **API-Based**: Use TestClient for HTTP requests, not direct database access
+- **Current Behavior**: Test current schema version 2 behavior, not migration
+- **Comprehensive Coverage**: Test auto-generation, validation, uniqueness
+- **Realistic Data**: Use valid enum values and production-like test data
+- **HTTPStatus Enum**: Always use HTTPStatus enum for status code assertions
+- **No Async**: Follow existing working patterns, avoid async test functions
+- **Type Safety**: Complete type annotations for all variables and functions
+
+---
+
 ## ✅ Test Execution Commands
 
 ### **Running Tests**
@@ -389,11 +515,18 @@ uv run pytest tests/ --tb=short -v
 # Run specific test file
 uv run pytest tests/admin/test_admin_products.py --tb=short -v
 
+# Run schema upgrade tests
+uv run pytest tests/schema_upgrade/ --tb=short -v
+uv run pytest tests/schema_upgrade/test_product_upgrade_v1_to_v2.py --tb=short -v
+uv run pytest tests/schema_upgrade/test_contact_upgrade_v1_to_v2.py --tb=short -v
+
 # Run specific test method
 uv run pytest tests/admin/test_admin_products.py::TestAdminProducts::test_bulk_delete_products_success --tb=short -v
 
 # Run tests by pattern
 uv run pytest tests/ -k "bulk_delete" --tb=short -v
+uv run pytest tests/ -k "schema_upgrade" --tb=short -v
+uv run pytest tests/ -k "admin_search" --tb=short -v
 
 # Run with coverage
 uv run pytest tests/ --cov=app --cov-report=html --tb=short
@@ -465,3 +598,46 @@ uv run pytest tests/admin/test_admin_products.py::TestAdminProducts::test_bulk_d
 ---
 
 **Remember**: Consistent patterns, proper HTTP status enums, comprehensive type annotations, and realistic test scenarios create maintainable and reliable test suites that catch bugs early and document expected behavior clearly.
+
+## 📋 KEY ATTENTION POINTS (Summary)
+
+### **🚨 CRITICAL: What You MUST Do**
+1. **Use TestClient ONLY** - Never direct database access in tests
+2. **No async functions** - Don't use `@pytest.mark.asyncio` or `async def`
+3. **HTTPStatus enum required** - Always `HTTPStatus.STATUS.value`, never `200`, `404`, etc.
+4. **Type everything** - Every variable needs type hints: `Dict[str, Any]`, `List[int]`
+5. **Follow working patterns** - Look at existing successful tests and copy their structure
+
+### **🔧 Pattern Requirements**
+- **Authentication tests**: unauthorized (401), forbidden (403), success (200/201)
+- **Input validation**: invalid data types, missing fields, enum validation
+- **Response validation**: check structure, data types, business logic
+- **Edge cases**: empty lists, over limits, boundary conditions
+- **Error messages**: verify specific error text from backend
+
+### **📝 Test Structure Template**
+```python
+def test_feature_name(self, client: TestClient, admin_token: str) -> None:
+    """Clear description of what this test validates."""
+    headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
+    
+    testData: Dict[str, Any] = {
+        "field": "realistic_value",
+        "enum": EnumClass.VALUE.value
+    }
+    
+    response = client.post("/api/endpoint", json=testData, headers=headers)
+    assert response.status_code == HTTPStatus.CREATED.value
+    
+    responseData: Dict[str, Any] = response.json()
+    assert "expectedField" in responseData
+```
+
+### **⚠️ Common Mistakes to Avoid**
+- ❌ Using hardcoded status codes (401, 404, 201)
+- ❌ Missing type annotations on variables
+- ❌ Using async functions or direct database access
+- ❌ Not testing authentication/authorization patterns
+- ❌ Using unrealistic test data or invalid enum values
+- ❌ Skipping error message validation
+- ❌ Not following existing working test patterns

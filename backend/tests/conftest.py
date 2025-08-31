@@ -3,6 +3,7 @@ Pytest configuration using mongomock-motor for clean async MongoDB mocking.
 """
 import os
 import pytest
+from unittest.mock import AsyncMock, patch
 from fastapi.testclient import TestClient
 from mongomock_motor import AsyncMongoMockClient
 from main import create_app
@@ -62,37 +63,51 @@ def setup_test_environment(mock_db_manager):
     original_db_manager = db_manager
     app.config.database.db_manager = mock_db_manager
     
-    # Replace in all router modules
-    import app.routers.products
-    import app.routers.auth
-    import app.routers.admin_users
-    import app.routers.cart
-    import app.routers.wishlist
-    import app.routers.contact
-    import app.auth.dependencies
-    import app.auth.blacklist
-    
-    app.routers.products.db_manager = mock_db_manager
-    app.routers.auth.db_manager = mock_db_manager
-    app.routers.admin_users.db_manager = mock_db_manager
-    app.routers.cart.db_manager = mock_db_manager
-    app.routers.wishlist.db_manager = mock_db_manager
-    app.routers.contact.db_manager = mock_db_manager
-    app.auth.dependencies.db_manager = mock_db_manager
-    app.auth.blacklist.db_manager = mock_db_manager
-    
-    yield
-    
-    # Cleanup - restore original db_manager
-    app.config.database.db_manager = original_db_manager
-    app.routers.products.db_manager = original_db_manager
-    app.routers.auth.db_manager = original_db_manager
-    app.routers.admin_users.db_manager = original_db_manager
-    app.routers.cart.db_manager = original_db_manager
-    app.routers.wishlist.db_manager = original_db_manager
-    app.routers.contact.db_manager = original_db_manager
-    app.auth.dependencies.db_manager = original_db_manager
-    app.auth.blacklist.db_manager = original_db_manager
+    # Mock email service to prevent actual emails during tests
+    with patch('app.services.email.email_service.send_contact_email') as mock_send_email:
+        # Configure mock to return success
+        mock_send_email.return_value = (True, "Mock email sent successfully", "mock_message_id_12345")
+        
+        # Replace in all router modules
+        import app.routers.products
+        import app.routers.auth
+        import app.routers.admin_users
+        import app.routers.cart
+        import app.routers.wishlist
+        import app.routers.contact
+        import app.auth.dependencies
+        import app.auth.blacklist
+        import app.utils.admin_search
+        import app.schema_version_upgrade.v2.products_upgrade
+        import app.schema_version_upgrade.v2.contacts_upgrade
+        
+        app.routers.products.db_manager = mock_db_manager
+        app.routers.auth.db_manager = mock_db_manager
+        app.routers.admin_users.db_manager = mock_db_manager
+        app.routers.cart.db_manager = mock_db_manager
+        app.routers.wishlist.db_manager = mock_db_manager
+        app.routers.contact.db_manager = mock_db_manager
+        app.auth.dependencies.db_manager = mock_db_manager
+        app.auth.blacklist.db_manager = mock_db_manager
+        app.utils.admin_search.db_manager = mock_db_manager
+        app.schema_version_upgrade.v2.products_upgrade.db_manager = mock_db_manager
+        app.schema_version_upgrade.v2.contacts_upgrade.db_manager = mock_db_manager
+        
+        yield
+        
+        # Cleanup - restore original db_manager
+        app.config.database.db_manager = original_db_manager
+        app.routers.products.db_manager = original_db_manager
+        app.routers.auth.db_manager = original_db_manager
+        app.routers.admin_users.db_manager = original_db_manager
+        app.routers.cart.db_manager = original_db_manager
+        app.routers.wishlist.db_manager = original_db_manager
+        app.routers.contact.db_manager = original_db_manager
+        app.auth.dependencies.db_manager = original_db_manager
+        app.auth.blacklist.db_manager = original_db_manager
+        app.utils.admin_search.db_manager = original_db_manager
+        app.schema_version_upgrade.v2.products_upgrade.db_manager = original_db_manager
+        app.schema_version_upgrade.v2.contacts_upgrade.db_manager = original_db_manager
     
     # Restore original environment variables
     for var, value in original_env.items():

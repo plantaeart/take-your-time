@@ -2,7 +2,7 @@
 User schemas for request/response validation.
 """
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 import re
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
@@ -81,3 +81,14 @@ class UserInDB(UserResponse):
     """Schema for user data stored in database (includes hashed password)."""
     hashedPassword: str
     schemaVersion: int = Field(default=1, description="Schema version for database upgrade management")
+
+
+class UserListResponse(BaseModel):
+    """Schema for paginated user list responses."""
+    users: List[UserResponse] = Field(..., description="List of users")
+    total: int = Field(..., description="Total number of users")
+    page: int = Field(..., description="Current page number")
+    limit: int = Field(..., description="Number of users per page")
+    totalPages: int = Field(..., description="Total number of pages")
+    hasNext: bool = Field(..., description="Whether there are more pages")
+    hasPrev: bool = Field(..., description="Whether there are previous pages")

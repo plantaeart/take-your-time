@@ -9,6 +9,7 @@ from pymongo.cursor import Cursor
 from pymongo.errors import DuplicateKeyError
 
 from app.config.database import db_manager
+from app.config.schema_versions import get_schema_version
 from app.schemas.product import ProductCreate, ProductUpdate, ProductResponse, ProductListResponse
 from app.models.product import generate_product_code, generate_internal_reference, get_next_product_id
 from app.models.enums.category import Category
@@ -81,11 +82,19 @@ async def get_products(
         del product["_id"]
         productResponses.append(ProductResponse(**product))
     
+    # Calculate pagination info
+    totalPages: int = (total + limit - 1) // limit if total > 0 else 0
+    hasNext: bool = page < totalPages
+    hasPrev: bool = page > 1
+    
     return ProductListResponse(
         products=productResponses,
         total=total,
         page=page,
-        limit=limit
+        limit=limit,
+        totalPages=totalPages,
+        hasNext=hasNext,
+        hasPrev=hasPrev
     )
 
 
@@ -193,7 +202,8 @@ async def create_product(
     productDict["internalReference"] = internalRef  # Use generated or provided internal reference
     productDict.update({
         "createdAt": currentTime,
-        "updatedAt": currentTime
+        "updatedAt": currentTime,
+        "schemaVersion": get_schema_version("products")  # Current schema version
     })
     
     try:
@@ -445,6 +455,7 @@ async def create_products_bulk(
             productDict["id"] = productId
             productDict["createdAt"] = datetime.now()
             productDict["updatedAt"] = datetime.now()
+            productDict["schemaVersion"] = get_schema_version("products")  # Current schema version
             
             # Insert product
             await collection.insert_one(productDict)

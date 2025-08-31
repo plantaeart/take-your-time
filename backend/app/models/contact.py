@@ -3,12 +3,44 @@ Contact model for storing contact form submissions in MongoDB.
 """
 
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from pymongo import IndexModel, ASCENDING
 from pymongo.collection import Collection
 
 from app.config.database import db_manager
 from app.models.enums.contactStatus import ContactStatus
+from app.config.schema_versions import get_schema_version
+
+
+class AdminNote:
+    """Admin note entry for contact submissions."""
+    
+    def __init__(
+        self,
+        adminId: int,
+        note: str,
+        createdAt: Optional[datetime] = None
+    ):
+        self.adminId = adminId
+        self.note = note
+        self.createdAt = createdAt or datetime.now()
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert admin note to dictionary."""
+        return {
+            "adminId": self.adminId,
+            "note": self.note,
+            "createdAt": self.createdAt
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "AdminNote":
+        """Create admin note from dictionary."""
+        return cls(
+            adminId=data["adminId"],
+            note=data["note"],
+            createdAt=data.get("createdAt")
+        )
 
 
 class ContactModel:
@@ -23,7 +55,8 @@ class ContactModel:
         status: ContactStatus = ContactStatus.PENDING,
         messageId: Optional[str] = None,
         errorMessage: Optional[str] = None,
-        schemaVersion: int = 1,
+        adminNotes: Optional[List[AdminNote]] = None,
+        schemaVersion: Optional[int] = None,
         createdAt: Optional[datetime] = None,
         updatedAt: Optional[datetime] = None
     ):
@@ -34,7 +67,8 @@ class ContactModel:
         self.status = status
         self.messageId = messageId
         self.errorMessage = errorMessage
-        self.schemaVersion = schemaVersion
+        self.adminNotes = adminNotes or []
+        self.schemaVersion = schemaVersion or get_schema_version("contacts")
         self.createdAt = createdAt or datetime.now()
         self.updatedAt = updatedAt or datetime.now()
     
@@ -48,6 +82,7 @@ class ContactModel:
             "status": self.status,
             "messageId": self.messageId,
             "errorMessage": self.errorMessage,
+            "adminNotes": [note.to_dict() for note in self.adminNotes] if self.adminNotes else [],
             "schemaVersion": self.schemaVersion,
             "createdAt": self.createdAt,
             "updatedAt": self.updatedAt
@@ -56,13 +91,35 @@ class ContactModel:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "ContactModel":
         """Create model instance from MongoDB document."""
-        return cls(**data)
+        # Handle admin notes conversion
+        admin_notes_data = data.get("adminNotes", [])
+        admin_notes = []
+        if admin_notes_data:
+            for note_data in admin_notes_data:
+                if isinstance(note_data, dict):
+                    admin_notes.append(AdminNote.from_dict(note_data))
+                
+        # Create new data dict with converted admin notes
+        converted_data = data.copy()
+        converted_data["adminNotes"] = admin_notes
+        
+        # Remove MongoDB's _id field if present
+        if "_id" in converted_data:
+            del converted_data["_id"]
+        
+        return cls(**converted_data)
     
     def update_status(self, status: ContactStatus, message_id: Optional[str] = None, error_message: Optional[str] = None):
         """Update contact submission status."""
         self.status = status
         self.messageId = message_id
         self.errorMessage = error_message
+        self.updatedAt = datetime.now()
+    
+    def add_admin_note(self, adminId: int, note: str):
+        """Add an admin note to the contact submission."""
+        admin_note = AdminNote(adminId=adminId, note=note)
+        self.adminNotes.append(admin_note)
         self.updatedAt = datetime.now()
 
 
