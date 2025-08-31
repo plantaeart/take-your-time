@@ -22,6 +22,7 @@ MONGODB_IMAGE = "mongo:7.0"
 CONTAINER_NAME = "mongodb"
 PORT = "27017"
 DATABASE_NAME = "TAKE_YOUR_TIME"
+VOLUME_NAME = "mongodb_data"
 
 
 def run_command(command: str, capture_output: bool = True) -> subprocess.CompletedProcess:
@@ -80,7 +81,8 @@ def start_mongodb(
         # Create and start new container
         console.print("[blue]🏗️  Creating new MongoDB container...[/blue]")
         detach_flag = "-d" if detach else ""
-        command = f"docker run {detach_flag} --name {CONTAINER_NAME} -p {PORT}:{PORT} -e MONGO_INITDB_DATABASE={DATABASE_NAME} {MONGODB_IMAGE}"
+        # Add volume for data persistence
+        command = f"docker run {detach_flag} --name {CONTAINER_NAME} -p {PORT}:{PORT} -v {VOLUME_NAME}:/data/db -e MONGO_INITDB_DATABASE={DATABASE_NAME} {MONGODB_IMAGE}"
         
         if detach:
             result = run_command(command)
@@ -144,9 +146,10 @@ def status_mongodb():
 
 @app.command("remove")
 def remove_mongodb(
-    force: bool = typer.Option(False, "--force", "-f", help="Force remove running container")
+    force: bool = typer.Option(False, "--force", "-f", help="Force remove running container"),
+    keep_data: bool = typer.Option(True, "--keep-data/--remove-data", help="Keep persistent data volume")
 ):
-    """🗑️  Remove MongoDB container and data."""
+    """🗑️  Remove MongoDB container and optionally data."""
     console.print(Panel.fit("🗑️ Removing MongoDB Container", style="red"))
     
     if not container_exists():
@@ -167,9 +170,55 @@ def remove_mongodb(
     
     if result and result.returncode == 0:
         console.print("[green]✅ MongoDB container removed successfully![/green]")
-        console.print("[yellow]⚠️  All data in the container has been lost[/yellow]")
+        
+        if keep_data:
+            console.print(f"[green]💾 Data volume '{VOLUME_NAME}' preserved[/green]")
+            console.print("[blue]💡 Your data will be restored when you start a new container[/blue]")
+        else:
+            console.print("[blue]🗑️  Removing data volume...[/blue]")
+            volume_result = run_command(f"docker volume rm {VOLUME_NAME}")
+            if volume_result and volume_result.returncode == 0:
+                console.print("[green]✅ Data volume removed successfully![/green]")
+                console.print("[yellow]⚠️  All persistent data has been permanently deleted[/yellow]")
+            else:
+                console.print("[yellow]⚠️  Failed to remove data volume (may not exist)[/yellow]")
     else:
         console.print("[red]❌ Failed to remove MongoDB container[/red]")
+
+
+@app.command("volume-info")
+def volume_info():
+    """💾 Show MongoDB data volume information."""
+    console.print(Panel.fit("💾 MongoDB Data Volume Info", style="blue"))
+    
+    # Check if volume exists
+    result = run_command(f"docker volume ls -q -f name={VOLUME_NAME}")
+    
+    if result and result.stdout.strip():
+        console.print(f"[green]✅ Data volume '{VOLUME_NAME}' exists[/green]")
+        
+        # Get volume details
+        inspect_result = run_command(f"docker volume inspect {VOLUME_NAME}")
+        if inspect_result and inspect_result.returncode == 0:
+            import json
+            try:
+                volume_data = json.loads(inspect_result.stdout)[0]
+                mountpoint = volume_data.get('Mountpoint', 'Unknown')
+                created = volume_data.get('CreatedAt', 'Unknown')
+                console.print(f"[blue]📍 Location: {mountpoint}[/blue]")
+                console.print(f"[blue]📅 Created: {created}[/blue]")
+            except:
+                console.print("[yellow]⚠️  Could not parse volume details[/yellow]")
+        
+        # Show volume size if possible
+        size_result = run_command(f"docker system df -v")
+        if size_result and size_result.returncode == 0 and VOLUME_NAME in size_result.stdout:
+            console.print("[blue]📊 Use 'docker system df -v' to see volume size[/blue]")
+        
+        console.print("[green]💡 Your MongoDB data persists across container restarts[/green]")
+    else:
+        console.print(f"[yellow]⚠️  Data volume '{VOLUME_NAME}' does not exist[/yellow]")
+        console.print("[blue]💡 Volume will be created when you start MongoDB[/blue]")
 
 
 @app.command("logs")
