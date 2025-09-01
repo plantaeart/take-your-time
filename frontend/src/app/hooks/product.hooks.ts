@@ -112,7 +112,9 @@ export function useProducts() {
     // ============================================================================
     
     /** Create a new product (Admin only) */
-    createProduct: (productData: ProductCreateRequest) => store.createProduct(productData),
+    createProduct: (productData: ProductCreateRequest) => {
+      return store.createProduct(productData);
+    },
     
     /** Update an existing product (Admin only) */
     updateProduct: (productId: number, productData: ProductUpdateRequest) => store.updateProduct(productId, productData),

@@ -71,7 +71,7 @@
               <app-text-input
                 [ngModel]="getColumnValue(column)"
                 (ngModelChange)="setColumnValue(column, $event)"
-                [placeholder]="column.header"
+                placeholder=""
                 [invalid]="!isFieldValid(column)">
               </app-text-input>
             }
@@ -79,7 +79,7 @@
               <app-textarea-input
                 [ngModel]="getColumnValue(column)"
                 (ngModelChange)="setColumnValue(column, $event)"
-                [placeholder]="column.header"
+                placeholder=""
                 [invalid]="!isFieldValid(column)">
               </app-textarea-input>
             }
@@ -88,7 +88,7 @@
                 [ngModel]="getColumnValue(column)"
                 (ngModelChange)="setColumnValue(column, $event)"
                 [options]="column.options || []"
-                [placeholder]="'Select ' + column.header"
+                placeholder=""
                 [invalid]="!isFieldValid(column)">
               </app-dropdown-input>
             }
@@ -113,12 +113,19 @@
                 [invalid]="!isFieldValid(column)">
               </app-rating-input>
             }
+            @case ('upload-input') {
+              <app-upload-input
+                [ngModel]="getColumnValue(column)"
+                (ngModelChange)="setColumnValue(column, $event)"
+                [invalid]="!isFieldValid(column)">
+              </app-upload-input>
+            }
             @default {
               <!-- Fallback to text input -->
               <app-text-input
                 [ngModel]="getColumnValue(column)"
                 (ngModelChange)="setColumnValue(column, $event)"
-                [placeholder]="column.header"
+                placeholder=""
                 [invalid]="!isFieldValid(column)">
               </app-text-input>
             }
@@ -132,35 +139,42 @@
           }
         </div>
       } @else {
-        <!-- View Mode -->
+        <!-- View Mode or Non-Editable Field -->
         <div class="display-field">
-          @switch (column.type) {
-            @case ('enum') {
-              <p-tag 
-                [value]="getDisplayValue(column)"
-                [severity]="getTagSeverity(column)">
-              </p-tag>
-            }
-            @case ('image') {
-              @if (getColumnValue(column)) {
-                <img 
-                  [src]="getColumnValue(column)" 
-                  [alt]="column.header"
-                  class="table-image">
-              } @else {
-                <span class="no-image">No image</span>
+          @if (isNew() && column.field === 'id') {
+            <!-- Special handling for ID in new item mode -->
+            <span class="auto-generated-id" title="Auto-generated on save">
+              (Auto-generated)
+            </span>
+          } @else {
+            @switch (column.type) {
+              @case ('enum') {
+                <p-tag 
+                  [value]="getDisplayValue(column)"
+                  [severity]="getTagSeverity(column)">
+                </p-tag>
               }
-            }
-            @case ('boolean') {
-              <i 
-                [class]="getColumnValue(column) ? 'pi pi-check text-green-500' : 'pi pi-times text-red-500'"
-                [title]="getDisplayValue(column)">
-              </i>
-            }
-            @default {
-              <span [title]="getDisplayValue(column)">
-                {{ getDisplayValue(column) }}
-              </span>
+              @case ('image') {
+                @if (getColumnValue(column)) {
+                  <img 
+                    [src]="getColumnValue(column)" 
+                    [alt]="column.header"
+                    class="table-image">
+                } @else {
+                  <span class="no-image">No image</span>
+                }
+              }
+              @case ('boolean') {
+                <i 
+                  [class]="getColumnValue(column) ? 'pi pi-check text-green-500' : 'pi pi-times text-red-500'"
+                  [title]="getDisplayValue(column)">
+                </i>
+              }
+              @default {
+                <span [title]="getDisplayValue(column)">
+                  {{ getDisplayValue(column) }}
+                </span>
+              }
             }
           }
         </div>

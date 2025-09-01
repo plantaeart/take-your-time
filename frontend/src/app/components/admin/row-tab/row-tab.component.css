@@ -40,6 +40,7 @@
   width: 60px;
   justify-content: center;
   flex-shrink: 0;
+  overflow: visible !important; /* Ensure checkbox is always visible */
 }
 
 .table-cell.select-cell .select-checkbox {
@@ -51,6 +52,7 @@
   width: 120px;
   justify-content: center;
   flex-shrink: 0;
+  overflow: visible !important; /* Ensure action buttons are always visible */
 }
 
 .table-cell.actions-cell .action-buttons {
@@ -144,4 +146,12 @@
     max-width: 35px;
     max-height: 35px;
   }
+}
+
+/* Auto-generated ID styling for new items */
+.auto-generated-id {
+  color: var(--text-color-secondary);
+  font-style: italic;
+  font-size: 0.875rem;
+  opacity: 0.8;
 }

@@ -1,0 +1,12 @@
+:host {
+  overflow: visible !important;
+}
+
+:host ::ng-deep .p-dropdown {
+  overflow: visible !important;
+}
+
+:host ::ng-deep .p-dropdown-panel {
+  z-index: 1000;
+  overflow: visible !important;
+}

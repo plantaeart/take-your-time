@@ -78,7 +78,7 @@ const productColumns: ColumnConfig[] = [
     filterable: false,
     width: '10rem',
     editable: true,
-    editComponent: 'text-input'
+    editComponent: 'upload-input'
   },
   {
     field: 'category',
@@ -133,6 +133,22 @@ const productColumns: ColumnConfig[] = [
     validations: [
       { rule: 'required', message: 'Quantity is required' },
       { rule: 'min', value: 0, message: 'Quantity must be greater than or equal to 0' }
+    ],
+    editComponent: 'number-input'
+  },
+  {
+    field: 'shellId',
+    header: 'Shell ID',
+    type: 'number',
+    sortable: true,
+    filterable: true,
+    filterType: 'number',
+    width: '6rem',
+    editable: true,
+    required: true,
+    validations: [
+      { rule: 'required', message: 'Shell ID is required' },
+      { rule: 'min', value: 1, message: 'Shell ID must be greater than 0' }
     ],
     editComponent: 'number-input'
   },

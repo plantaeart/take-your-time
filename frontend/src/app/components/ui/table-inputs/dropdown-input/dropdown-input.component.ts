@@ -1,4 +1,4 @@
-import { Component, input, forwardRef } from '@angular/core';
+import { Component, input, forwardRef, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { DropdownModule } from 'primeng/dropdown';
@@ -50,6 +50,8 @@ export class DropdownInputComponent implements ControlValueAccessor {
   private onChange = (value: any) => {};
   private onTouched = () => {};
 
+  constructor(private cdr: ChangeDetectorRef) {}
+
   onSelectionChange(value: any): void {
     this.value = value;
     this.onChange(this.value);
@@ -57,7 +59,21 @@ export class DropdownInputComponent implements ControlValueAccessor {
   }
 
   writeValue(value: any): void {
-    this.value = value;
+    // Ensure the value matches one of the available options
+    const availableOptions = this.options();
+    if (value !== null && value !== undefined && availableOptions.length > 0) {
+      const matchingOption = availableOptions.find(opt => opt.value === value);
+      if (matchingOption) {
+        this.value = value;
+      } else {
+        this.value = value; // Still set it in case of type mismatch
+      }
+    } else {
+      this.value = value;
+    }
+    
+    // Trigger change detection to ensure dropdown reflects the new value
+    this.cdr.detectChanges();
   }
 
   registerOnChange(fn: (value: any) => void): void {

@@ -1,9 +1,12 @@
-import { Component, OnInit, input, signal, computed, ViewChild, TemplateRef, output, effect } from '@angular/core';
+import { Component, OnInit, input, signal, computed, ViewChild, TemplateRef, output, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { PaginatorModule } from 'primeng/paginator';
 import { TooltipModule } from 'primeng/tooltip';
+import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { TableManagementConfig, ColumnConfig, FilterType } from '../object-management-config/table-config.interface';
 import { RowTabComponent } from '../row-tab/row-tab.component';
 import { ButtonConfirmPopupComponent, FilterButtonConfig } from '../../ui/button-confirm-popup/button-confirm-popup.component';
@@ -27,14 +30,21 @@ interface SortState {
     ButtonModule,
     PaginatorModule,
     TooltipModule,
+    ToastModule,
+    ConfirmDialogModule,
     RowTabComponent,
     ButtonConfirmPopupComponent,
     GlobalSearchComponent
   ],
+  providers: [ConfirmationService, MessageService],
   templateUrl: './tab-management.component.html',
   styleUrl: './tab-management.component.css'
 })
 export class TabManagementComponent<T = any> implements OnInit {
+  // Services
+  private confirmationService = inject(ConfirmationService);
+  private messageService = inject(MessageService);
+
   // Inputs
   config = input.required<TableManagementConfig<T>>();
   data = input<T[]>([]);
@@ -532,9 +542,21 @@ export class TabManagementComponent<T = any> implements OnInit {
     this.newItem.set({});
   }
 
-  saveNewItem(): void {
-    console.log('Save new item:', this.newItem());
-    // Implementation needed by parent component
+  async saveNewItem(newItemData: Partial<T>): Promise<void> {
+    try {
+      if (this.config().createItem) {
+        await this.config().createItem!(newItemData as any);
+      } else {
+        console.warn('⚠️ No createItem function configured');
+      }
+      // Close the new item form on success
+      this.isCreatingNew.set(false);
+      this.newItem.set({});
+    } catch (error) {
+      // Error handling is done in the parent component
+      console.error('❌ Failed to save new item:', error);
+      throw error; // Re-throw so parent can handle it
+    }
   }
 
   startEdit(item: T): void {
@@ -547,14 +569,61 @@ export class TabManagementComponent<T = any> implements OnInit {
     this.editItemData.set({});
   }
 
-  saveEdit(): void {
-    console.log('Save edit:', this.editItemData());
-    // Implementation needed by parent component
+  async saveEdit(editedData: Partial<T>): Promise<void> {
+    try {
+      if (this.config().updateItem) {
+        const itemId = (editedData as any)[this.config().dataKey];
+        await this.config().updateItem!(itemId, editedData as any);
+      }
+      // Close the edit form on success
+      this.editingItem.set(null);
+      this.editItemData.set({});
+    } catch (error) {
+      // Error handling is done in the parent component
+      console.error('Failed to save edit:', error);
+    }
   }
 
-  deleteItem(item: T): void {
-    console.log('Delete item:', item);
-    // Implementation needed by parent component
+  async deleteItem(item: T): Promise<void> {
+    const itemId = (item as any)[this.config().dataKey];
+    const itemName = (item as any).name || `${this.config().objectName} #${itemId}`;
+    
+    this.confirmationService.confirm({
+      message: `Are you sure you want to delete "${itemName}"?`,
+      header: `Delete ${this.config().objectName}`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      rejectButtonStyleClass: 'p-button-secondary',
+      accept: async () => {
+        try {
+          const deleteFunction = this.config().deleteItem;
+          if (deleteFunction) {
+            await deleteFunction(itemId);
+            
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Success',
+              detail: `${this.config().objectName} "${itemName}" has been deleted successfully.`
+            });
+
+            // Remove the item from selected items if it was selected
+            const currentSelected = this.selectedItems();
+            if (currentSelected.includes(item)) {
+              this.selectedItems.set(currentSelected.filter(i => i !== item));
+            }
+
+            // Trigger data reload to refresh the list
+            this.triggerDataLoad();
+          }
+        } catch (error) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: error instanceof Error ? error.message : `Failed to delete ${this.config().objectName.toLowerCase()}.`
+          });
+        }
+      }
+    });
   }
 
   toggleSelectItem(item: T): void {
@@ -591,19 +660,58 @@ export class TabManagementComponent<T = any> implements OnInit {
     }
   }
 
-  deleteSelectedItems(): void {
-    const selectedCount = this.selectedItems().length;
+  async deleteSelectedItems(): Promise<void> {
+    const selectedItems = this.selectedItems();
+    const selectedCount = selectedItems.length;
+    
     if (selectedCount === 0) return;
 
-    console.log('Bulk delete requested for:', this.selectedItems());
-    // Implementation needed by parent component
-    
-    // For now, just clear selection
-    this.selectedItems.set([]);
+    const itemsText = selectedCount === 1 ? 
+      `1 ${this.config().objectName.toLowerCase()}` : 
+      `${selectedCount} ${this.config().objectName.toLowerCase()}s`;
+
+    this.confirmationService.confirm({
+      message: `Are you sure you want to delete ${itemsText}? This action cannot be undone.`,
+      header: `Delete ${itemsText}`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      rejectButtonStyleClass: 'p-button-secondary',
+      accept: async () => {
+        try {
+          const bulkDeleteFunction = this.config().bulkDelete;
+          if (bulkDeleteFunction) {
+            // Extract IDs from selected items
+            const selectedIds = selectedItems.map(item => (item as any)[this.config().dataKey]);
+            
+            const result = await bulkDeleteFunction(selectedIds);
+            
+            // Simple success message - don't try to parse result details
+            const successMessage = `Successfully deleted ${itemsText}.`;
+
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Success',
+              detail: successMessage
+            });
+
+            // Clear selection
+            this.selectedItems.set([]);
+
+            // Trigger data reload to refresh the list
+            this.triggerDataLoad();
+          }
+        } catch (error) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: error instanceof Error ? error.message : `Failed to delete selected ${this.config().objectName.toLowerCase()}s.`
+          });
+        }
+      }
+    });
   }
 
   exportData(): void {
-    console.log('Export data requested');
     // Implementation needed by parent component
   }
 

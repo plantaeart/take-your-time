@@ -1,10 +1,11 @@
-import { Component, input, output, signal, computed, ViewContainerRef, ComponentRef, ViewChild } from '@angular/core';
+import { Component, input, output, signal, computed, effect, inject, ViewContainerRef, ComponentRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CheckboxModule } from 'primeng/checkbox';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
+import { MessageService } from 'primeng/api';
 import { TableManagementConfig, ColumnConfig } from '../object-management-config/table-config.interface';
 import { TextInputComponent } from '../../ui/table-inputs/text-input/text-input.component';
 import { DropdownInputComponent } from '../../ui/table-inputs/dropdown-input/dropdown-input.component';
@@ -12,6 +13,7 @@ import { CurrencyInputComponent } from '../../ui/table-inputs/currency-input/cur
 import { NumberInputComponent } from '../../ui/table-inputs/number-input/number-input.component';
 import { TextareaInputComponent } from '../../ui/table-inputs/textarea-input/textarea-input.component';
 import { RatingInputComponent } from '../../ui/table-inputs/rating-input/rating-input.component';
+import { UploadInputComponent } from '../../ui/table-inputs/upload-input/upload-input.component';
 
 @Component({
   selector: 'app-row-tab',
@@ -28,12 +30,16 @@ import { RatingInputComponent } from '../../ui/table-inputs/rating-input/rating-
     CurrencyInputComponent,
     NumberInputComponent,
     TextareaInputComponent,
-    RatingInputComponent
+    RatingInputComponent,
+    UploadInputComponent
   ],
   templateUrl: './row-tab.component.html',
   styleUrl: './row-tab.component.css'
 })
 export class RowTabComponent<T = any> {
+  // Services
+  private messageService = inject(MessageService);
+  
   // Inputs
   item = input.required<T>();
   columns = input.required<ColumnConfig[]>();
@@ -45,25 +51,37 @@ export class RowTabComponent<T = any> {
   
   // Outputs
   edit = output<void>();
-  save = output<void>();
+  save = output<Partial<T>>();  // Pass the data when saving
   cancel = output<void>();
   delete = output<void>();
   toggleSelect = output<void>();
 
   // Internal state for editing
   editData = signal<Partial<T>>({});
+  private isInitialized = signal<boolean>(false);
   
-  // Initialize edit data when editing starts
-  ngOnInit(): void {
-    if (this.isEditing()) {
-      this.editData.set({ ...this.item() });
-    }
-  }
-
-  ngOnChanges(): void {
-    if (this.isEditing()) {
-      this.editData.set({ ...this.item() });
-    }
+  // Effect to initialize edit data when editing starts
+  constructor() {
+    effect(() => {
+      if (this.isEditing() && !this.isInitialized()) {
+        if (this.isNew()) {
+          // For new items, start with empty data
+          this.editData.set({});
+        } else {
+          // For existing items, populate edit data with current item values
+          const currentItem = this.item();
+          if (currentItem && Object.keys(currentItem).length > 0) {
+            // Deep copy the current item to edit data to ensure dropdowns get populated
+            this.editData.set({ ...currentItem });
+          }
+        }
+        this.isInitialized.set(true);
+      } else if (!this.isEditing()) {
+        // Clear edit data when not editing and reset initialization flag
+        this.editData.set({});
+        this.isInitialized.set(false);
+      }
+    }, { allowSignalWrites: true });
   }
 
   // ============= ACTION METHODS =============
@@ -73,9 +91,25 @@ export class RowTabComponent<T = any> {
   }
 
   onSave(): void {
-    // The parent component will handle the actual saving
-    // We just emit the save event with the current edit data
-    this.save.emit();
+    // Validate all fields before saving
+    const editableColumns = this.columns().filter(col => col.editable);
+    const invalidColumns = editableColumns.filter(col => !this.isFieldValid(col));
+    
+    if (invalidColumns.length > 0) {
+      // Show toast notification for validation errors
+      const fieldNames = invalidColumns.map(col => col.header || col.field).join(', ');
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Validation Error',
+        detail: `Please fix the following fields: ${fieldNames}`,
+        life: 5000
+      });
+      return;
+    }
+    
+    // Emit the save event with the current edit data
+    const dataToSave = this.isNew() ? this.editData() : { ...this.item(), ...this.editData() };
+    this.save.emit(dataToSave as Partial<T>);
   }
 
   onCancel(): void {
@@ -94,8 +128,26 @@ export class RowTabComponent<T = any> {
   // ============= DATA METHODS =============
   
   getColumnValue(column: ColumnConfig): any {
-    const data = this.isEditing() ? this.editData() : this.item();
-    return (data as any)[column.field];
+    if (this.isEditing()) {
+      // During editing, first check edit data, then original item data
+      const editData = this.editData() as any;
+      const itemData = this.item() as any;
+      
+      // If we have edit data for this field, use it (including null values)
+      if (editData && editData.hasOwnProperty(column.field)) {
+        const value = editData[column.field];
+        return value;
+      }
+      
+      // Otherwise, use the original item data
+      const value = itemData ? itemData[column.field] : null;
+      return value;
+    } else {
+      // Not editing, use item data
+      const itemData = this.item() as any;
+      const value = itemData ? itemData[column.field] : null;
+      return value;
+    }
   }
 
   setColumnValue(column: ColumnConfig, value: any): void {
@@ -178,11 +230,19 @@ export class RowTabComponent<T = any> {
   isFieldValid(column: ColumnConfig): boolean {
     const value = this.getColumnValue(column);
     
-    // Basic required field validation - detailed validation handled by backend
-    if (column.required && (value === null || value === undefined || value === '')) {
-      return false;
+    // For required fields, check if value exists and is not empty
+    if (column.required) {
+      // For enum fields (dropdown), check if value is a valid enum option
+      if (column.type === 'enum' && column.options) {
+        const isValidOption = column.options.some(option => option.value === value);
+        return isValidOption;
+      }
+      
+      // For other fields, check if value is not null/undefined/empty
+      return value !== null && value !== undefined && value !== '';
     }
     
+    // Non-required fields are always valid
     return true;
   }
 
@@ -210,7 +270,6 @@ export class RowTabComponent<T = any> {
 
   executeCustomAction(action: any): void {
     // Emit custom action event - parent component should handle this
-    console.log('Custom action:', action.action, 'for item:', this.item());
   }
 
   shouldShowCustomAction(action: any): boolean {

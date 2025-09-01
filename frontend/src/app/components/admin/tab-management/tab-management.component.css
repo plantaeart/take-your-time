@@ -351,12 +351,14 @@
 :host ::ng-deep app-row-tab .table-cell.select-cell {
   justify-content: center;
   padding: 0.5rem 0.3rem !important;
+  overflow: visible !important; /* Ensure checkbox is visible */
 }
 
 :host ::ng-deep app-row-tab .table-cell.actions-cell {
   justify-content: center;
   gap: 0.25rem;
   padding: 0.5rem 0.3rem !important;
+  overflow: visible !important; /* Ensure action buttons are visible */
 }
 
 :host ::ng-deep app-row-tab .table-cell.data-cell {
@@ -364,6 +366,16 @@
   text-overflow: ellipsis;
   align-items: center; /* Center align like headers */
   padding: 0.5rem !important; /* Match header padding */
+}
+
+/* Special handling for dropdown inputs - allow overflow for dropdown panels */
+:host ::ng-deep app-row-tab .table-cell.data-cell:has(app-dropdown-input) {
+  overflow: visible !important;
+}
+
+/* Fallback for browsers that don't support :has() */
+:host ::ng-deep app-row-tab .table-cell.data-cell app-dropdown-input {
+  overflow: visible !important;
 }
 
 /* Special handling for description columns */

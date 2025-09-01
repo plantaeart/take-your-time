@@ -498,6 +498,7 @@ export class ProductStore {
       
       return newProduct;
     } catch (error) {
+      console.error('❌ ProductStore createProduct error:', error);
       this._setError('products', error instanceof Error ? error.message : 'Failed to create product');
       throw error;
     } finally {
@@ -628,9 +629,11 @@ export class ProductStore {
    * Bulk delete products (Admin only)
    */
   async bulkDeleteProducts(productIds: number[]): Promise<{ 
-    deleted: number[], 
-    notFound: number[],
-    message: string 
+    message: string,
+    deletedCount: number,
+    deletedIds: number[], 
+    notFoundIds: number[],
+    requestedCount: number
   }> {
     this._setLoading('products', true);
     this._clearError('products');
@@ -639,16 +642,16 @@ export class ProductStore {
       const result = await this.productService.bulkDeleteProducts(productIds);
       
       // Remove the deleted products from the current list
-      if (result.deleted.length > 0) {
+      if (result && result.deletedIds && Array.isArray(result.deletedIds) && result.deletedIds.length > 0) {
         const currentProducts = this._products();
         const filteredProducts = currentProducts.filter(product => 
-          !result.deleted.includes(product.id!)
+          !result.deletedIds.includes(product.id!)
         );
         this._products.set(filteredProducts);
         
         // Clear selected product if it was deleted
         const selectedId = this._selectedProduct()?.id;
-        if (selectedId && result.deleted.includes(selectedId)) {
+        if (selectedId && result.deletedIds.includes(selectedId)) {
           this._selectedProduct.set(null);
         }
       }

@@ -1,0 +1,19 @@
+.upload-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+:host ::ng-deep .disabled-upload .p-fileupload-choose {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+:host ::ng-deep .disabled-upload .p-fileupload-choose:hover {
+  background-color: var(--surface-border) !important;
+}
+
+.p-text-secondary {
+  font-size: 0.75rem;
+  color: var(--text-color-secondary);
+}

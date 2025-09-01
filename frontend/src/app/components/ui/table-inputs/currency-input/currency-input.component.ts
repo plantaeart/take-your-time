@@ -17,6 +17,8 @@ import { InputNumberModule } from 'primeng/inputnumber';
       [min]="min()"
       [max]="max()"
       [step]="step()"
+      [minFractionDigits]="1"
+      [maxFractionDigits]="1"
       [disabled]="disabled()"
       [class.p-invalid]="invalid()"
       class="w-full">
@@ -36,7 +38,7 @@ export class CurrencyInputComponent implements ControlValueAccessor {
   locale = input<string>('en-US');
   min = input<number>(0);
   max = input<number | null>(null);
-  step = input<number>(0.01);
+  step = input<number>(0.1);
   disabled = input<boolean>(false);
   invalid = input<boolean>(false);
 

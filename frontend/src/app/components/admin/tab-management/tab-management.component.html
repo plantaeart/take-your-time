@@ -1,3 +1,9 @@
+<!-- Toast for notifications -->
+<p-toast></p-toast>
+
+<!-- Confirmation dialog -->
+<p-confirmDialog></p-confirmDialog>
+
 <div class="table-management-container">
   <!-- Header Actions -->
   <div class="table-header">
@@ -51,16 +57,7 @@
         </p-button>
       }
 
-      <!-- Export -->
-      @if (config().export.enabled) {
-        <p-button 
-          icon="pi pi-download" 
-          label="Export CSV" 
-          (click)="exportData()"
-          severity="help"
-          [outlined]="true">
-        </p-button>
-      }
+
     </div>
   </div>
 
@@ -120,17 +117,17 @@
     <div class="table-grid-body" [style.--grid-template-columns]="gridTemplateColumns()">
       <!-- New Item Row -->
       @if (isCreatingNew()) {
-      <app-row-tab
-        [item]="newItem()"
-        [columns]="visibleColumns()"
-        [config]="config()"
-        [isEditing]="true"
-        [isNew]="true"
-        [showSelect]="false"
-        (save)="saveNewItem()"
-        (cancel)="cancelNewItem()">
-      </app-row-tab>
-    }
+        <app-row-tab
+          [item]="newItem()"
+          [columns]="visibleColumns()"
+          [config]="config()"
+          [isEditing]="true"
+          [isNew]="true"
+          [showSelect]="config().actions.canBulkDelete || false"
+          (save)="saveNewItem($event)"
+          (cancel)="cancelNewItem()">
+        </app-row-tab>
+      }
 
     <!-- Data Rows -->
     @for (item of paginatedData(); track getColumnValue(item, {field: config().dataKey})) {
@@ -142,7 +139,7 @@
         [isSelected]="isItemSelected(item)"
         [showSelect]="config().actions.canBulkDelete || false"
         (edit)="startEdit(item)"
-        (save)="saveEdit()"
+        (save)="saveEdit($event)"
         (cancel)="cancelEdit()"
         (delete)="deleteItem(item)"
         (toggleSelect)="toggleSelectItem(item)">

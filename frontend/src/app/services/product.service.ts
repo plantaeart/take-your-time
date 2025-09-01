@@ -169,12 +169,16 @@ export class ProductService {
    */
   async createProduct(productData: ProductCreateRequest): Promise<Product> {
     try {
+      const token = this.getAuthToken();
+      
+      const url = `${this.baseUrl}${this.apiPath}`;
+      
       const response: AxiosResponse<Product> = await axios.post(
-        `${this.baseUrl}${this.apiPath}`,
+        url,
         productData,
         {
           headers: {
-            'Authorization': `Bearer ${this.getAuthToken()}`,
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         }
@@ -182,6 +186,12 @@ export class ProductService {
       
       return response.data;
     } catch (error) {
+      console.error('❌ ProductService createProduct error:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('📊 Error response status:', error.response?.status);
+        console.error('📋 Error response data:', error.response?.data);
+        console.error('🔍 Error config:', error.config);
+      }
       throw this.handleError(error, 'Failed to create product');
     }
   }
@@ -192,12 +202,27 @@ export class ProductService {
    */
   async updateProduct(productId: number, productData: ProductUpdateRequest): Promise<Product> {
     try {
+      const token = this.getAuthToken();
+      
+      // Filter out read-only/auto-generated fields that shouldn't be updated
+      const {
+        id,
+        code,
+        createdAt,
+        updatedAt,
+        internalReference,
+        schemaVersion,
+        ...updateData
+      } = productData as any;
+      
+      const url = `${this.baseUrl}${this.apiPath}/${productId}`;
+      
       const response: AxiosResponse<Product> = await axios.put(
-        `${this.baseUrl}${this.apiPath}/${productId}`,
-        productData,
+        url,
+        updateData,
         {
           headers: {
-            'Authorization': `Bearer ${this.getAuthToken()}`,
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         }
@@ -205,6 +230,12 @@ export class ProductService {
       
       return response.data;
     } catch (error) {
+      console.error('❌ ProductService updateProduct error:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('📊 Error response status:', error.response?.status);
+        console.error('📋 Error response data:', error.response?.data);
+        console.error('🔍 Error config:', error.config);
+      }
       throw this.handleError(error, `Failed to update product ${productId}`);
     }
   }
@@ -284,9 +315,11 @@ export class ProductService {
    * DELETE /api/admin/products/bulk
    */
   async bulkDeleteProducts(productIds: number[]): Promise<{ 
-    deleted: number[], 
-    notFound: number[],
-    message: string 
+    message: string,
+    deletedCount: number,
+    deletedIds: number[], 
+    notFoundIds: number[],
+    requestedCount: number
   }> {
     try {
       const response = await axios.request({
@@ -309,8 +342,9 @@ export class ProductService {
    * Get auth token from localStorage
    */
   private getAuthToken(): string {
-    const token = localStorage.getItem('access_token');
+    const token = localStorage.getItem('auth_token');
     if (!token) {
+      console.error('❌ No auth_token in localStorage. Available keys:', Object.keys(localStorage));
       throw new Error('Authentication token not found. Please log in.');
     }
     return token;
