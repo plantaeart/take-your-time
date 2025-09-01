@@ -22,6 +22,60 @@ from app.models.enums.messages import ProductErrorMessages, SuccessMessages, for
 router = APIRouter(tags=["products"])
 
 
+async def cleanup_deleted_products_from_carts_and_wishlists(productIds: List[int]) -> Dict[str, int]:
+    """
+    Remove deleted products from all users' carts and wishlists.
+    
+    Args:
+        productIds: List of product IDs that were deleted
+        
+    Returns:
+        Dictionary with cleanup statistics
+    """
+    cartsCollection: Collection = db_manager.get_collection("carts")
+    wishlistsCollection: Collection = db_manager.get_collection("wishlists")
+    
+    # Cleanup statistics
+    stats: Dict[str, int] = {
+        "cartsUpdated": 0,
+        "cartItemsRemoved": 0,
+        "wishlistsUpdated": 0,
+        "wishlistItemsRemoved": 0
+    }
+    
+    try:
+        # Remove products from carts
+        cartUpdateResult = await cartsCollection.update_many(
+            {"items.productId": {"$in": productIds}},
+            {
+                "$pull": {"items": {"productId": {"$in": productIds}}},
+                "$set": {"updatedAt": datetime.now()}
+            }
+        )
+        stats["cartsUpdated"] = cartUpdateResult.modified_count
+        
+        # Remove products from wishlists  
+        wishlistUpdateResult = await wishlistsCollection.update_many(
+            {"items.productId": {"$in": productIds}},
+            {
+                "$pull": {"items": {"productId": {"$in": productIds}}},
+                "$set": {"updatedAt": datetime.now()}
+            }
+        )
+        stats["wishlistsUpdated"] = wishlistUpdateResult.modified_count
+        
+        # Count removed items (for logging purposes)
+        # Note: We can't get exact counts from update_many with $pull, so these are estimates
+        stats["cartItemsRemoved"] = len(productIds) * stats["cartsUpdated"]
+        stats["wishlistItemsRemoved"] = len(productIds) * stats["wishlistsUpdated"]
+        
+    except Exception as e:
+        # Log error but don't fail the product deletion
+        print(f"Warning: Failed to cleanup carts/wishlists for deleted products {productIds}: {e}")
+    
+    return stats
+
+
 @router.get("/products", response_model=ProductListResponse)
 async def get_products(
     page: int = Query(1, ge=1, description="Page number"),
@@ -300,11 +354,17 @@ async def delete_product(
     productName: str = existingProduct.get("name", "Unknown Product")
     
     try:
+        # Delete the product
         await collection.delete_one({"id": productId})
+        
+        # Cleanup product from carts and wishlists
+        cleanupStats: Dict[str, int] = await cleanup_deleted_products_from_carts_and_wishlists([productId])
+        
         return {
             "message": SuccessMessages.PRODUCT_DELETED.value, 
             "productId": productId,
-            "productName": productName
+            "productName": productName,
+            "cleanup": cleanupStats
         }
         
     except Exception as e:
@@ -337,6 +397,9 @@ async def bulk_delete_products(
         # Delete the products
         deleteResult = await collection.delete_many({"id": {"$in": existingIds}})
         
+        # Cleanup deleted products from carts and wishlists
+        cleanupStats: Dict[str, int] = await cleanup_deleted_products_from_carts_and_wishlists(existingIds)
+        
         notFoundIds: List[int] = [pid for pid in productIds if pid not in existingIds]
         
         return {
@@ -344,7 +407,8 @@ async def bulk_delete_products(
             "deletedCount": deleteResult.deleted_count,
             "deletedIds": existingIds,
             "notFoundIds": notFoundIds,
-            "requestedCount": len(productIds)
+            "requestedCount": len(productIds),
+            "cleanup": cleanupStats
         }
         
     except Exception as e:

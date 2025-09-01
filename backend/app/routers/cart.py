@@ -96,27 +96,46 @@ async def validate_product_stock(productId: int, requestedQuantity: int, current
             )
 
 
-async def populate_cart_items(cartItems: List[CartItem]) -> List[CartItemResponse]:
-    """Populate cart items with product details."""
+async def populate_cart_items(cartItems: List[CartItem]) -> tuple[List[CartItemResponse], List[int]]:
+    """Populate cart items with product details, filtering out deleted products."""
     productsCollection: Collection = db_manager.get_collection("products")
     populatedItems: List[CartItemResponse] = []
+    validProductIds: List[int] = []
     
     for item in cartItems:
         # Get product details
         product: Optional[Dict[str, Any]] = await productsCollection.find_one({"id": item.productId})
         
-        cartItemResponse: CartItemResponse = CartItemResponse(
-            productId=item.productId,
-            quantity=item.quantity,
-            addedAt=item.addedAt,
-            updatedAt=item.updatedAt,
-            productName=product.get("name") if product else "Product Not Found",
-            productPrice=product.get("price") if product else None,
-            productImage=product.get("image") if product else None
-        )
-        populatedItems.append(cartItemResponse)
+        # Only include items where the product still exists
+        if product:
+            cartItemResponse: CartItemResponse = CartItemResponse(
+                productId=item.productId,
+                quantity=item.quantity,
+                addedAt=item.addedAt,
+                updatedAt=item.updatedAt,
+                productName=product.get("name"),
+                productPrice=product.get("price"),
+                productImage=product.get("image")
+            )
+            populatedItems.append(cartItemResponse)
+            validProductIds.append(item.productId)
+        # If product doesn't exist, skip this item (don't add "Product Not Found")
     
-    return populatedItems
+    return populatedItems, validProductIds
+
+
+async def cleanup_orphaned_cart_items(userId: int, validProductIds: List[int], originalItemCount: int) -> None:
+    """Remove orphaned cart items that reference deleted products."""
+    if len(validProductIds) < originalItemCount:
+        # Some items were filtered out, clean up the database
+        cartsCollection: Collection = db_manager.get_collection("carts")
+        await cartsCollection.update_one(
+            {"userId": userId},
+            {
+                "$pull": {"items": {"productId": {"$nin": validProductIds}}},
+                "$set": {"updatedAt": datetime.now()}
+            }
+        )
 
 
 @router.get("/cart", response_model=CartResponse)
@@ -125,12 +144,18 @@ async def get_cart(
 ):
     """Get user's shopping cart."""
     cart: CartModel = await get_user_cart(currentUser.id)
-    populatedItems: List[CartItemResponse] = await populate_cart_items(cart.items)
+    originalItemCount: int = len(cart.items)
+    result = await populate_cart_items(cart.items)
+    populatedItems: List[CartItemResponse] = result[0]
+    validProductIds: List[int] = result[1]
+    
+    # Clean up orphaned items from database if any were filtered out
+    await cleanup_orphaned_cart_items(currentUser.id, validProductIds, originalItemCount)
     
     return CartResponse(
         userId=cart.userId,
         items=populatedItems,
-        totalItems=sum(item.quantity for item in cart.items),
+        totalItems=sum(item.quantity for item in populatedItems),  # Use populated items for accurate count
         createdAt=cart.createdAt,
         updatedAt=cart.updatedAt
     )

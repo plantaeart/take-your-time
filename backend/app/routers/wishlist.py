@@ -30,25 +30,44 @@ async def get_user_wishlist(userId: int) -> WishlistModel:
     return newWishlist
 
 
-async def populate_wishlist_items(wishlistItems: List[WishlistItem]) -> List[WishlistItemResponse]:
-    """Populate wishlist items with product details."""
+async def populate_wishlist_items(wishlistItems: List[WishlistItem]) -> tuple[List[WishlistItemResponse], List[int]]:
+    """Populate wishlist items with product details, filtering out deleted products."""
     productsCollection: Collection = db_manager.get_collection("products")
     populatedItems: List[WishlistItemResponse] = []
+    validProductIds: List[int] = []
     
     for item in wishlistItems:
         # Get product details
         product: Optional[Dict[str, Any]] = await productsCollection.find_one({"id": item.productId})
         
-        wishlistItemResponse: WishlistItemResponse = WishlistItemResponse(
-            productId=item.productId,
-            addedAt=item.addedAt,
-            productName=product.get("name") if product else "Product Not Found",
-            productPrice=product.get("price") if product else None,
-            productImage=product.get("image") if product else None
-        )
-        populatedItems.append(wishlistItemResponse)
+        # Only include items where the product still exists
+        if product:
+            wishlistItemResponse: WishlistItemResponse = WishlistItemResponse(
+                productId=item.productId,
+                addedAt=item.addedAt,
+                productName=product.get("name"),
+                productPrice=product.get("price"),
+                productImage=product.get("image")
+            )
+            populatedItems.append(wishlistItemResponse)
+            validProductIds.append(item.productId)
+        # If product doesn't exist, skip this item (don't add "Product Not Found")
     
-    return populatedItems
+    return populatedItems, validProductIds
+
+
+async def cleanup_orphaned_wishlist_items(userId: int, validProductIds: List[int], originalItemCount: int) -> None:
+    """Remove orphaned wishlist items that reference deleted products."""
+    if len(validProductIds) < originalItemCount:
+        # Some items were filtered out, clean up the database
+        wishlistsCollection: Collection = db_manager.get_collection("wishlists")
+        await wishlistsCollection.update_one(
+            {"userId": userId},
+            {
+                "$pull": {"items": {"productId": {"$nin": validProductIds}}},
+                "$set": {"updatedAt": datetime.now()}
+            }
+        )
 
 
 @router.get("/wishlist", response_model=WishlistResponse)
@@ -57,12 +76,18 @@ async def get_wishlist(
 ):
     """Get user's wishlist."""
     wishlist: WishlistModel = await get_user_wishlist(currentUser.id)
-    populatedItems: List[WishlistItemResponse] = await populate_wishlist_items(wishlist.items)
+    originalItemCount: int = len(wishlist.items)
+    result = await populate_wishlist_items(wishlist.items)
+    populatedItems: List[WishlistItemResponse] = result[0]
+    validProductIds: List[int] = result[1]
+    
+    # Clean up orphaned items from database if any were filtered out
+    await cleanup_orphaned_wishlist_items(currentUser.id, validProductIds, originalItemCount)
     
     return WishlistResponse(
         userId=wishlist.userId,
         items=populatedItems,
-        totalItems=len(wishlist.items),
+        totalItems=len(populatedItems),  # Use populated items for accurate count
         createdAt=wishlist.createdAt,
         updatedAt=wishlist.updatedAt
     )
