@@ -3,6 +3,7 @@ Application startup utilities.
 """
 from app.auth.password import get_password_hash
 from app.config.database import db_manager
+from app.config.settings import get_settings
 from app.models.user import create_admin_user, create_indexes
 from app.models.product import create_product_indexes
 from app.models.contact import create_contact_indexes
@@ -12,6 +13,9 @@ from app.schema_version_upgrade.upgrade_system import run_schema_upgrades
 async def initialize_database():
     """Initialize database with required indexes, schema upgrades, and default admin user."""
     print("🚀 Starting database initialization...")
+    
+    # Get settings for admin credentials
+    settings = get_settings()
     
     # Run schema upgrades first
     print("📊 Running schema upgrades...")
@@ -45,12 +49,12 @@ async def initialize_database():
     # Initialize contacts collection
     await create_contact_indexes()
     
-    # Create default admin user (admin@admin.com / AdminPass!@)
-    admin_password_hash = get_password_hash("AdminPass!@")
-    await create_admin_user(users_collection, admin_password_hash)
+    # Create default admin user using environment variables
+    admin_password_hash = get_password_hash(settings.admin_password)
+    await create_admin_user(users_collection, admin_password_hash, settings.admin_email)
     
     print("✅ Database initialized successfully")
-    print("🔑 Default admin user: admin@admin.com / AdminPass!@")
+    print(f"🔑 Default admin user: {settings.admin_email} / {settings.admin_password}")
     
     # Print upgrade summary
     total_upgraded = upgrade_results["total_documents_upgraded"]

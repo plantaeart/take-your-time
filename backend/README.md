@@ -57,6 +57,45 @@ User wishlist for favorite products:
 - Docker & Docker Compose (for containerized setup)
 - MongoDB (local or Docker)
 
+### Environment Configuration
+
+#### 1. **Create Environment Files**
+
+**For Local Development:**
+```bash
+# Copy the example environment file
+cp .env.example .env.local
+
+# Edit .env.local with your settings
+nano .env.local  # or use your preferred editor
+```
+
+**For Docker Development:**
+```bash
+# The .env.dev-docker file is already configured
+# You can modify it if needed for your Docker setup
+```
+
+#### 2. **Configure Admin Credentials**
+
+**⚠️ IMPORTANT**: Change the default admin credentials for security!
+
+In your `.env.local` or `.env.dev-docker` file, update:
+```bash
+# Admin User Configuration (IMPORTANT: Change these credentials!)
+ADMIN_EMAIL=admin@yourdomain.com
+ADMIN_PASSWORD=YourSecureAdminPassword123!
+```
+
+**Required Environment Variables:**
+- `MONGODB_URL` - MongoDB connection string
+- `DATABASE_NAME` - Database name
+- `SECRET_KEY` - JWT secret key (make it long and random!)
+- `FRONTEND_URLS` - Comma-separated list of allowed frontend URLs
+- `ADMIN_EMAIL` - Admin user email
+- `ADMIN_PASSWORD` - Admin user password
+- `SMTP_*` - Email configuration for contact form
+
 ### Local Development
 
 1. **Install dependencies:**
@@ -64,13 +103,7 @@ User wishlist for favorite products:
    uv sync
    ```
 
-2. **Configure environment:**
-   ```bash
-   cp .env.local .env
-   # Edit .env with your local MongoDB settings and secret key
-   ```
-
-3. **Start MongoDB locally:**
+2. **Start MongoDB locally:**
    ```bash
    # Using Docker
    docker run -d -p 27017:27017 --name mongodb mongo:7.0
@@ -78,7 +111,7 @@ User wishlist for favorite products:
    # Or use your local MongoDB installation
    ```
 
-4. **Run the application:**
+3. **Run the application:**
    ```bash
    # Using uv
    uv run uvicorn main:app --reload
@@ -87,7 +120,7 @@ User wishlist for favorite products:
    uv run python main.py
    ```
 
-5. **Access the API:**
+4. **Access the API:**
    - API Documentation: http://localhost:8000/docs
    - Health Check: http://localhost:8000/health
    - Root: http://localhost:8000
@@ -107,6 +140,26 @@ User wishlist for favorite products:
    ```bash
    docker-compose down
    ```
+
+### 🔐 Admin User Setup
+
+When the application starts for the first time, it automatically creates a default admin user using the credentials from your environment variables:
+
+**Default Admin Login:**
+- **Email**: Value from `ADMIN_EMAIL` environment variable
+- **Password**: Value from `ADMIN_PASSWORD` environment variable
+
+**Admin Capabilities:**
+- Full CRUD operations on products
+- View all users and their carts/wishlists
+- Access to admin-only endpoints
+- User management capabilities
+
+**⚠️ Security Notes:**
+- Always change the default admin credentials in production
+- Use strong, unique passwords
+- Consider using environment-specific credentials
+- The admin user is created only if it doesn't already exist
 
 ## 📖 API Endpoints
 
@@ -219,6 +272,8 @@ GET /api/products/?search=laptop&category=Electronics&page=1&limit=10
 
 ### Environment Variables
 
+All configuration is done through environment variables. See `.env.example` for a complete list of required variables.
+
 **Local (.env.local):**
 ```env
 ENVIRONMENT=local
@@ -228,9 +283,11 @@ DATABASE_NAME=TAKE_YOUR_TIME
 API_HOST=0.0.0.0
 API_PORT=8000
 FRONTEND_URLS=http://localhost:4200,http://127.0.0.1:4200
-JWT_SECRET_KEY=your-secret-key-here
-JWT_ALGORITHM=HS256
-JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+SECRET_KEY=your-super-secret-jwt-key-change-this-in-production
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+ADMIN_EMAIL=admin@yourdomain.com
+ADMIN_PASSWORD=YourSecureAdminPassword123!
 ```
 
 **Docker (.env.dev-docker):**
@@ -242,9 +299,54 @@ DATABASE_NAME=TAKE_YOUR_TIME
 API_HOST=0.0.0.0
 API_PORT=8000
 FRONTEND_URLS=http://localhost:4200,http://127.0.0.1:4200,http://frontend:4200
-JWT_SECRET_KEY=your-docker-secret-key-here
-JWT_ALGORITHM=HS256
-JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+SECRET_KEY=your-docker-secret-key-change-this-in-production
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+ADMIN_EMAIL=admin@docker.local
+ADMIN_PASSWORD=DockerAdminPass123!
+```
+
+## 🔒 Security Guidelines
+
+### Production Security Checklist
+
+**Environment Variables:**
+- ✅ Change `SECRET_KEY` to a long, random string (recommended: 64+ characters)
+- ✅ Update `ADMIN_EMAIL` to your organization's admin email
+- ✅ Set a strong `ADMIN_PASSWORD` (minimum 12 characters, mixed case, numbers, symbols)
+- ✅ Use production-grade database URLs
+- ✅ Configure proper `FRONTEND_URLS` for your domain
+
+**Database Security:**
+- ✅ Enable MongoDB authentication
+- ✅ Use SSL/TLS for database connections
+- ✅ Configure proper firewall rules
+- ✅ Regular database backups
+
+**Application Security:**
+- ✅ Use HTTPS in production
+- ✅ Configure proper CORS origins
+- ✅ Enable rate limiting (not included, should be added at reverse proxy level)
+- ✅ Monitor and log authentication attempts
+- ✅ Regular security updates
+
+**JWT Security:**
+- ✅ Tokens expire after 30 minutes by default
+- ✅ Token blacklist functionality prevents reuse of logged-out tokens
+- ✅ Strong secret key for token signing
+
+### Environment File Security
+
+**Never commit real environment files to version control!**
+
+```bash
+# Add to .gitignore
+.env.local
+.env.production
+.env.dev
+*.env
+!.env.example
+```
 ```
 
 ### CORS Configuration

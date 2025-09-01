@@ -72,20 +72,23 @@ async def create_indexes(collection):
     await collection.create_index([("id", ASCENDING)], unique=True)
 
 
-async def create_admin_user(collection, hashed_password: str) -> UserModel:
+async def create_admin_user(collection, hashed_password: str, admin_email: str = "admin@admin.com") -> UserModel:
     """Create the default admin user if it doesn't exist."""
     # Check if admin user already exists
-    existing_admin = await collection.find_one({"email": "admin@admin.com"})
+    existing_admin = await collection.find_one({"email": admin_email})
     
     if existing_admin:
         return UserModel(**existing_admin)
     
+    # Extract username from email (everything before @)
+    admin_username = admin_email.split("@")[0]
+    
     # Create admin user
     admin_user = UserModel(
         id=await get_next_user_id(collection),
-        username="admin",
+        username=admin_username,
         firstname="Administrator",
-        email="admin@admin.com",
+        email=admin_email,
         hashedPassword=hashed_password,
         isActive=True,
         isAdmin=True,  # This is the key admin flag

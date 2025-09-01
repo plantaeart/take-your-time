@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     # CORS
     frontend_urls: str
     
+    # Admin User Configuration
+    admin_email: str
+    admin_password: str
+    
     # Email Configuration
     smtp_server: str = "smtp.gmail.com"
     smtp_port: int = 587
