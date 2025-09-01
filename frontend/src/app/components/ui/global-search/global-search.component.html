@@ -1,0 +1,22 @@
+<div class="global-search-container" [class]="'global-search-' + size()">
+  <input 
+    type="text" 
+    pInputText 
+    [placeholder]="'🔍 ' + placeholder()"
+    [(ngModel)]="searchValue"
+    (ngModelChange)="onSearchChange($event)"
+    [class]="inputClass()"
+    [attr.aria-label]="placeholder()"
+    autocomplete="off"
+    spellcheck="false" />
+  @if (showClearButton() && searchValue()) {
+    <button
+      type="button"
+      class="clear-icon"
+      (click)="onClear()"
+      [attr.aria-label]="'Clear search'"
+      tabindex="0">
+      <i class="pi pi-times" aria-hidden="true"></i>
+    </button>
+  }
+</div>

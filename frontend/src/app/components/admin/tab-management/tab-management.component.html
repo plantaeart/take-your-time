@@ -7,29 +7,27 @@
     <div class="header-actions">
       <!-- Global Search -->
       @if (config().search.enabled) {
-        <span class="p-input-icon-left">
-          <i class="pi pi-search"></i>
-          <input 
-            id="global-filter-input"
-            pInputText 
-            type="text" 
-            [value]="globalFilterValue()"
-            (input)="onGlobalFilter($event)"
-            [placeholder]="config().search.placeholder || 'Search...'" 
-            class="global-filter-input" />
-        </span>
+        <app-global-search
+          [placeholder]="config().search.placeholder || 'Search...'"
+          [value]="globalFilterValue()"
+          [debounceTime]="500"
+          [showClearButton]="true"
+          size="normal"
+          (searchChange)="onGlobalSearchChange($event)"
+          (searchClear)="onGlobalSearchClear()">
+        </app-global-search>
       }
 
       <!-- Clear Filters -->
-      @if (hasActiveFilters()) {
-        <p-button 
-          icon="pi pi-filter-slash" 
-          [text]="true"
-          (onClick)="clearFilters()"
-          pTooltip="Clear all filters and sorting"
-          severity="secondary">
-        </p-button>
-      }
+      <p-button 
+        icon="pi pi-filter-slash" 
+        [text]="true"
+        (onClick)="clearFilters()"
+        [pTooltip]="clearFiltersTooltip()"
+        tooltipPosition="top"
+        severity="secondary"
+        [disabled]="!hasActiveFilters()">
+      </p-button>
 
       <!-- Add New Item -->
       @if (config().actions.canAdd) {

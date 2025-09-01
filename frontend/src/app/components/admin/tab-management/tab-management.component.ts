@@ -7,6 +7,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { TableManagementConfig, ColumnConfig, FilterType } from '../object-management-config/table-config.interface';
 import { RowTabComponent } from '../row-tab/row-tab.component';
 import { ButtonConfirmPopupComponent, FilterButtonConfig } from '../../ui/button-confirm-popup/button-confirm-popup.component';
+import { GlobalSearchComponent } from '../../ui/global-search/global-search.component';
 
 interface FilterState {
   [key: string]: any;
@@ -27,7 +28,8 @@ interface SortState {
     PaginatorModule,
     TooltipModule,
     RowTabComponent,
-    ButtonConfirmPopupComponent
+    ButtonConfirmPopupComponent,
+    GlobalSearchComponent
   ],
   templateUrl: './tab-management.component.html',
   styleUrl: './tab-management.component.css'
@@ -604,4 +606,33 @@ export class TabManagementComponent<T = any> implements OnInit {
     console.log('Export data requested');
     // Implementation needed by parent component
   }
+
+  // ============= GLOBAL SEARCH METHODS =============
+  
+  onGlobalSearchChange(value: string): void {
+    this.globalFilterValue.set(value);
+    // Reset to first page when filtering
+    this.currentPage.set(1);
+    
+    // If lazy loading is enabled, trigger data load
+    if (this.config().pagination.lazy) {
+      this.triggerDataLoad();
+    }
+  }
+
+  onGlobalSearchClear(): void {
+    this.globalFilterValue.set('');
+    // Reset to first page when clearing search
+    this.currentPage.set(1);
+    
+    // If lazy loading is enabled, trigger data load
+    if (this.config().pagination.lazy) {
+      this.triggerDataLoad();
+    }
+  }
+
+  clearFiltersTooltip = computed(() => {
+    const hasFilters = this.hasActiveFilters();
+    return hasFilters ? 'Clear all filters and reset table' : 'No active filters to clear';
+  });
 }
