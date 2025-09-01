@@ -6,7 +6,9 @@ import {
   ProductCreateRequest,
   ProductUpdateRequest,
   ProductInventoryUpdate,
-  BulkProductCreateRequest
+  BulkProductCreateRequest,
+  ProductDeletionResponse,
+  BulkProductDeletionResponse
 } from '../models/product.model';
 import { Category } from '../enums/category.enum';
 import { InventoryStatus } from '../enums/inventory-status.enum';

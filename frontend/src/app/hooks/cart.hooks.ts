@@ -19,6 +19,7 @@ export function useCart() {
     initializeCart: () => cartStore.initializeCart(),
     loadCart: () => cartStore.loadCart(),
     refreshCartFromDatabase: () => cartStore.refreshCartFromDatabase(),
+    forceRefreshCart: () => cartStore.forceRefreshCart(),
     addToCart: (productId: number, quantity: number = 1) => cartStore.addToCart(productId, quantity),
     updateCartItem: (productId: number, quantity: number) => cartStore.updateCartItem(productId, quantity),
     removeFromCart: (productId: number) => cartStore.removeFromCart(productId),

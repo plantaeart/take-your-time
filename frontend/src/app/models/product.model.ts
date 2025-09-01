@@ -202,6 +202,63 @@ export interface BulkProductCreateRequest {
 }
 
 /**
+ * Product Deletion Cleanup Statistics
+ */
+export interface ProductDeletionCleanupStats {
+  /** Number of carts that were updated */
+  cartsUpdated: number;
+  
+  /** Number of cart items that were removed */
+  cartItemsRemoved: number;
+  
+  /** Number of wishlists that were updated */
+  wishlistsUpdated: number;
+  
+  /** Number of wishlist items that were removed */
+  wishlistItemsRemoved: number;
+}
+
+/**
+ * Single Product Deletion Response
+ */
+export interface ProductDeletionResponse {
+  /** Success message */
+  message: string;
+  
+  /** ID of the deleted product */
+  productId: number;
+  
+  /** Name of the deleted product */
+  productName: string;
+  
+  /** Cleanup statistics */
+  cleanup: ProductDeletionCleanupStats;
+}
+
+/**
+ * Bulk Product Deletion Response
+ */
+export interface BulkProductDeletionResponse {
+  /** Success message */
+  message: string;
+  
+  /** Number of products successfully deleted */
+  deletedCount: number;
+  
+  /** List of IDs that were successfully deleted */
+  deletedIds: number[];
+  
+  /** List of IDs that were not found */
+  notFoundIds: number[];
+  
+  /** Total number of IDs requested for deletion */
+  requestedCount: number;
+  
+  /** Cleanup statistics */
+  cleanup: ProductDeletionCleanupStats;
+}
+
+/**
  * Product validation helpers
  */
 export class ProductValidation {

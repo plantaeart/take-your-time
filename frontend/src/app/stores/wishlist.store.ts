@@ -506,4 +506,46 @@ export class WishlistStore {
     // Update localStorage with enhanced data
     this.saveWishlistToStorage();
   }
+
+  /**
+   * Force refresh wishlist from backend and clear localStorage cache
+   * Use this after product deletions to clean up deleted products from wishlist
+   */
+  async forceRefreshWishlist(): Promise<void> {
+    if (!this.authStore.isAuthenticated()) {
+      this._wishlist.set(null);
+      return;
+    }
+
+    // Clear localStorage cache first
+    this.clearWishlistFromStorage();
+    
+    this._isLoading.set(true);
+    try {
+      const wishlist = await firstValueFrom(this.wishlistService.getWishlist());
+      this._wishlist.set(wishlist);
+      
+      // Save fresh data to localStorage
+      this.saveWishlistToStorage();
+      
+      if (environment.debug) {
+        console.log('Wishlist force refreshed for user:', wishlist.userId, 'with', wishlist.totalItems, 'items');
+      }
+    } catch (error: any) {
+      console.error('Failed to force refresh wishlist:', error);
+      
+      // Set empty wishlist on error
+      const emptyWishlist = {
+        userId: this.authStore.user()?.id || 0,
+        items: [],
+        totalItems: 0,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      this._wishlist.set(emptyWishlist);
+      this.saveWishlistToStorage();
+    } finally {
+      this._isLoading.set(false);
+    }
+  }
 }

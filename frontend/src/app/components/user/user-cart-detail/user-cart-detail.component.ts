@@ -64,12 +64,8 @@ export class UserCartDetailComponent implements OnInit {
     // Only load cart if user is authenticated and auth is fully initialized
     if (this.auth.isAuthenticated() && this.auth.isInitialized()) {
       try {
-        // Smart cart loading: only load from database if needed
-        if (this.cart.shouldRefreshFromDatabase() && !this.cart.isLoading()) {
-          // Cart is empty or stale, load from database
-          await this.cart.loadCart();
-        }
-        // If cart has fresh data, no need to reload
+        // Always refresh cart from database when page loads to ensure deleted products are removed
+        await this.cart.refreshCartFromDatabase();
         
         // Load product details for quantity limits
         await this.loadProductDetails();

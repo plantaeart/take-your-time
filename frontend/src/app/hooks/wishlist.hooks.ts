@@ -19,6 +19,7 @@ export function useWishlist() {
     initializeWishlist: () => wishlistStore.initializeWishlist(),
     loadWishlist: () => wishlistStore.loadWishlist(),
     refreshWishlistFromDatabase: () => wishlistStore.refreshWishlistFromDatabase(),
+    forceRefreshWishlist: () => wishlistStore.forceRefreshWishlist(),
     addToWishlist: (productId: number) => wishlistStore.addToWishlist(productId),
     removeFromWishlist: (productId: number) => wishlistStore.removeFromWishlist(productId),
     clearWishlist: () => wishlistStore.clearWishlist(),

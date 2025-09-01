@@ -72,11 +72,8 @@ export class UserWishlistDetailComponent implements OnInit {
         // Initialize cart to check product status
         await this.cart.initializeCart();
         
-        // Smart wishlist loading: only load from database if needed
-        if (this.wishlist.shouldRefreshFromDatabase() && !this.wishlist.isLoading()) {
-          // Wishlist is empty or stale, load from database
-          await this.wishlist.loadWishlist();
-        }
+        // Always refresh wishlist from database when page loads to ensure deleted products are removed
+        await this.wishlist.refreshWishlistFromDatabase();
         
         // Load product details for wishlist items
         await this.loadProductDetails();

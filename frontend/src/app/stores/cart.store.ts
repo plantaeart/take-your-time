@@ -503,4 +503,46 @@ export class CartStore {
     // Update localStorage with enhanced data
     this.saveCartToStorage();
   }
+
+  /**
+   * Force refresh cart from backend and clear localStorage cache
+   * Use this after product deletions to clean up deleted products from cart
+   */
+  async forceRefreshCart(): Promise<void> {
+    if (!this.authStore.isAuthenticated()) {
+      this._cart.set(null);
+      return;
+    }
+
+    // Clear localStorage cache first
+    this.clearCartFromStorage();
+    
+    this._isLoading.set(true);
+    try {
+      const cart = await firstValueFrom(this.cartService.getCart());
+      this._cart.set(cart);
+      
+      // Save fresh data to localStorage
+      this.saveCartToStorage();
+      
+      if (environment.debug) {
+        console.log('Cart force refreshed for user:', cart.userId, 'with', cart.totalItems, 'items');
+      }
+    } catch (error: any) {
+      console.error('Failed to force refresh cart:', error);
+      
+      // Set empty cart on error
+      const emptyCart = {
+        userId: this.authStore.user()?.id || 0,
+        items: [],
+        totalItems: 0,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      this._cart.set(emptyCart);
+      this.saveCartToStorage();
+    } finally {
+      this._isLoading.set(false);
+    }
+  }
 }

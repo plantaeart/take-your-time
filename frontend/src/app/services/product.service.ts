@@ -7,7 +7,9 @@ import {
   ProductCreateRequest,
   ProductUpdateRequest,
   ProductInventoryUpdate,
-  BulkProductCreateRequest
+  BulkProductCreateRequest,
+  ProductDeletionResponse,
+  BulkProductDeletionResponse
 } from '../models/product.model';
 import { Category } from '../enums/category.enum';
 import { API_CONFIG, getApiBaseUrl } from './axios/api.config';
@@ -244,9 +246,9 @@ export class ProductService {
    * Delete a product (Admin only)
    * DELETE /api/products/{id}
    */
-  async deleteProduct(productId: number): Promise<{ message: string }> {
+  async deleteProduct(productId: number): Promise<ProductDeletionResponse> {
     try {
-      const response: AxiosResponse<{ message: string }> = await axios.delete(
+      const response: AxiosResponse<ProductDeletionResponse> = await axios.delete(
         `${this.baseUrl}${this.apiPath}/${productId}`,
         {
           headers: {
@@ -314,13 +316,7 @@ export class ProductService {
    * Bulk delete products (Admin only)
    * DELETE /api/admin/products/bulk
    */
-  async bulkDeleteProducts(productIds: number[]): Promise<{ 
-    message: string,
-    deletedCount: number,
-    deletedIds: number[], 
-    notFoundIds: number[],
-    requestedCount: number
-  }> {
+  async bulkDeleteProducts(productIds: number[]): Promise<BulkProductDeletionResponse> {
     try {
       const response = await axios.request({
         method: 'DELETE',

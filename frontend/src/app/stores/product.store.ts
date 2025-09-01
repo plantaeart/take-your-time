@@ -6,7 +6,9 @@ import {
   ProductCreateRequest,
   ProductUpdateRequest,
   ProductInventoryUpdate,
-  BulkProductCreateRequest
+  BulkProductCreateRequest,
+  ProductDeletionResponse,
+  BulkProductDeletionResponse
 } from '../models/product.model';
 import { Category } from '../enums/category.enum';
 import { InventoryStatus } from '../enums/inventory-status.enum';
@@ -540,7 +542,7 @@ export class ProductStore {
   /**
    * Delete a product (Admin only)
    */
-  async deleteProduct(productId: number): Promise<{ message: string }> {
+  async deleteProduct(productId: number): Promise<ProductDeletionResponse> {
     this._setLoading('products', true);
     this._clearError('products');
 
@@ -628,13 +630,7 @@ export class ProductStore {
   /**
    * Bulk delete products (Admin only)
    */
-  async bulkDeleteProducts(productIds: number[]): Promise<{ 
-    message: string,
-    deletedCount: number,
-    deletedIds: number[], 
-    notFoundIds: number[],
-    requestedCount: number
-  }> {
+  async bulkDeleteProducts(productIds: number[]): Promise<BulkProductDeletionResponse> {
     this._setLoading('products', true);
     this._clearError('products');
 
