@@ -172,8 +172,9 @@ def build_image(
     image_name = f"{IMAGE_BASE_NAME}:{tag}"
     console.print(f"[blue]🔨 Building image {image_name}...[/blue]")
     console.print(f"[dim]Building from: {BACKEND_PATH}[/dim]")
+    console.print(f"[yellow]📝 Using --no-cache to ensure latest changes are included[/yellow]")
     
-    result = run_command(f"docker build -t {image_name} .", capture_output=False, cwd=BACKEND_PATH)
+    result = run_command(f"docker build -t {image_name} --no-cache .", capture_output=False, cwd=BACKEND_PATH)
     
     if result and result.returncode == 0:
         console.print(f"[green]✅ Successfully built image: {image_name}[/green]")
