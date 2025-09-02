@@ -7,9 +7,12 @@ import { SignOutButtonComponent } from '../../ui/sign-out-button/sign-out-button
 import { TabManagementComponent } from '../tab-management/tab-management.component';
 import { useAuth } from '../../../hooks/auth.hooks';
 import { useProducts } from '../../../hooks/product.hooks';
-import { useAdminProductSearch, TabManagementConverter } from '../../../hooks/admin-search.hooks';
+import { useAdminProductSearch, useAdminUserSearch, TabManagementConverter } from '../../../hooks/admin-search.hooks';
+import { useUserManagement } from '../../../hooks/user-management.hooks';
 import { PRODUCT_TABLE_CONFIG } from '../object-management-config/product.config';
+import { USER_TABLE_CONFIG } from '../object-management-config/user.config';
 import { Product, ProductCreateRequest, ProductUpdateRequest } from '../../../models/product.model';
+import { User } from '../../../models/user.model';
 import { AdminSearchParams } from '../../../models/adminSearch.model';
 
 @Component({
@@ -38,6 +41,12 @@ export class AdminDashboardComponent implements OnInit {
   
   // Use admin product search hook
   adminProductSearch = useAdminProductSearch();
+  
+  // Use admin user search hook for reading/searching users
+  adminUserSearch = useAdminUserSearch();
+  
+  // Use user management hook for CRUD operations
+  userManagement = useUserManagement();
   
   // Product table configuration with CRUD operations
   productTableConfig = {
@@ -128,8 +137,86 @@ export class AdminDashboardComponent implements OnInit {
   // Loading state computed from admin search state  
   isLoadingProducts = computed(() => this.adminProductSearch.state().isLoading);
 
-  ngOnInit(): void {
+  // User data computed from admin search state
+  userData = computed(() => this.adminUserSearch.state().items);
+  
+  // User loading state computed from admin search state  
+  isLoadingUsers = computed(() => this.adminUserSearch.state().isLoading);
 
+  // User table configuration with CRUD operations using hooks
+  userTableConfig = {
+    ...USER_TABLE_CONFIG,
+    updateItem: async (id: number, item: Partial<User>) => {
+      try {
+        await this.userManagement.updateUser(id, item);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'User updated successfully'
+        });
+        // Refresh the data
+        await this.onUserDataLoad({ page: 1, size: 25, sorts: [], filters: {} });
+      } catch (error: any) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: error.message || 'Failed to update user'
+        });
+        throw error;
+      }
+    },
+    deleteItem: async (id: number) => {
+      try {
+        await this.userManagement.deleteUser(id);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'User deleted successfully'
+        });
+        // Refresh the data
+        await this.onUserDataLoad({ page: 1, size: 25, sorts: [], filters: {} });
+      } catch (error: any) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: error.message || 'Failed to delete user'
+        });
+        throw error;
+      }
+    },
+    executeCustomAction: async (action: string, id: number) => {
+      try {
+        if (action === 'activate') {
+          await this.userManagement.activateUser(id);
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Success',
+            detail: 'User activated successfully'
+          });
+        } else if (action === 'deactivate') {
+          await this.userManagement.deactivateUser(id);
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Success',
+            detail: 'User deactivated successfully'
+          });
+        }
+        // Refresh the data
+        await this.onUserDataLoad({ page: 1, size: 25, sorts: [], filters: {} });
+      } catch (error: any) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: error.message || `Failed to ${action} user`
+        });
+        throw error;
+      }
+    }
+  };
+
+  ngOnInit(): void {
+    // Trigger initial user data load
+    this.onUserDataLoad({ page: 1, size: 25, sorts: [], filters: {} });
   }
 
   /**
@@ -146,6 +233,23 @@ export class AdminDashboardComponent implements OnInit {
       await this.adminProductSearch.search(searchParams);
     } catch (error) {
       console.error('Failed to load products:', error);
+    }
+  }
+
+  /**
+   * Handle data load requests from user tab-management component
+   */
+  async onUserDataLoad(event: { page: number; size: number; sorts: any[]; filters: any }): Promise<void> {
+    // Convert tab-management event to AdminSearchParams using the converter
+    const searchParams = TabManagementConverter.convertTabManagementEvent(
+      event,
+      USER_TABLE_CONFIG.globalFilterFields || ['username', 'email']
+    );
+    
+    try {
+      await this.adminUserSearch.search(searchParams);
+    } catch (error) {
+      console.error('Failed to load users:', error);
     }
   }
 

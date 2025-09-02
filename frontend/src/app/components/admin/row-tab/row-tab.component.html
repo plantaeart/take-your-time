@@ -120,6 +120,14 @@
                 [invalid]="!isFieldValid(column)">
               </app-upload-input>
             }
+            @case ('checkbox-input') {
+              <app-checkbox-input
+                [ngModel]="getColumnValue(column)"
+                (ngModelChange)="setColumnValue(column, $event)"
+                [label]="column.header || column.field"
+                [invalid]="!isFieldValid(column)">
+              </app-checkbox-input>
+            }
             @default {
               <!-- Fallback to text input -->
               <app-text-input

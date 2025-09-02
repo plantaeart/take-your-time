@@ -27,11 +27,13 @@
 
     <!-- Users Management Tab -->
     <p-tabPanel header="Users" leftIcon="pi pi-users">
-      <div class="tab-content">
-        <h3>Users Management (RUD)</h3>
-        <p>Read, Update, Delete users</p>
-        <!-- TODO: Implement users RUD component -->
-      </div>
+      <app-tab-management 
+        [config]="userTableConfig"
+        [data]="userData()"
+        [loading]="isLoadingUsers()"
+        [totalRecordsInput]="adminUserSearch.state().total"
+        (dataLoad)="onUserDataLoad($event)">
+      </app-tab-management>
     </p-tabPanel>
 
     <!-- User Carts Management Tab -->

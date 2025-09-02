@@ -46,7 +46,7 @@ const productColumns: ColumnConfig[] = [
     sortable: true,
     filterable: true,
     filterType: 'text',
-    width: '12rem',
+    width: '16rem',
     editable: true,
     required: true,
     validations: [
@@ -63,7 +63,7 @@ const productColumns: ColumnConfig[] = [
     sortable: false,
     filterable: true,
     filterType: 'text',
-    width: '20rem',
+    width: '24rem',
     editable: true,
     validations: [
       { rule: 'maxLength', value: 500, message: 'Description cannot exceed 500 characters' }
@@ -87,7 +87,7 @@ const productColumns: ColumnConfig[] = [
     sortable: true,
     filterable: true,
     filterType: 'dropdown',
-    width: '8rem',
+    width: '10rem',
     editable: true,
     required: true,
     options: [
@@ -109,7 +109,7 @@ const productColumns: ColumnConfig[] = [
     filterable: true,
     filterType: 'range',
     filterStep: 10,
-    width: '6rem',
+    width: '10rem',
     editable: true,
     required: true,
     displayFormat: 'currency',
@@ -127,7 +127,7 @@ const productColumns: ColumnConfig[] = [
     filterable: true,
     filterType: 'range',
     filterStep: 1,
-    width: '6rem',
+    width: '10rem',
     editable: true,
     required: true,
     validations: [
@@ -143,7 +143,7 @@ const productColumns: ColumnConfig[] = [
     sortable: true,
     filterable: true,
     filterType: 'number',
-    width: '6rem',
+    width: '10rem',
     editable: true,
     required: true,
     validations: [
@@ -159,7 +159,7 @@ const productColumns: ColumnConfig[] = [
     sortable: true,
     filterable: true,
     filterType: 'dropdown',
-    width: '7rem',
+    width: '10rem',
     editable: true,
     required: true,
     options: [
@@ -182,7 +182,7 @@ const productColumns: ColumnConfig[] = [
     filterMin: 0,
     filterMax: 5,
     filterStep: 0.1,
-    width: '6rem',
+    width: '10rem',
     editable: true,
     displayFormat: 'rating',
     validations: [

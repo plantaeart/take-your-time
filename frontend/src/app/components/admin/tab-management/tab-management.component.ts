@@ -225,47 +225,10 @@ export class TabManagementComponent<T = any> implements OnInit {
     const selectWidth = this.config().actions.canBulkDelete ? '60px ' : '';
     const actionsWidth = '120px ';
     
-    // Define specific widths for different column types and special cases
+    // Use column.width directly for all columns
     const columnWidths: string[] = [];
     this.visibleColumns().forEach(column => {
-      // Handle special cases first
-      if (column.field === 'description') {
-        // Description fields need more space regardless of type
-        columnWidths.push('max(320px, 25vw)');
-      } else if (column.displayFormat === 'currency') {
-        // Currency fields (like price) need moderate width
-        columnWidths.push('max(160px, 8vw)');
-      } else if (column.displayFormat === 'rating') {
-        // Rating fields should match other number columns
-        columnWidths.push('max(160px, 7vw)');
-      } else {
-        // Standard type-based widths
-        switch (column.type) {
-          case 'number':
-            columnWidths.push('max(160px, 7vw)');
-            break;
-          case 'text':
-            columnWidths.push('max(180px, 12vw)');
-            break;
-          case 'image':
-            columnWidths.push('max(120px, 8vw)');
-            break;
-          case 'enum':
-            columnWidths.push('max(160px, 9vw)');
-            break;
-          case 'date':
-            columnWidths.push('max(120px, 8vw)');
-            break;
-          case 'boolean':
-            columnWidths.push('max(90px, 6vw)');
-            break;
-          case 'actions':
-            columnWidths.push('max(120px, 8vw)');
-            break;
-          default:
-            columnWidths.push('max(160px, 10vw)'); // Default width for other columns
-        }
-      }
+      columnWidths.push(column.width || 'auto');
     });
     
     const dataColumns = columnWidths.join(' ');

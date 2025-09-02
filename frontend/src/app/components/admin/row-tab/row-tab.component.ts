@@ -14,6 +14,7 @@ import { NumberInputComponent } from '../../ui/table-inputs/number-input/number-
 import { TextareaInputComponent } from '../../ui/table-inputs/textarea-input/textarea-input.component';
 import { RatingInputComponent } from '../../ui/table-inputs/rating-input/rating-input.component';
 import { UploadInputComponent } from '../../ui/table-inputs/upload-input/upload-input.component';
+import { CheckboxInputComponent } from '../../ui/table-inputs/checkbox-input/checkbox-input.component';
 
 @Component({
   selector: 'app-row-tab',
@@ -31,7 +32,8 @@ import { UploadInputComponent } from '../../ui/table-inputs/upload-input/upload-
     NumberInputComponent,
     TextareaInputComponent,
     RatingInputComponent,
-    UploadInputComponent
+    UploadInputComponent,
+    CheckboxInputComponent
   ],
   templateUrl: './row-tab.component.html',
   styleUrl: './row-tab.component.css'
