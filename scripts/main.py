@@ -50,6 +50,7 @@ def get_version_info():
 from mongodb.manage import app as mongodb_app
 from fastapi.manage import app as fastapi_app
 from angular.manage import app as angular_app
+from network.manage import app as network_app
 
 # Main application
 app = typer.Typer(
@@ -63,6 +64,7 @@ console = Console()
 app.add_typer(mongodb_app, name="mongodb", help="🍃 MongoDB container management")
 app.add_typer(fastapi_app, name="fastapi", help="🚀 FastAPI container management")
 app.add_typer(angular_app, name="angular", help="🅰️ Angular frontend container management")
+app.add_typer(network_app, name="network", help="🌐 Docker network management")
 
 
 @app.callback()

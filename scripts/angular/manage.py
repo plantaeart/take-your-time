@@ -24,7 +24,9 @@ console = Console()
 
 # Configuration
 IMAGE_BASE_NAME = "take-your-time-frontend"
-DEFAULT_PORT = 4200
+CONTAINER_NAME = "angular-frontend"
+NETWORK_NAME = "take-your-time-network"
+DEFAULT_PORT = 3000
 FRONTEND_PATH = Path(__file__).parent.parent.parent / "frontend"
 
 
@@ -181,32 +183,39 @@ def build_image(
         
         # Ask if user wants to run a container with the newly built image
         if Confirm.ask("\nDo you want to run a container with this image now?", default=False):
-            container_name = f"angular-{tag}"
             port = DEFAULT_PORT
             
             # Check if container name already exists
-            result_check = run_command(f"docker ps -a -q -f name={container_name}")
+            result_check = run_command(f"docker ps -a -q -f name={CONTAINER_NAME}")
             if result_check and result_check.stdout.strip():
-                console.print(f"[yellow]⚠️  Container {container_name} already exists[/yellow]")
+                console.print(f"[yellow]⚠️  Container {CONTAINER_NAME} already exists[/yellow]")
                 if Confirm.ask("Remove existing container?", default=True):
-                    run_command(f"docker rm -f {container_name}")
-                    console.print(f"[green]✅ Removed existing container {container_name}[/green]")
+                    run_command(f"docker rm -f {CONTAINER_NAME}")
+                    console.print(f"[green]✅ Removed existing container {CONTAINER_NAME}[/green]")
                 else:
-                    # Ask for alternative name
-                    new_name = Prompt.ask("Enter a different container name", default=f"angular-{tag}-new")
-                    container_name = new_name
+                    console.print("[yellow]Skipping container run[/yellow]")
+                    return
             
-            # Run the container
-            command = f"docker run -d --name {container_name} -p {port}:80 {image_name}"
-            console.print(f"[blue]🔄 Starting container {container_name}...[/blue]")
+            # Check if network exists
+            network_check = run_command(f"docker network inspect {NETWORK_NAME}")
+            network_flag = f"--network {NETWORK_NAME}" if network_check.returncode == 0 else ""
+            if network_check.returncode != 0:
+                console.print(f"[yellow]⚠️  Network {NETWORK_NAME} not found. Container will use default network.[/yellow]")
+                console.print(f"[blue]💡 Create network with: uv run python main.py network create[/blue]")
+            
+            # Run the container with network
+            command = f"docker run -d --name {CONTAINER_NAME} {network_flag} -p {port}:80 {image_name}"
+            console.print(f"[blue]🔄 Starting container {CONTAINER_NAME}...[/blue]")
             
             result_run = run_command(command)
             if result_run and result_run.returncode == 0:
-                console.print(f"[green]✅ Container {container_name} started successfully![/green]")
+                console.print(f"[green]✅ Container {CONTAINER_NAME} started successfully![/green]")
                 console.print(f"[blue]🌐 Frontend available at: http://localhost:{port}[/blue]")
                 console.print(f"[blue]🔍 Health check: http://localhost:{port}/health[/blue]")
+                if network_check.returncode == 0:
+                    console.print(f"[green]🌐 Container connected to network: {NETWORK_NAME}[/green]")
             else:
-                console.print(f"[red]❌ Failed to start container {container_name}[/red]")
+                console.print(f"[red]❌ Failed to start container {CONTAINER_NAME}[/red]")
                 if result_run and result_run.stderr:
                     console.print(f"[dim red]   {result_run.stderr.strip()}[/dim red]")
     else:
@@ -217,12 +226,12 @@ def build_image(
 def run_container(
     tag: str = typer.Option("latest", "--tag", "-t", help="Image tag to run"),
     port: int = typer.Option(DEFAULT_PORT, "--port", "-p", help="Host port to bind to"),
-    name: Optional[str] = typer.Option(None, "--name", "-n", help="Container name"),
+    name: Optional[str] = typer.Option(None, "--name", "-n", help="Container name (overrides default)"),
     detach: bool = typer.Option(True, "--detach/--no-detach", "-d", help="Run in detached mode")
 ):
-    """🚀 Run Angular Frontend container."""
+    """🚀 Run Angular Frontend container with fixed name for networking."""
     image_name = f"{IMAGE_BASE_NAME}:{tag}"
-    container_name = name or f"angular-{tag}"
+    container_name = name or CONTAINER_NAME  # Use fixed name unless overridden
     
     console.print(Panel.fit(f"🚀 Running Angular Frontend Container: {container_name}", style="green"))
     
@@ -242,8 +251,15 @@ def run_container(
         else:
             return
     
+    # Check if network exists
+    network_check = run_command(f"docker network inspect {NETWORK_NAME}")
+    network_flag = f"--network {NETWORK_NAME}" if network_check.returncode == 0 else ""
+    if network_check.returncode != 0:
+        console.print(f"[yellow]⚠️  Network {NETWORK_NAME} not found. Container will use default network.[/yellow]")
+        console.print(f"[blue]💡 Create network with: uv run python main.py network create[/blue]")
+    
     detach_flag = "-d" if detach else ""
-    command = f"docker run {detach_flag} --name {container_name} -p {port}:80 {image_name}"
+    command = f"docker run {detach_flag} --name {container_name} {network_flag} -p {port}:80 {image_name}"
     
     console.print(f"[blue]🔄 Starting container {container_name}...[/blue]")
     console.print(f"[dim]Command: {command}[/dim]")
@@ -254,6 +270,8 @@ def run_container(
             console.print(f"[green]✅ Container {container_name} started successfully![/green]")
             console.print(f"[blue]🌐 Frontend available at: http://localhost:{port}[/blue]")
             console.print(f"[blue]🔍 Health check: http://localhost:{port}/health[/blue]")
+            if network_check.returncode == 0:
+                console.print(f"[green]🌐 Container connected to network: {NETWORK_NAME}[/green]")
         else:
             console.print("[red]❌ Failed to start container[/red]")
     else:
