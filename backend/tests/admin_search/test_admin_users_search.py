@@ -57,6 +57,23 @@ class TestAdminUsersSearch:
             assert "username" in user
             assert "email" in user
 
+    def test_admin_users_search_excludes_admin_users_by_default(self, client: TestClient, admin_token: str) -> None:
+        """Test that admin users search excludes admin users by default."""
+        headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
+
+        response = client.get("/api/admin/users/search", headers=headers)
+        assert response.status_code == HTTPStatus.OK.value
+
+        responseData: Dict[str, Any] = response.json()
+        users: List[Dict[str, Any]] = responseData["users"]
+        
+        # Verify that all returned users are NOT admin users
+        for user in users:
+            assert user["isAdmin"] is False
+            
+        # Also verify the search only returns non-admin users
+        # The response should not include any users with isAdmin=true
+
     def test_admin_users_search_with_username_filter(self, client: TestClient, admin_token: str) -> None:
         """Test admin users search with username filter."""
         headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}

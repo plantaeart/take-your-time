@@ -95,6 +95,9 @@ async def search_users_admin(
     """
     Advanced admin user search with flexible filtering.
     
+    Note: This endpoint automatically excludes admin users (isAdmin=true) 
+    from search results to separate regular user management from admin management.
+    
     Filters format: {"id": 123, "username": "john", "email": "user@example.com", "isActive": true}
     Sorts format: [{"field": "username", "direction": "asc"}]
     """
@@ -114,6 +117,11 @@ async def search_users_admin(
     ]
     
     try:
+        # Add filter to exclude admin users from regular user management
+        # Admin users should only be managed through special admin management endpoints
+        if "isAdmin" not in parsed_filters:
+            parsed_filters["isAdmin"] = False
+        
         # Use generic admin search utility
         result = await admin_search_objects(
             collection_name="users",
