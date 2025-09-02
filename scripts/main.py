@@ -49,6 +49,7 @@ def get_version_info():
 # Import sub-applications
 from mongodb.manage import app as mongodb_app
 from fastapi.manage import app as fastapi_app
+from angular.manage import app as angular_app
 
 # Main application
 app = typer.Typer(
@@ -61,11 +62,12 @@ console = Console()
 # Add sub-applications
 app.add_typer(mongodb_app, name="mongodb", help="🍃 MongoDB container management")
 app.add_typer(fastapi_app, name="fastapi", help="🚀 FastAPI container management")
+app.add_typer(angular_app, name="angular", help="🅰️ Angular frontend container management")
 
 
 @app.callback()
 def main():
-    """🎯 Take Your Time - Docker Management CLI for MongoDB and FastAPI."""
+    """🎯 Take Your Time - Docker Management CLI for MongoDB, FastAPI, and Angular."""
     pass
 
 
@@ -103,16 +105,29 @@ def show_info():
     console.print("   • [red]remove-containers[/red] - Remove containers")
     console.print("   • [red]remove-images[/red] - Remove images")
     
+    console.print("\n📁 [cyan]angular[/cyan] - Angular frontend container management")
+    console.print("   • [green]build[/green] - Build Docker image")
+    console.print("   • [green]run[/green] - Run container")
+    console.print("   • [blue]list[/blue] - List images and containers")
+    console.print("   • [yellow]logs[/yellow] - View container logs")
+    console.print("   • [red]remove-containers[/red] - Remove containers")
+    console.print("   • [red]remove-images[/red] - Remove images")
+    console.print("   • [red]clean[/red] - Remove all containers and images")
+    
     console.print("\n[bold]Examples:[/bold]")
-    console.print("🍃 [dim]python main.py mongodb start[/dim]")
-    console.print("🚀 [dim]python main.py fastapi build --tag v1.0[/dim]")
-    console.print("🚀 [dim]python main.py fastapi run --tag v1.0 --port 8080[/dim]")
-    console.print("📋 [dim]python main.py fastapi list[/dim]")
+    console.print("🍃 [dim]uv run python main.py mongodb start[/dim]")
+    console.print("🚀 [dim]uv run python main.py fastapi build --tag v1.0[/dim]")
+    console.print("🚀 [dim]uv run python main.py fastapi run --tag v1.0 --port 8080[/dim]")
+    console.print("🅰️ [dim]uv run python main.py angular build[/dim]")
+    console.print("🅰️ [dim]uv run python main.py angular run --port 4200[/dim]")
+    console.print("📋 [dim]uv run python main.py fastapi list[/dim]")
     
     console.print("\n[bold]Quick Setup:[/bold]")
-    console.print("1. 🍃 Start MongoDB: [green]python main.py mongodb start[/green]")
-    console.print("2. 🚀 Build FastAPI: [green]python main.py fastapi build[/green]")
-    console.print("3. 🚀 Run FastAPI: [green]python main.py fastapi run[/green]")
+    console.print("1. 🍃 Start MongoDB: [green]uv run python main.py mongodb start[/green]")
+    console.print("2. 🚀 Build FastAPI: [green]uv run python main.py fastapi build[/green]")
+    console.print("3. 🚀 Run FastAPI: [green]uv run python main.py fastapi run[/green]")
+    console.print("4. 🅰️ Build Angular: [green]uv run python main.py angular build[/green]")
+    console.print("5. 🅰️ Run Angular: [green]uv run python main.py angular run[/green]")
 
 
 if __name__ == "__main__":

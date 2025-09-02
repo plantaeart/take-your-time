@@ -22,6 +22,9 @@ scripts/
 ├── fastapi/
 │   ├── manage.py          # FastAPI container management
 │   └── __init__.py
+├── angular/
+│   ├── manage.py          # Angular frontend container management
+│   └── __init__.py
 ├── pyproject.toml         # Dependencies (rich, typer)
 └── README.md
 ```
@@ -48,6 +51,11 @@ uv run python main.py mongodb stop
 uv run python main.py fastapi build --tag v1.0
 uv run python main.py fastapi run --tag v1.0
 uv run python main.py fastapi list
+
+# Angular operations
+uv run python main.py angular build
+uv run python main.py angular run --port 4200
+uv run python main.py angular list
 ```
 
 ## 🍃 MongoDB Commands
@@ -117,6 +125,60 @@ uv run python main.py fastapi remove-images
 - ✅ **Safety confirmations** - Confirm before destructive operations
 - ✅ **Rich tables** - Beautiful formatted lists
 
+## 🅰️ Angular Commands
+
+### Build & Run
+```bash
+# Build Angular Docker image
+uv run python main.py angular build
+
+# Run container (default port 4200)
+uv run python main.py angular run
+
+# Run on custom port with custom name
+uv run python main.py angular run --port 3000 --name angular-dev
+```
+
+### Monitor & Debug
+```bash
+# List all images and containers
+uv run python main.py angular list
+
+# Check container status
+uv run python main.py angular status
+
+# View logs
+uv run python main.py angular logs
+
+# Follow logs in real time
+uv run python main.py angular logs --follow
+
+# Show specific container logs
+uv run python main.py angular logs --container angular-dev
+```
+
+### Cleanup (Interactive)
+```bash
+# Remove containers (interactive selection)
+uv run python main.py angular remove-containers
+
+# Remove images (interactive selection)
+uv run python main.py angular remove-images
+
+# Clean everything (containers + images)
+uv run python main.py angular clean
+```
+
+### Angular Features:
+- ✅ **Rich UI** - Beautiful tables and interactive selection
+- ✅ **Production build** - Multi-stage Docker build with nginx
+- ✅ **Port configuration** - Default 4200, customizable
+- ✅ **Interactive selection** - Choose containers/images from numbered list
+- ✅ **Health checks** - Built-in nginx health endpoint
+- ✅ **Safety confirmations** - Confirm before destructive operations
+- ✅ **Container management** - Multiple container support with custom names
+- ✅ **Frontend focus** - No external .env dependencies
+
 ## 🎯 Complete Workflow Example
 
 ```bash
@@ -129,11 +191,20 @@ uv run python main.py fastapi build --tag v1.0
 # 3. Run FastAPI container
 uv run python main.py fastapi run --tag v1.0
 
-# 4. Check everything is running
+# 4. Build Angular frontend
+uv run python main.py angular build
+
+# 5. Run Angular container
+uv run python main.py angular run
+
+# 6. Check everything is running
 uv run python main.py mongodb status
 uv run python main.py fastapi list
+uv run python main.py angular list
 
-# 5. Test the API
+# 7. Test the application
+# Backend API: http://localhost:8000
+# Frontend App: http://localhost:4200
 curl http://localhost:8000/health
 curl http://localhost:8000/docs
 ```
@@ -179,14 +250,17 @@ uv run python main.py mongodb logs --tail 100
 ### Image Names
 - **MongoDB**: `mongodb` (standard)
 - **FastAPI**: `take-your-time-fastapi:tag`
+- **Angular**: `take-your-time-frontend`
 
 ### Default Ports
 - **MongoDB**: `27017`
 - **FastAPI**: `8000` (configurable)
+- **Angular**: `4200` (configurable)
 
-### Backend Path
-- FastAPI builds from: `../backend/` (relative to scripts)
-- Dockerfile location: `../backend/Dockerfile`
+### Build Paths
+- **FastAPI**: `../backend/` (relative to scripts)
+- **Angular**: `../frontend/` (relative to scripts)
+- **Dockerfiles**: Located in respective directories
 
 ## 🆘 Troubleshooting
 
@@ -217,9 +291,39 @@ uv run python main.py fastapi build --tag test
 ```bash
 # List all containers
 uv run python main.py fastapi list
+uv run python main.py angular list
 
 # Remove conflicts
 uv run python main.py fastapi remove-containers
+uv run python main.py angular remove-containers
+```
+
+### Angular Build Issues
+```bash
+# Check frontend path exists
+ls ../frontend/Dockerfile
+
+# Clean npm cache and rebuild
+cd ../frontend
+npm cache clean --force
+npm install
+cd ../scripts
+
+# Rebuild Docker image
+uv run python main.py angular clean
+uv run python main.py angular build
+```
+
+### Port Conflicts
+```bash
+# Check what's using ports
+netstat -an | findstr 4200
+netstat -an | findstr 8000
+netstat -an | findstr 27017
+
+# Use different ports
+uv run python main.py angular run --port 3000
+uv run python main.py fastapi run --tag latest --port 8080
 ```
 
 ## 🎨 Rich UI Features
