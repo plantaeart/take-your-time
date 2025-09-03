@@ -1,3 +1,8 @@
+/* FIX: Override PrimeNG TabView CSS that hides tabs in production mode */
+.p-tabview-scrollable .p-tabview-nav-container {
+  overflow: visible !important;
+}
+
 .table-management-container {
   display: flex;
   flex-direction: column;

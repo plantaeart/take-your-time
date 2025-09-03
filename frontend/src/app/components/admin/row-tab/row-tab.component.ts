@@ -65,21 +65,30 @@ export class RowTabComponent<T = any> {
   // Effect to initialize edit data when editing starts
   constructor() {
     effect(() => {
-      if (this.isEditing() && !this.isInitialized()) {
-        if (this.isNew()) {
-          // For new items, start with empty data
-          this.editData.set({});
-        } else {
-          // For existing items, populate edit data with current item values
-          const currentItem = this.item();
-          if (currentItem && Object.keys(currentItem).length > 0) {
-            // Deep copy the current item to edit data to ensure dropdowns get populated
-            this.editData.set({ ...currentItem });
+      try {
+        if (this.isEditing() && !this.isInitialized()) {
+          if (this.isNew()) {
+            // For new items, start with empty data
+            this.editData.set({});
+          } else {
+            // For existing items, populate edit data with current item values
+            const currentItem = this.item();
+            if (currentItem && typeof currentItem === 'object' && Object.keys(currentItem).length > 0) {
+              // Deep copy the current item to edit data to ensure dropdowns get populated
+              this.editData.set({ ...currentItem });
+            } else {
+              this.editData.set({});
+            }
           }
+          this.isInitialized.set(true);
+        } else if (!this.isEditing()) {
+          // Clear edit data when not editing and reset initialization flag
+          this.editData.set({});
+          this.isInitialized.set(false);
         }
-        this.isInitialized.set(true);
-      } else if (!this.isEditing()) {
-        // Clear edit data when not editing and reset initialization flag
+      } catch (error) {
+        console.warn('Error in editing effect:', error);
+        // Fallback to safe state
         this.editData.set({});
         this.isInitialized.set(false);
       }
@@ -130,25 +139,34 @@ export class RowTabComponent<T = any> {
   // ============= DATA METHODS =============
   
   getColumnValue(column: ColumnConfig): any {
-    if (this.isEditing()) {
-      // During editing, first check edit data, then original item data
-      const editData = this.editData() as any;
-      const itemData = this.item() as any;
-      
-      // If we have edit data for this field, use it (including null values)
-      if (editData && editData.hasOwnProperty(column.field)) {
-        const value = editData[column.field];
+    try {
+      if (!column || !column.field) {
+        return null;
+      }
+
+      if (this.isEditing()) {
+        // During editing, first check edit data, then original item data
+        const editData = this.editData() as any;
+        const itemData = this.item() as any;
+        
+        // If we have edit data for this field, use it (including null values)
+        if (editData && editData.hasOwnProperty(column.field)) {
+          const value = editData[column.field];
+          return value;
+        }
+        
+        // Otherwise, use the original item data
+        const value = itemData ? itemData[column.field] : null;
+        return value;
+      } else {
+        // Not editing, use item data
+        const itemData = this.item() as any;
+        const value = itemData ? itemData[column.field] : null;
         return value;
       }
-      
-      // Otherwise, use the original item data
-      const value = itemData ? itemData[column.field] : null;
-      return value;
-    } else {
-      // Not editing, use item data
-      const itemData = this.item() as any;
-      const value = itemData ? itemData[column.field] : null;
-      return value;
+    } catch (error) {
+      console.warn('Error in getColumnValue:', error, 'column:', column);
+      return null;
     }
   }
 
@@ -159,39 +177,44 @@ export class RowTabComponent<T = any> {
   }
 
   getDisplayValue(column: ColumnConfig): string {
-    const value = this.getColumnValue(column);
-    
-    if (value === null || value === undefined) {
-      return '-';
-    }
-
-    switch (column.type) {
-      case 'number':
-        if (column.displayFormat === 'currency') {
-          return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD'
-          }).format(value);
-        } else if (column.displayFormat === 'rating') {
-          return `${value} ⭐`;
-        }
-        return value.toString();
+    try {
+      const value = this.getColumnValue(column);
       
-      case 'enum':
-        const option = column.options?.find(opt => opt.value === value);
-        return option?.label || value;
+      if (value === null || value === undefined) {
+        return '-';
+      }
+
+      switch (column.type) {
+        case 'number':
+          if (column.displayFormat === 'currency') {
+            return new Intl.NumberFormat('en-US', {
+              style: 'currency',
+              currency: 'USD'
+            }).format(value);
+          } else if (column.displayFormat === 'rating') {
+            return `${value} ⭐`;
+          }
+          return value?.toString() || '-';
         
-      case 'boolean':
-        return value ? 'Yes' : 'No';
-        
-      case 'date':
-        return new Date(value).toLocaleDateString();
-        
-      case 'image':
-        return value ? 'Image' : 'No image';
-        
-      default:
-        return value.toString();
+        case 'enum':
+          const option = column.options?.find(opt => opt.value === value);
+          return option?.label || (value?.toString() || '-');
+          
+        case 'boolean':
+          return value ? 'Yes' : 'No';
+          
+        case 'date':
+          return new Date(value).toLocaleDateString();
+          
+        case 'image':
+          return value ? 'Image' : 'No image';
+          
+        default:
+          return value?.toString() || '-';
+      }
+    } catch (error) {
+      console.warn('Error in getDisplayValue:', error, 'column:', column);
+      return '-';
     }
   }
 

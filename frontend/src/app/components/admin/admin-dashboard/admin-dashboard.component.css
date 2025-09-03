@@ -5,6 +5,15 @@
   width: 100vw;
 }
 
+/* FIX: PrimeNG TabView CSS issue in production mode */
+:host ::ng-deep .p-tabview-nav-container {
+  overflow: visible !important;
+}
+
+:host ::ng-deep .p-tabview-scrollable .p-tabview-nav-container {
+  overflow: visible !important;
+}
+
 /* Admin Header */
 .admin-header {
   display: flex;

@@ -58,11 +58,16 @@ export class RatingInputComponent implements ControlValueAccessor {
   private onTouched = () => {};
 
   get displayValue(): string {
-    if (this.value !== null) {
-      // Show comma as decimal separator for better UX
-      return this.value.toString().replace('.', ',');
+    try {
+      if (this.value !== null && this.value !== undefined) {
+        // Show comma as decimal separator for better UX
+        return this.value.toString().replace('.', ',');
+      }
+      return '';
+    } catch (error) {
+      console.warn('Error in rating-input displayValue:', error);
+      return '';
     }
-    return '';
   }
 
   onKeyDown(event: KeyboardEvent): void {

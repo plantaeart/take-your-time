@@ -41,7 +41,12 @@ export class NumberInputComponent implements ControlValueAccessor {
   private onTouched = () => {};
 
   get displayValue(): string {
-    return this.internalValue !== null ? this.internalValue.toString() : '';
+    try {
+      return this.internalValue !== null && this.internalValue !== undefined ? this.internalValue.toString() : '';
+    } catch (error) {
+      console.warn('Error in number-input displayValue:', error);
+      return '';
+    }
   }
 
   onKeyDown(event: KeyboardEvent): void {

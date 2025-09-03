@@ -215,7 +215,8 @@ export class AdminDashboardComponent implements OnInit {
   };
 
   ngOnInit(): void {
-    // Trigger initial user data load
+    // Trigger initial data load for both products and users
+    this.onProductDataLoad({ page: 1, size: 25, sorts: [], filters: {} });
     this.onUserDataLoad({ page: 1, size: 25, sorts: [], filters: {} });
   }
 
