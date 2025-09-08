@@ -4,7 +4,7 @@ import { AdminSearchParams, CartSearchResponse, WishlistSearchResponse } from '.
 import { ProductListResponse, Product } from '../models/product.model';
 import { UserListResponse, User } from '../models/user.model';
 import { ContactSubmissionsResponse, ContactSubmission } from '../models/contact.model';
-import { AdminUserCartData } from '../models/admin-user-cart.model';
+import { AdminUserCartData } from '../models/user-cart.model';
 
 /**
  * Entity types supported by admin search

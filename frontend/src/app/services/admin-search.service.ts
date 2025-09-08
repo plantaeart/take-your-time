@@ -6,7 +6,7 @@ import { ProductListResponse } from '../models/product.model';
 import { UserListResponse } from '../models/user.model';
 import { ContactSubmissionsResponse } from '../models/contact.model';
 import { AdminSearchParams, CartSearchResponse, WishlistSearchResponse } from '../models/adminSearch.model';
-import { AdminUserCartListResponse, AdminUserCartSearchParams } from '../models/admin-user-cart.model';
+import { AdminUserCartListResponse, AdminUserCartSearchParams } from '../models/user-cart.model';
 
 /**
  * Unified Admin Search Service

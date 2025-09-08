@@ -7,7 +7,7 @@ import {
   DataLoaderConfig,
   NotificationConfig
 } from './table-config.interface';
-import { AdminUserCartData, AdminUserCartItem } from '../../../models/admin-user-cart.model';
+import { AdminUserCartData, AdminUserCartItem } from '../../../models/user-cart.model';
 import { AdminSearchStore } from '../../../stores/admin-search.store';
 import { AdminSearchParams } from '../../../models/adminSearch.model';
 
@@ -21,7 +21,7 @@ import { AdminSearchParams } from '../../../models/adminSearch.model';
  * - User information displayed directly (no joins required)
  * - Cart items shown in expandable rows
  * - Simplified data structure for better performance
- * - Direct access to user fields: userId, userName, email, firstname, isActive
+ * - Direct access to user fields: id, username, email, firstname, isActive
  * - Cart array contains: productId, productName, quantity, productPrice
  * 
  * DATA SOURCE: /api/admin/cart/search (new flattened endpoint)
@@ -397,7 +397,7 @@ export function createAdminUserCartConfig(cartManagement: any, collapseRowCallba
     export: {
       enabled: true,
       filename: 'user-carts-export',
-      columns: ['userId', 'userName', 'email', 'firstname', 'isActive']
+      columns: ['id', 'username', 'email', 'firstname', 'isActive']
     },
     
     // Pagination configuration
@@ -420,7 +420,7 @@ export const ADMIN_USER_CART_TABLE_CONFIG: TableManagementConfig = {
   objectName: 'User Cart',
   columns: LEVEL_0_USER_COLUMNS, // Use level 0 columns as default
   actions: LEVEL_0_USER_ACTIONS, // Use level 0 actions as default
-  dataKey: 'userId', // Primary key for each row
+  dataKey: 'id', // Primary key for each row
   
   // Hierarchy configuration for parent (user) -> child (cart items) relationship
   hierarchyConfig: {
@@ -677,9 +677,9 @@ export function createCartDashboardConfig(
             
             const result = await cartManagement.removeItemFromUserCart(userId, productId);
             
-          } else if (itemData.userId && !itemData.parentUserId) {
+          } else if (itemData.id && !itemData.parentUserId) {
             // This is a user (level 0) - clear their entire cart
-            const userId = itemData.userId;
+            const userId = itemData.id;
             userIdToCheck = userId;
             
             const result = await cartManagement.clearUserCart(userId);
@@ -696,14 +696,14 @@ export function createCartDashboardConfig(
             }
             
           } else {
-            console.error('❌ Unable to determine delete type. Expected productId+parentUserId or userId without parentUserId');
+            console.error('❌ Unable to determine delete type. Expected productId+parentUserId or id without parentUserId');
             console.error('❌ Actual itemData structure:', {
               hasProductId: itemData.productId !== undefined,
               hasParentUserId: itemData.parentUserId !== undefined,
-              hasUserId: itemData.userId !== undefined,
+              hasId: itemData.id !== undefined,
               productId: itemData.productId,
               parentUserId: itemData.parentUserId,
-              userId: itemData.userId,
+              id: itemData.id,
               keys: Object.keys(itemData)
             });
           }

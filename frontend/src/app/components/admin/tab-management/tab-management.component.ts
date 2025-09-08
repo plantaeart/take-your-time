@@ -817,8 +817,8 @@ export class TabManagementComponent<T = any> implements OnInit {
       // the quantity controls component handles the quantity change directly
     } else if (action === 'clear-cart') {
       // Use config's executeCustomAction instead of direct hooks call
-      if (config.executeCustomAction && (item as any).userId) {
-        await config.executeCustomAction(action, (item as any).userId);
+      if (config.executeCustomAction && (item as any).id) {
+        await config.executeCustomAction(action, (item as any).id);
       } else {
         // Fallback to old method if config doesn't have executeCustomAction
         await this.handleClearCart(item);

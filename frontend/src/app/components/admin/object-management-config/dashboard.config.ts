@@ -15,10 +15,10 @@
 import { DashboardTabConfig } from './table-config.interface';
 import { createProductDashboardConfig } from './product.config';
 import { createUserDashboardConfig } from './user.config';
-import { createCartDashboardConfig } from './admin-user-cart.config';
+import { createCartDashboardConfig } from './user-cart.config';
 import { Product } from '../../../models/product.model';
 import { User } from '../../../models/user.model';
-import { AdminUserCartData } from '../../../models/admin-user-cart.model';
+import { AdminUserCartData } from '../../../models/user-cart.model';
 
 // Dashboard tab configuration type
 export interface DashboardConfig {
