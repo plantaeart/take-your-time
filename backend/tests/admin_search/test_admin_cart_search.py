@@ -1,5 +1,5 @@
 """
-Tests for admin cart search functionality.
+Tests for admin user cart search functionality with flattened data structure.
 """
 import json
 from typing import Dict, Any, List
@@ -8,8 +8,8 @@ from fastapi.testclient import TestClient
 from app.models.enums.http_status import HTTPStatus
 
 
-class TestAdminCartSearch:
-    """Test admin cart search functionality."""
+class TestAdminUserCartSearch:
+    """Test admin user cart search functionality with new flattened structure."""
 
     def test_search_carts_unauthorized(self, client: TestClient) -> None:
         """Test that cart search requires authentication."""
@@ -29,8 +29,8 @@ class TestAdminCartSearch:
         assert response.status_code == HTTPStatus.OK.value
         
         responseData: Dict[str, Any] = response.json()
-        assert "carts" in responseData
-        assert responseData["carts"] == []
+        assert "items" in responseData
+        assert responseData["items"] == []
         assert responseData["total"] == 0
         assert responseData["page"] == 1
         assert responseData["limit"] == 10
@@ -65,7 +65,7 @@ class TestAdminCartSearch:
         assert response.status_code == HTTPStatus.OK.value
         
         responseData: Dict[str, Any] = response.json()
-        assert "carts" in responseData
+        assert "items" in responseData
 
     def test_search_carts_with_date_range_filter(self, client: TestClient, admin_token: str) -> None:
         """Test cart search with date range filter."""
@@ -98,7 +98,7 @@ class TestAdminCartSearch:
         assert response.status_code == HTTPStatus.OK.value
         
         responseData: Dict[str, Any] = response.json()
-        assert "carts" in responseData
+        assert "items" in responseData
 
     def test_search_carts_with_multiple_sorts(self, client: TestClient, admin_token: str) -> None:
         """Test cart search with multiple sort fields."""
@@ -164,7 +164,7 @@ class TestAdminCartSearch:
         assert response.status_code == HTTPStatus.OK.value
         
         responseData: Dict[str, Any] = response.json()
-        assert "carts" in responseData
+        assert "items" in responseData
         assert responseData["page"] == 1
         assert responseData["limit"] == 20
 
@@ -184,7 +184,7 @@ class TestAdminCartSearch:
         assert responseData["limit"] == 100
 
     def test_search_carts_response_structure(self, client: TestClient, admin_token: str) -> None:
-        """Test cart search response structure."""
+        """Test cart search response structure matches new flattened format."""
         headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
         
         response = client.get("/api/admin/cart/search", headers=headers)
@@ -193,7 +193,7 @@ class TestAdminCartSearch:
         responseData: Dict[str, Any] = response.json()
         
         # Verify response structure
-        assert "carts" in responseData
+        assert "items" in responseData
         assert "total" in responseData
         assert "page" in responseData
         assert "limit" in responseData
@@ -202,13 +202,45 @@ class TestAdminCartSearch:
         assert "hasPrev" in responseData
         
         # Verify data types
-        assert isinstance(responseData["carts"], list)
+        assert isinstance(responseData["items"], list)  # Changed from 'carts' to 'items'
         assert isinstance(responseData["total"], int)
         assert isinstance(responseData["page"], int)
         assert isinstance(responseData["limit"], int)
         assert isinstance(responseData["totalPages"], int)
         assert isinstance(responseData["hasNext"], bool)
         assert isinstance(responseData["hasPrev"], bool)
+        
+        # If there are carts, verify the flattened structure
+        if responseData["items"]:  # Changed from 'carts' to 'items'
+            cart: Dict[str, Any] = responseData["items"][0]  # Changed from 'carts' to 'items'
+            
+            # Verify flattened cart structure
+            assert "userId" in cart
+            assert "userName" in cart
+            assert "email" in cart
+            assert "firstname" in cart  # Can be null
+            assert "isActive" in cart
+            assert "cart" in cart
+            
+            # Verify data types
+            assert isinstance(cart["userId"], int)
+            assert isinstance(cart["userName"], str)
+            assert isinstance(cart["email"], str)
+            assert isinstance(cart["isActive"], bool)
+            assert isinstance(cart["cart"], list)
+            
+            # If cart has items, verify cart item structure
+            if cart["cart"]:
+                cartItem: Dict[str, Any] = cart["cart"][0]
+                assert "productId" in cartItem
+                assert "productName" in cartItem
+                assert "quantity" in cartItem
+                assert "productPrice" in cartItem
+                
+                assert isinstance(cartItem["productId"], int)
+                assert isinstance(cartItem["productName"], str)
+                assert isinstance(cartItem["quantity"], int)
+                assert isinstance(cartItem["productPrice"], (int, float))
 
     def test_search_carts_empty_filters_and_sorts(self, client: TestClient, admin_token: str) -> None:
         """Test cart search with empty filters and sorts."""
@@ -222,4 +254,79 @@ class TestAdminCartSearch:
         assert response.status_code == HTTPStatus.OK.value
         
         responseData: Dict[str, Any] = response.json()
-        assert "carts" in responseData
+        assert "items" in responseData
+
+    def test_search_carts_flattened_structure_with_data(self, client: TestClient, admin_token: str) -> None:
+        """Test cart search returns properly flattened structure with actual data."""
+        headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
+        
+        # First create a user (non-admin)
+        userData: Dict[str, Any] = {
+            "username": "testuser",
+            "email": "testuser@example.com",
+            "firstname": "Test",
+            "password": "TestPass123!"
+        }
+        userResponse = client.post("/api/account", json=userData)
+        assert userResponse.status_code == HTTPStatus.CREATED.value
+        
+        # Create a product
+        productData: Dict[str, Any] = {
+            "name": "Test Cart Product",
+            "description": "Product for cart testing",
+            "category": "ELECTRONICS",
+            "price": 29.99,
+            "quantity": 10,
+            "shellId": 1001,
+            "inventoryStatus": "INSTOCK"
+        }
+        productResponse = client.post("/api/products", json=productData, headers=headers)
+        assert productResponse.status_code == HTTPStatus.CREATED.value
+        productId: int = productResponse.json()["id"]
+        
+        # Login the user to get user token
+        loginData: Dict[str, str] = {"username": "testuser@example.com", "password": "TestPass123!"}
+        loginResponse = client.post("/api/token", data=loginData)
+        assert loginResponse.status_code == HTTPStatus.OK.value
+        userToken: str = loginResponse.json()["access_token"]
+        
+        # Add item to user's cart
+        cartItemData: Dict[str, Any] = {
+            "productId": productId,
+            "quantity": 2
+        }
+        userHeaders: Dict[str, str] = {"Authorization": f"Bearer {userToken}"}
+        cartResponse = client.post("/api/cart/items", json=cartItemData, headers=userHeaders)
+        assert cartResponse.status_code == HTTPStatus.CREATED.value
+        
+        # Now search for carts as admin
+        searchResponse = client.get("/api/admin/cart/search", headers=headers)
+        assert searchResponse.status_code == HTTPStatus.OK.value
+        
+        searchData: Dict[str, Any] = searchResponse.json()
+        assert searchData["total"] >= 1
+        assert len(searchData["items"]) >= 1
+        
+        # Find our test user's cart
+        testUserCart: Dict[str, Any] = None
+        for cart in searchData["items"]:
+            if cart["userName"] == "testuser":
+                testUserCart = cart
+                break
+        
+        assert testUserCart is not None, "Test user cart not found in search results"
+        
+        # Verify flattened structure
+        assert testUserCart["userName"] == "testuser"
+        assert testUserCart["email"] == "testuser@example.com"
+        assert testUserCart["firstname"] == "Test"
+        assert testUserCart["isActive"] is True
+        assert isinstance(testUserCart["cart"], list)
+        assert len(testUserCart["cart"]) == 1
+        
+        # Verify cart item structure
+        cartItem: Dict[str, Any] = testUserCart["cart"][0]
+        assert cartItem["productId"] == productId
+        assert cartItem["productName"] == "Test Cart Product"
+        assert cartItem["quantity"] == 2
+        assert cartItem["productPrice"] == 29.99

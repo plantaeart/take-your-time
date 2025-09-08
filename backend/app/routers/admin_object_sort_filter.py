@@ -11,8 +11,10 @@ from app.models.user import UserModel
 from app.schemas.product import ProductListResponse
 from app.schemas.user import UserListResponse
 from app.schemas.contact import ContactSubmissionsResponse
+from app.schemas.admin_user_cart import AdminUserCartListResponse
 from app.models.enums.http_status import HTTPStatus
 from app.utils.admin_search import admin_search_objects
+from app.utils.admin_user_cart_search import admin_search_user_carts_with_user_info
 
 router = APIRouter(tags=["admin-search"])
 
@@ -159,7 +161,7 @@ async def search_users_admin(
         )
 
 
-@router.get("/admin/cart/search")
+@router.get("/admin/cart/search", response_model=AdminUserCartListResponse)
 async def search_cart_admin(
     currentAdmin: Annotated[UserModel, Depends(admin_required)],
     page: int = Query(1, ge=1, description="Page number"),
@@ -168,10 +170,15 @@ async def search_cart_admin(
     sorts: str = Query("", description="JSON string of sorts array")
 ):
     """
-    Advanced admin cart search with flexible filtering.
+    Enhanced admin user cart search with user information and product details.
     
-    Filters format: {"userId": 123, "createdAt": ["2024-01-01", "2024-12-31"]}
-    Sorts format: [{"field": "createdAt", "direction": "desc"}]
+    Returns user carts with complete user information (username, email) and product details.
+    Automatically excludes admin users (isAdmin=true) from results.
+    
+    Filters format: {"userId": 123, "createdAt": ["2024-01-01", "2024-12-31"], "totalItems": [1, 10]}
+    Sorts format: [{"field": "createdAt", "direction": "desc"}, {"field": "username", "direction": "asc"}]
+    
+    Available sort fields: userId, createdAt, updatedAt, totalItems, username, email
     """
     # Parse JSON filters and sorts
     try:
@@ -183,43 +190,21 @@ async def search_cart_admin(
             detail="Invalid JSON format in filters or sorts"
         )
     
-    # Define allowed fields for cart
-    allowed_fields = [
-        "userId", "items", "createdAt", "updatedAt"
-    ]
-    
     try:
-        # Use generic admin search utility
-        result = await admin_search_objects(
-            collection_name="carts",
+        # Use user cart search without aggregation issues
+        result = await admin_search_user_carts_with_user_info(
             page=page,
             limit=limit,
             filters=parsed_filters,
-            sorts=parsed_sorts,
-            allowed_fields=allowed_fields
+            sorts=parsed_sorts
         )
         
-        # Remove MongoDB _id field
-        sanitized_items = []
-        for item in result["items"]:
-            if "_id" in item:
-                del item["_id"]
-            sanitized_items.append(item)
-        
-        return {
-            "carts": sanitized_items,
-            "total": result["total"],
-            "page": result["page"],
-            "limit": result["limit"],
-            "totalPages": result["totalPages"],
-            "hasNext": result["hasNext"],
-            "hasPrev": result["hasPrev"]
-        }
+        return AdminUserCartListResponse(**result)
         
     except Exception as e:
         raise HTTPException(
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR.value,
-            detail=f"Failed to search carts: {str(e)}"
+            detail=f"Failed to search user carts: {str(e)}"
         )
 
 

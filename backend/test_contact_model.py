@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-import asyncio
 from app.models.contact import ContactModel, AdminNote
 from datetime import datetime
 
-async def test_admin_notes():
+def test_admin_notes():
+    """Test ContactModel admin notes functionality."""
     # Create a contact with admin notes
     contact = ContactModel(
         id=1,
@@ -27,6 +27,13 @@ async def test_admin_notes():
     print(f'Reconstructed contact admin notes count: {len(new_contact.adminNotes)}')
     print(f'First note adminId: {new_contact.adminNotes[0].adminId}')
     print('✅ Admin notes structure working correctly!')
+    
+    # Assertions for pytest
+    assert len(data["adminNotes"]) == 2
+    assert data["adminNotes"][0]["adminId"] == 1
+    assert data["adminNotes"][0]["note"] == 'First admin note'
+    assert len(new_contact.adminNotes) == 2
+    assert new_contact.adminNotes[0].adminId == 1
 
 if __name__ == "__main__":
-    asyncio.run(test_admin_notes())
+    test_admin_notes()

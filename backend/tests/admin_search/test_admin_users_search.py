@@ -247,6 +247,17 @@ class TestAdminUsersSearch:
         """Test admin users search pagination."""
         headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
         
+        # Create test user to ensure we have data for pagination
+        userData: Dict[str, str] = {
+            "username": "testpaginationuser",
+            "firstname": "Test",
+            "email": "testpagination@example.com",
+            "password": "TestPass123!"
+        }
+
+        createResponse = client.post("/api/account", json=userData)
+        assert createResponse.status_code == HTTPStatus.CREATED.value
+        
         # Test pagination parameters
         response = client.get(
             "/api/admin/users/search",

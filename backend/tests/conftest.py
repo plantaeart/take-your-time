@@ -78,6 +78,7 @@ def setup_test_environment(mock_db_manager):
         import app.auth.dependencies
         import app.auth.blacklist
         import app.utils.admin_search
+        import app.utils.admin_user_cart_search
         import app.schema_version_upgrade.v2.products_upgrade
         import app.schema_version_upgrade.v2.contacts_upgrade
         
@@ -90,6 +91,7 @@ def setup_test_environment(mock_db_manager):
         app.auth.dependencies.db_manager = mock_db_manager
         app.auth.blacklist.db_manager = mock_db_manager
         app.utils.admin_search.db_manager = mock_db_manager
+        app.utils.admin_user_cart_search.db_manager = mock_db_manager
         app.schema_version_upgrade.v2.products_upgrade.db_manager = mock_db_manager
         app.schema_version_upgrade.v2.contacts_upgrade.db_manager = mock_db_manager
         
@@ -106,6 +108,7 @@ def setup_test_environment(mock_db_manager):
         app.auth.dependencies.db_manager = original_db_manager
         app.auth.blacklist.db_manager = original_db_manager
         app.utils.admin_search.db_manager = original_db_manager
+        app.utils.admin_user_cart_search.db_manager = original_db_manager
         app.schema_version_upgrade.v2.products_upgrade.db_manager = original_db_manager
         app.schema_version_upgrade.v2.contacts_upgrade.db_manager = original_db_manager
     
