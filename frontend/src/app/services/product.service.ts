@@ -188,12 +188,6 @@ export class ProductService {
       
       return response.data;
     } catch (error) {
-      console.error('❌ ProductService createProduct error:', error);
-      if (axios.isAxiosError(error)) {
-        console.error('📊 Error response status:', error.response?.status);
-        console.error('📋 Error response data:', error.response?.data);
-        console.error('🔍 Error config:', error.config);
-      }
       throw this.handleError(error, 'Failed to create product');
     }
   }
@@ -232,12 +226,6 @@ export class ProductService {
       
       return response.data;
     } catch (error) {
-      console.error('❌ ProductService updateProduct error:', error);
-      if (axios.isAxiosError(error)) {
-        console.error('📊 Error response status:', error.response?.status);
-        console.error('📋 Error response data:', error.response?.data);
-        console.error('🔍 Error config:', error.config);
-      }
       throw this.handleError(error, `Failed to update product ${productId}`);
     }
   }

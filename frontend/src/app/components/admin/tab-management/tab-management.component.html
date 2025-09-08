@@ -121,7 +121,7 @@
       </app-row-tab>
       
       <!-- Children Section (when expanded) -->
-      @if (hierarchicalItem.expanded && hierarchicalItem.children && hierarchicalItem.children.length > 0) {
+      @if (hierarchicalItem.expanded && hierarchicalItem.children !== undefined) {
         <!-- Child Level Container with proper grid template -->
         <div [style.--grid-template-columns]="childGridTemplateColumns()">
           <!-- Child Level Header -->

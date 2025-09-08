@@ -23,7 +23,6 @@ export function useUserManagement() {
       try {
         return await userManagementStore.updateUser(id, userData);
       } catch (error) {
-        console.error('❌ useUserManagement: Update failed:', error);
         throw error;
       }
     },
@@ -32,7 +31,6 @@ export function useUserManagement() {
       try {
         await userManagementStore.deleteUser(id);
       } catch (error) {
-        console.error('❌ useUserManagement: Delete failed:', error);
         throw error;
       }
     },
@@ -41,7 +39,6 @@ export function useUserManagement() {
       try {
         await userManagementStore.activateUser(id);
       } catch (error) {
-        console.error('❌ useUserManagement: Activate failed:', error);
         throw error;
       }
     },
@@ -50,7 +47,6 @@ export function useUserManagement() {
       try {
         await userManagementStore.deactivateUser(id);
       } catch (error) {
-        console.error('❌ useUserManagement: Deactivate failed:', error);
         throw error;
       }
     },
@@ -59,7 +55,6 @@ export function useUserManagement() {
       try {
         return await userManagementStore.getUserById(id);
       } catch (error) {
-        console.error('❌ useUserManagement: Get user by ID failed:', error);
         throw error;
       }
     },

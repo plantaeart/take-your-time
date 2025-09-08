@@ -910,13 +910,30 @@ export class TabManagementComponent<T = any> implements OnInit {
       
       // Also set the expanded flag on the hierarchical item
       userHierarchicalItem.expanded = true;
+    } else {
+      // If hierarchical item not found yet, at least set the expanded state
+      // This will be preserved when hierarchy is rebuilt
+      const itemId = userId; // Assuming userId is the dataKey for user items
+      const expandedSet = new Set(this.expandedItems());
+      expandedSet.add(itemId);
+      this.expandedItems.set(expandedSet);
     }
+    
+    // Force a small delay to ensure the UI updates properly
+    setTimeout(() => {
+      // Re-initialize hierarchy to ensure proper state after adding cart item
+      if (this.isHierarchyEnabled()) {
+        this.initializeHierarchy();
+      }
+    }, 0);
   }
 
   /**
    * Cancel adding cart item
    */
   cancelAddCartItem(): void {
+    const userId = this.addingCartItemForUserId();
+    
     this.isAddingCartItem.set(false);
     this.addingCartItemForUserId.set(null);
     this.newCartItem.set({
@@ -924,6 +941,26 @@ export class TabManagementComponent<T = any> implements OnInit {
       selectedProduct: null,
       quantity: 1
     });
+
+    // If the user doesn't have existing cart items, collapse their section
+    if (userId) {
+      const hierarchicalData = this.hierarchicalData();
+      const userHierarchicalItem = hierarchicalData.find(hierarchicalItem => 
+        hierarchicalItem.level === 0 && (hierarchicalItem.data as any).userId === userId
+      );
+      
+      // Check if user has existing cart items
+      if (userHierarchicalItem && !this.hasExistingCartItems(userHierarchicalItem.data)) {
+        // User has no existing cart items, so collapse their section
+        const itemId = (userHierarchicalItem.data as any)[this.config().dataKey];
+        const expandedSet = new Set(this.expandedItems());
+        expandedSet.delete(itemId);
+        this.expandedItems.set(expandedSet);
+        
+        // Also set the expanded flag on the hierarchical item
+        userHierarchicalItem.expanded = false;
+      }
+    }
   }
 
   /**
@@ -965,8 +1002,17 @@ export class TabManagementComponent<T = any> implements OnInit {
       });
 
       if (success) {
-        // Reset the state
-        this.cancelAddCartItem();
+        // Store the userId before resetting state
+        const userIdToKeepExpanded = userId;
+        
+        // Reset the adding state but don't collapse the user section
+        this.isAddingCartItem.set(false);
+        this.addingCartItemForUserId.set(null);
+        this.newCartItem.set({
+          productId: null,
+          selectedProduct: null,
+          quantity: 1
+        });
 
         // Trigger a data reload to refresh the cart display
         this.dataLoad.emit({ 
@@ -975,6 +1021,24 @@ export class TabManagementComponent<T = any> implements OnInit {
           sorts: [], 
           filters: this.columnFilters() 
         });
+
+        // After data reload, ensure the user section stays expanded to show the new item
+        setTimeout(() => {
+          const hierarchicalData = this.hierarchicalData();
+          const userHierarchicalItem = hierarchicalData.find(hierarchicalItem => 
+            hierarchicalItem.level === 0 && (hierarchicalItem.data as any).userId === userIdToKeepExpanded
+          );
+          
+          if (userHierarchicalItem) {
+            const itemId = (userHierarchicalItem.data as any)[this.config().dataKey];
+            const expandedSet = new Set(this.expandedItems());
+            expandedSet.add(itemId);
+            this.expandedItems.set(expandedSet);
+            
+            // Also set the expanded flag on the hierarchical item
+            userHierarchicalItem.expanded = true;
+          }
+        }, 100); // Small delay to allow data reload to complete
       }
 
     } catch (error: any) {
@@ -1004,6 +1068,32 @@ export class TabManagementComponent<T = any> implements OnInit {
       _isNewCartItem: true,
       _selectedProduct: cartItem.selectedProduct
     };
+  }
+
+  /**
+   * Helper method to identify if an item is a user row (level 0)
+   */
+  private isUserRow(item: any): boolean {
+    return (item.level === 0 || item.itemType === 'user') && item.userId !== undefined;
+  }
+
+  /**
+   * Helper method to check if user has existing cart items
+   */
+  private hasExistingCartItems(userData: any): boolean {
+    const config = this.hierarchyConfig();
+    if (config?.childAttributeField) {
+      const childArray = userData[config.childAttributeField];
+      return Array.isArray(childArray) && childArray.length > 0;
+    }
+    
+    // For flattened data, check if there are child items
+    const hierarchicalData = this.hierarchicalData();
+    const userHierarchicalItem = hierarchicalData.find(item => 
+      item.level === 0 && (item.data as any).userId === userData.userId
+    );
+    
+    return userHierarchicalItem && userHierarchicalItem.children ? userHierarchicalItem.children.length > 0 : false;
   }
 
   isEditing(item: T): boolean {
@@ -1140,14 +1230,15 @@ export class TabManagementComponent<T = any> implements OnInit {
           children: [],
           expanded: isExpanded, // Use preserved state
           loading: false,
-          hasChildren: this.hasChildItems(item, flatData, config.parentIdField)
+          hasChildren: this.hasChildItems(item, flatData, config.parentIdField) // This now always returns true for users
         };
         
-        // Build children from the child attribute array
-        if (config.loadStrategy === 'eager' && hierarchicalItem.hasChildren) {
-          const childArray = (item as any)[config.childAttributeField];
-          
-          if (Array.isArray(childArray)) {
+        // Build children from the child attribute array OR create empty structure for expansion
+        const childArray = (item as any)[config.childAttributeField];
+        
+        if (config.loadStrategy === 'eager') {
+          if (Array.isArray(childArray) && childArray.length > 0) {
+            // User has existing cart items
             hierarchicalItem.children = childArray.map((childItem, index) => {
               const childId = `${itemId}_${childItem.productId || index}`;
               const isChildExpanded = expandedItems.has(childId); // Preserve child expansion state
@@ -1170,6 +1261,9 @@ export class TabManagementComponent<T = any> implements OnInit {
               
               return childHierarchicalItem;
             });
+          } else {
+            // User has no cart items - create empty children array to allow expansion for adding items
+            hierarchicalItem.children = [];
           }
         }
         
@@ -1186,6 +1280,7 @@ export class TabManagementComponent<T = any> implements OnInit {
       if (itemParentId === parentId) {
         const itemId = (item as any)[this.config().dataKey];
         const isExpanded = expandedItems.has(itemId); // Preserve expansion state
+        const isUserRow = (item as any).level === 0 || (item as any).itemType === 'user';
         
         const hierarchicalItem: HierarchicalItem<T> = {
           data: item,
@@ -1194,16 +1289,23 @@ export class TabManagementComponent<T = any> implements OnInit {
           children: [],
           expanded: isExpanded, // Use preserved state
           loading: false,
-          hasChildren: this.hasChildItems(item, flatData, config.parentIdField)
+          hasChildren: this.hasChildItems(item, flatData, config.parentIdField) // Enhanced to always return true for users
         };
         
         // Recursively build children if loading strategy is 'eager'
         if (config.loadStrategy === 'eager') {
-          hierarchicalItem.children = this.buildHierarchy(
+          const children = this.buildHierarchy(
             flatData, 
             (item as any)[this.config().dataKey], 
             level + 1
           );
+          
+          hierarchicalItem.children = children;
+          
+          // ENHANCEMENT: For user rows with no existing cart items, ensure children array exists for add functionality
+          if (isUserRow && children.length === 0) {
+            hierarchicalItem.children = []; // Empty but expandable for adding cart items
+          }
         }
         
         hierarchicalItems.push(hierarchicalItem);
@@ -1225,11 +1327,24 @@ export class TabManagementComponent<T = any> implements OnInit {
       const childArray = (item as any)[config.childAttributeField];
       const hasChildren = Array.isArray(childArray) && childArray.length > 0;
       
+      // ENHANCEMENT: For user cart management, always allow expansion for users (level 0)
+      // This enables adding cart items even for users with empty carts
+      if (this.isUserRow(item as any)) {
+        return true; // Users can always have cart items added
+      }
+      
       return hasChildren;
     }
     
     // Original logic for flattened hierarchy data
-    return allData.some(otherItem => (otherItem as any)[parentIdField] === itemId);
+    const hasExistingChildren = allData.some(otherItem => (otherItem as any)[parentIdField] === itemId);
+    
+    // ENHANCEMENT: For flattened hierarchy, also allow expansion for user rows
+    if (this.isUserRow(item as any)) {
+      return true; // Users can always have cart items added
+    }
+    
+    return hasExistingChildren;
   }
   
   /**

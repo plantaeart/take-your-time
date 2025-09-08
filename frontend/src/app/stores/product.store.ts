@@ -500,7 +500,6 @@ export class ProductStore {
       
       return newProduct;
     } catch (error) {
-      console.error('❌ ProductStore createProduct error:', error);
       this._setError('products', error instanceof Error ? error.message : 'Failed to create product');
       throw error;
     } finally {

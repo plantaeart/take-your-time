@@ -133,7 +133,6 @@ export class RowTabComponent<T = any> {
           this.isInitialized.set(false);
         }
       } catch (error) {
-        console.warn('Error in editing effect:', error);
         // Fallback to safe state
         this.editData.set({});
         this.isInitialized.set(false);
@@ -263,7 +262,6 @@ export class RowTabComponent<T = any> {
         return value;
       }
     } catch (error) {
-      console.warn('Error in getColumnValue:', error, 'columnOrField:', columnOrField);
       return null;
     }
   }
@@ -314,7 +312,6 @@ export class RowTabComponent<T = any> {
           return value?.toString() || '-';
       }
     } catch (error) {
-      console.warn('Error in getDisplayValue:', error, 'column:', column);
       return '-';
     }
   }
