@@ -72,6 +72,7 @@ def setup_test_environment(mock_db_manager):
         import app.routers.products
         import app.routers.auth
         import app.routers.admin_users
+        import app.routers.admin_object_sort_filter
         import app.routers.cart
         import app.routers.wishlist
         import app.routers.contact
@@ -85,6 +86,7 @@ def setup_test_environment(mock_db_manager):
         app.routers.products.db_manager = mock_db_manager
         app.routers.auth.db_manager = mock_db_manager
         app.routers.admin_users.db_manager = mock_db_manager
+        app.routers.admin_object_sort_filter.db_manager = mock_db_manager
         app.routers.cart.db_manager = mock_db_manager
         app.routers.wishlist.db_manager = mock_db_manager
         app.routers.contact.db_manager = mock_db_manager

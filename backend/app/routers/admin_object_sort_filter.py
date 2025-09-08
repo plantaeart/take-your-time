@@ -14,7 +14,8 @@ from app.schemas.contact import ContactSubmissionsResponse
 from app.schemas.admin_user_cart import AdminUserCartListResponse
 from app.models.enums.http_status import HTTPStatus
 from app.utils.admin_search import admin_search_objects
-from app.utils.admin_user_cart_search import admin_search_user_carts_with_user_info
+from app.utils.admin_user_cart_search import _transform_user_cart_simple
+from app.config.database import db_manager
 
 router = APIRouter(tags=["admin-search"])
 
@@ -172,13 +173,15 @@ async def search_cart_admin(
     """
     Enhanced admin user cart search with user information and product details.
     
-    Returns user carts with complete user information (username, email) and product details.
+    Uses the same generic search utility as products and users for consistency.
     Automatically excludes admin users (isAdmin=true) from results.
     
-    Filters format: {"userId": 123, "createdAt": ["2024-01-01", "2024-12-31"], "totalItems": [1, 10]}
-    Sorts format: [{"field": "createdAt", "direction": "desc"}, {"field": "username", "direction": "asc"}]
+    Filters format: {"search": "john", "userId": 123, "isActive": true}
+    Sorts format: [{"field": "username", "direction": "asc"}]
     
-    Available sort fields: userId, createdAt, updatedAt, totalItems, username, email
+    Available search fields: username, email (via global search)
+    Available filter fields: userId, username, email, isActive, createdAt, updatedAt
+    Available sort fields: userId, username, email, isActive, createdAt, updatedAt
     """
     # Parse JSON filters and sorts
     try:
@@ -190,16 +193,60 @@ async def search_cart_admin(
             detail="Invalid JSON format in filters or sorts"
         )
     
+    # Define allowed fields for user search (we'll search users, not carts directly)
+    allowed_fields = [
+        "id", "username", "email", "isActive", "isAdmin", "createdAt", "updatedAt"
+    ]
+    
     try:
-        # Use user cart search without aggregation issues
-        result = await admin_search_user_carts_with_user_info(
+        # Add filter to exclude admin users (same pattern as regular user search)
+        if "isAdmin" not in parsed_filters:
+            parsed_filters["isAdmin"] = False
+        
+        # Use generic admin search utility for users
+        result = await admin_search_objects(
+            collection_name="users",
             page=page,
             limit=limit,
             filters=parsed_filters,
-            sorts=parsed_sorts
+            sorts=parsed_sorts,
+            allowed_fields=allowed_fields
         )
         
-        return AdminUserCartListResponse(**result)
+        # Transform user results to cart format by adding cart information
+        enhanced_user_carts = []
+        carts_collection = db_manager.get_collection("carts")
+        
+        for user_doc in result["items"]:
+            # Get user's cart
+            cart_doc = await carts_collection.find_one({"userId": user_doc["id"]})
+            
+            if cart_doc:
+                # Transform to cart format with user info
+                enhanced_user_cart = await _transform_user_cart_simple(cart_doc, user_doc)
+                enhanced_user_carts.append(enhanced_user_cart)
+            else:
+                # User has no cart, create empty cart entry
+                from app.schemas.admin_user_cart import AdminUserCartData
+                empty_cart = AdminUserCartData(
+                    userId=user_doc["id"],
+                    userName=user_doc.get("username", f"User {user_doc['id']}"),
+                    email=user_doc.get("email", f"user{user_doc['id']}@example.com"),
+                    firstname=user_doc.get("firstname"),
+                    isActive=user_doc.get("isActive", True),
+                    cart=[]
+                )
+                enhanced_user_carts.append(empty_cart)
+        
+        return AdminUserCartListResponse(
+            items=enhanced_user_carts,
+            total=result["total"],
+            page=result["page"],
+            limit=result["limit"],
+            totalPages=result["totalPages"],
+            hasNext=result["hasNext"],
+            hasPrev=result["hasPrev"]
+        )
         
     except Exception as e:
         raise HTTPException(
