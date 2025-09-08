@@ -1212,17 +1212,8 @@ export class TabManagementComponent<T = any> implements OnInit {
             // Extract IDs from selected items
             const selectedIds = selectedItems.map(item => (item as any)[this.config().dataKey]);
             
-            const result = await bulkDeleteFunction(selectedIds);
+            await bulkDeleteFunction(selectedIds);
             
-            // Simple success message - don't try to parse result details
-            const successMessage = `Successfully deleted ${itemsText}.`;
-
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Success',
-              detail: successMessage
-            });
-
             // Clear selection
             this.selectedItems.set([]);
 

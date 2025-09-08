@@ -445,6 +445,28 @@ export function createProductDashboardConfig(
         });
         throw error;
       }
+    },
+    
+    // Add bulk delete compatibility mapping
+    bulkDelete: async (ids: number[]) => {
+      try {
+        const result = await productHooks.bulkDeleteProducts(ids);
+        messageService.add({
+          severity: 'success',
+          summary: 'Products Deleted! 🗑️',
+          detail: `Successfully deleted ${ids.length} product${ids.length > 1 ? 's' : ''} from your inventory.`
+        });
+        // Refresh data
+        await adminProductSearch.search({});
+        return result;
+      } catch (error: any) {
+        messageService.add({
+          severity: 'error',
+          summary: 'Bulk Deletion Failed ❌',
+          detail: error.message || 'Unable to delete the selected products. Some may be referenced in active orders.'
+        });
+        throw error;
+      }
     }
   };
 }
