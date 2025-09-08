@@ -51,7 +51,9 @@ export interface CustomActionConfig {
   icon: string;
   action: string;
   severity?: 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'help' | 'danger';
-  condition?: (item: any) => boolean;
+  disabled?: (item: any) => boolean; // Function to determine if action should be disabled
+  confirm?: boolean; // Whether to show confirmation dialog before executing
+  confirmMessage?: string; // Custom confirmation message
 }
 
 export interface SearchConfig {
@@ -88,6 +90,16 @@ export interface TableManagementConfig<T = any> {
   // N-Level Hierarchy Configuration
   hierarchyConfig?: HierarchyConfig<T>;
   
+  // NEW: Generic child action configurations
+  childActions?: {
+    [actionType: string]: ChildActionConfig;
+  };
+  
+  // NEW: Calculated field functions
+  calculatedFields?: {
+    [fieldName: string]: (item: any, allData?: any[]) => any;
+  };
+  
   // CRUD Operations - will be provided by the component using this config
   loadData?: (page: number, limit: number, filters: any) => Promise<{ data: T[]; total: number }>;
   createItem?: (item: any) => Promise<any>;
@@ -95,6 +107,7 @@ export interface TableManagementConfig<T = any> {
   deleteItem?: (id: any) => Promise<any>;
   bulkDelete?: (ids: any[]) => Promise<any>;
   exportData?: () => Promise<T[]>;
+  executeCustomAction?: (action: string, id: any) => Promise<any>;
 }
 
 // Enhanced hierarchy configuration for N-level depth
@@ -129,4 +142,121 @@ export interface LevelConfig<T = any> {
   search?: SearchConfig; // Override search for this level
   rowClass?: string; // CSS class for rows at this level
   allowExpansion?: boolean; // Whether rows at this level can be expanded
+}
+
+// NEW: Configuration for child actions (like adding cart items to users)
+export interface ChildActionConfig {
+  parentIdField: string; // Field in parent entity that identifies it (e.g., 'userId')
+  childTemplate: any; // Default template for new child entity
+  saveHandler: (parentId: any, childData: any) => Promise<boolean>; // Function to save the child
+  shouldKeepExpandedOnSave: boolean; // Whether to keep parent expanded after successful save
+  shouldCollapseOnCancel: (parentData: any) => boolean; // Function to determine if parent should collapse on cancel
+  childEntityName?: string; // Display name for the child entity (e.g., 'Cart Item')
+}
+
+// NEW: Complete CRUD operations configuration for enhanced admin dashboard
+export interface CrudOperationsConfig<T = any> {
+  create?: {
+    enabled: boolean;
+    handler: (item: any) => Promise<any>;
+    successMessage?: string;
+    errorMessage?: string;
+    refreshAfterCreate?: boolean;
+    refreshParams?: any; // Parameters to pass to refresh function
+  };
+  
+  update?: {
+    enabled: boolean;
+    handler: (id: any, item: any) => Promise<any>;
+    successMessage?: string;
+    errorMessage?: string;
+    refreshAfterUpdate?: boolean;
+    refreshParams?: any;
+    onSuccessCallback?: (itemData: any) => void; // Callback after successful operation
+  };
+  
+  delete?: {
+    enabled: boolean;
+    handler: (id: any) => Promise<any>;
+    successMessage?: string;
+    errorMessage?: string;
+    confirmMessage?: string;
+    refreshAfterDelete?: boolean;
+    refreshParams?: any;
+    onSuccessCallback?: (itemData: any) => void; // Callback after successful operation
+  };
+  
+  bulkDelete?: {
+    enabled: boolean;
+    handler: (ids: any[]) => Promise<any>;
+    successMessage?: string;
+    errorMessage?: string;
+    confirmMessage?: string;
+    refreshAfterDelete?: boolean;
+    refreshParams?: any;
+  };
+  
+  export?: {
+    enabled: boolean;
+    handler: () => Promise<T[]>;
+    filename?: string;
+    format?: 'csv' | 'excel' | 'json';
+    successMessage?: string;
+    errorMessage?: string;
+  };
+}
+
+// NEW: Data loading configuration for admin dashboard
+export interface DataLoaderConfig<T = any> {
+  handler: (searchParams: any) => Promise<{ 
+    items: T[]; 
+    total: number; 
+    page?: number; 
+    limit?: number; 
+    totalPages?: number 
+  }>;
+  searchParamsConverter?: (event: any) => any; // Convert UI event to search params
+  refreshTrigger?: (params?: any) => Promise<void>; // Function to trigger data refresh
+  initialParams?: any; // Default parameters for initial load
+}
+
+// NEW: Notification configuration for admin dashboard
+export interface NotificationConfig {
+  showSuccessMessages?: boolean;
+  showErrorMessages?: boolean;
+  successDuration?: number; // in milliseconds
+  errorDuration?: number; // in milliseconds
+  customMessages?: {
+    create?: { success?: string; error?: string };
+    update?: { success?: string; error?: string };
+    delete?: { success?: string; error?: string };
+    bulkDelete?: { success?: string; error?: string };
+    export?: { success?: string; error?: string };
+  };
+}
+
+// NEW: Enhanced dashboard tab configuration
+export interface DashboardTabConfig<T = any> extends TableManagementConfig<T> {
+  // Enhanced CRUD operations
+  operations?: CrudOperationsConfig<T>;
+  
+  // Data loading configuration
+  dataLoader?: DataLoaderConfig<T>;
+  
+  // Notification configuration
+  notifications?: NotificationConfig;
+  
+  // Tab-specific configuration
+  tabTitle?: string;
+  tabIcon?: string;
+  tabOrder?: number;
+  
+  // Data binding for the dashboard
+  dataSignal?: () => T[]; // Signal containing the data
+  loadingSignal?: () => boolean; // Signal indicating loading state
+  errorSignal?: () => string | null; // Signal for error state
+  
+  // Row control functions
+  collapseRow?: (itemId: any) => void; // Function to collapse a specific row
+  expandRow?: (itemId: any) => void; // Function to expand a specific row
 }

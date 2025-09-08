@@ -87,14 +87,17 @@
         <!-- Custom Actions -->
         @if (customActions() && customActions().length > 0) {
           @for (action of customActions(); track action.action) {
-            <p-button 
-              [icon]="action.icon" 
-              [severity]="action.severity || 'secondary'"
-              size="small"
-              [text]="true"
-              (onClick)="onCustomAction(action)"
-              [pTooltip]="action.label">
-            </p-button>
+            @if (shouldShowCustomAction(action)) {
+              <p-button 
+                [icon]="action.icon" 
+                [severity]="action.severity || 'secondary'"
+                size="small"
+                [text]="true"
+                [disabled]="isCustomActionDisabled(action)"
+                (onClick)="onCustomAction(action)"
+                [pTooltip]="action.label">
+              </p-button>
+            }
           }
         }
       </div>

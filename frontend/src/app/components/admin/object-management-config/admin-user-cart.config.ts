@@ -1,6 +1,15 @@
-import { ColumnConfig, ActionConfig, TableManagementConfig } from './table-config.interface';
+import { 
+  ColumnConfig, 
+  ActionConfig, 
+  TableManagementConfig,
+  DashboardTabConfig,
+  CrudOperationsConfig,
+  DataLoaderConfig,
+  NotificationConfig
+} from './table-config.interface';
 import { AdminUserCartData, AdminUserCartItem } from '../../../models/admin-user-cart.model';
 import { AdminSearchStore } from '../../../stores/admin-search.store';
+import { AdminSearchParams } from '../../../models/adminSearch.model';
 
 /**
  * ADMIN USER CART MANAGEMENT - FLATTENED STRUCTURE CONFIGURATION
@@ -31,7 +40,7 @@ function getTotalItemsCount(cart: AdminUserCartItem[]): number {
 // Level 0 (Parent) - User information columns
 export const LEVEL_0_USER_COLUMNS: ColumnConfig[] = [
   {
-    field: 'userId',
+    field: 'id',
     header: 'User ID',
     type: 'number',
     sortable: true,
@@ -39,7 +48,7 @@ export const LEVEL_0_USER_COLUMNS: ColumnConfig[] = [
     width: '10rem'
   },
   {
-    field: 'userName',
+    field: 'username',
     header: 'Username',
     type: 'text',
     sortable: true,
@@ -64,10 +73,10 @@ export const LEVEL_0_USER_COLUMNS: ColumnConfig[] = [
   },
   {
     field: 'isActive',
-    header: 'Status',
+    header: 'Active',
     type: 'boolean',
     sortable: true,
-    filterable: true,
+    filterable: false,
     width: '10rem',
     options: [
       { label: 'Active', value: true, color: 'success' },
@@ -80,6 +89,9 @@ export const LEVEL_0_USER_COLUMNS: ColumnConfig[] = [
     type: 'number',
     sortable: true,
     filterable: true,
+    filterType: 'range',
+    filterMin: 0,
+    filterStep: 10,
     width: '10rem',
     displayFormat: 'currency'
   }
@@ -104,7 +116,13 @@ export const LEVEL_0_USER_ACTIONS: ActionConfig = {
       label: 'Clear Cart',
       icon: 'pi pi-shopping-cart',
       action: 'clear-cart',
-      severity: 'danger'
+      severity: 'danger',
+      confirm: true,
+      confirmMessage: 'Are you sure you want to clear all items from this user\'s cart? This action cannot be undone.',
+      disabled: (item: AdminUserCartData) => {
+        // Disable clear cart button if user has no items in their cart
+        return !item.cart || item.cart.length === 0;
+      }
     }
   ]
 };
@@ -223,12 +241,13 @@ export function createAdminUserCartTableLoader(adminSearchStore: AdminSearchStor
         // Add parent row (user info)
         const parentRow = {
           // User data
-          userId: userCart.userId,
-          userName: userCart.userName,
+          id: userCart.id,
+          username: userCart.username,
           email: userCart.email,
           firstname: userCart.firstname,
           isActive: userCart.isActive,
-          cartSummary: `${getTotalItemsCount(userCart.cart)} items, $${calculateCartTotalValue(userCart.cart).toFixed(2)}`,
+          cartTotalValue: userCart.cartTotalValue,
+          cartSummary: `${getTotalItemsCount(userCart.cart)} items, $${userCart.cartTotalValue.toFixed(2)}`,
           
           // Hierarchy fields
           parentUserId: null, // This is a parent row
@@ -249,15 +268,15 @@ export function createAdminUserCartTableLoader(adminSearchStore: AdminSearchStor
         userCart.cart.forEach((item: AdminUserCartItem) => {
           const childRow = {
             // User data (inherited from parent for context)
-            userId: userCart.userId + '_' + item.productId, // Unique ID for child row
-            userName: userCart.userName,
+            id: userCart.id + '_' + item.productId, // Unique ID for child row
+            username: userCart.username,
             email: userCart.email,
             firstname: userCart.firstname,
             isActive: userCart.isActive,
             cartSummary: null, // Not applicable for child rows
             
             // Hierarchy fields
-            parentUserId: userCart.userId, // References the parent user
+            parentUserId: userCart.id, // References the parent user
             level: 1,
             itemType: 'cart_item',
             
@@ -284,6 +303,115 @@ export function createAdminUserCartTableLoader(adminSearchStore: AdminSearchStor
       console.error('❌ Error loading admin user carts for table:', error);
       throw error;
     }
+  };
+}
+
+// Function to create admin user cart configuration with generic child actions
+export function createAdminUserCartConfig(cartManagement: any, collapseRowCallback?: (userId: number) => void): TableManagementConfig {
+  return {
+    objectName: 'User Cart',
+    columns: LEVEL_0_USER_COLUMNS, // Use level 0 columns as default
+    actions: LEVEL_0_USER_ACTIONS, // Use level 0 actions as default
+    dataKey: 'id', // Primary key for each row
+    
+    // Hierarchy configuration for parent (user) -> child (cart items) relationship
+    hierarchyConfig: {
+      enabled: true,
+      parentIdField: 'parentUserId', // Field that contains parent reference (for flattened data)
+      childAttributeField: 'cart', // NEW: Attribute that contains child array
+      loadStrategy: 'eager', // All data loaded upfront
+      maxDepth: 2, // User -> Cart Items (could be extended)
+      indentSize: 40, // Pixels to indent each hierarchy level
+      expandIcon: 'pi pi-chevron-right',
+      collapseIcon: 'pi pi-chevron-down',
+      childDataLoader: async (parentId: number) => {
+        // Not used since strategy is 'eager' and we use childAttributeField
+        return [];
+      },
+      levelConfigs: [
+        {
+          level: 0, // Parent level (users)
+          columns: LEVEL_0_USER_COLUMNS,
+          actions: LEVEL_0_USER_ACTIONS,
+          allowExpansion: true
+        },
+        {
+          level: 1, // Child level (cart items)
+          columns: LEVEL_1_CART_ITEMS_COLUMNS,
+          actions: LEVEL_1_CART_ITEMS_ACTIONS,
+          allowExpansion: false // Cart items don't have sub-items
+        }
+      ]
+    },
+
+    // NEW: Generic child actions configuration
+    childActions: {
+      'ADD_CART_ITEM': {
+        parentIdField: 'id',
+        childTemplate: {
+          productId: null,
+          selectedProduct: null,
+          quantity: 1
+        },
+        saveHandler: async (userId: number, cartItemData: any): Promise<boolean> => {
+          try {
+            await cartManagement.addItemToUserCart(userId, {
+              productId: cartItemData.productId,
+              quantity: cartItemData.quantity || 1
+            });
+            
+            return true;
+          } catch (error) {
+            console.error('Error adding cart item:', error);
+            return false;
+          }
+        },
+        shouldKeepExpandedOnSave: true,
+        shouldCollapseOnCancel: (parentData: any) => {
+          // Collapse if user has no cart items
+          return !parentData.cart || parentData.cart.length === 0;
+        },
+        childEntityName: 'Cart Item'
+      }
+    },
+
+    // NEW: Calculated fields for dynamic data
+    calculatedFields: {
+      subtotal: (data: any) => {
+        return (data.productPrice || 0) * (data.quantity || 0);
+      },
+      cartTotalValue: (data: any) => {
+        // Use backend-provided cartTotalValue if available, otherwise calculate
+        return data.cartTotalValue || 0;
+      }
+    },
+    
+    // Search configuration
+    search: {
+      enabled: true,
+      fields: ['userName', 'email', 'firstname'],
+      placeholder: 'Search users...'
+    },
+    
+    // Export configuration
+    export: {
+      enabled: true,
+      filename: 'user-carts-export',
+      columns: ['userId', 'userName', 'email', 'firstname', 'isActive']
+    },
+    
+    // Pagination configuration
+    pagination: {
+      enabled: true,
+      rowsPerPage: 10,
+      rowsPerPageOptions: [5, 10, 20, 50],
+      showCurrentPageReport: true,
+      currentPageReportTemplate: 'Showing {first} to {last} of {totalRecords} carts',
+      lazy: true // Enable server-side pagination to match custom dataLoader
+    },
+    
+    // Global filter fields
+    globalFilterFields: ['username', 'email', 'firstname']
   };
 }
 
@@ -327,7 +455,7 @@ export const ADMIN_USER_CART_TABLE_CONFIG: TableManagementConfig = {
   // Search configuration
   search: {
     enabled: true,
-    fields: ['userName', 'email', 'firstname'],
+    fields: ['username', 'email', 'firstname'],
     placeholder: 'Search users...'
   },
   
@@ -335,7 +463,7 @@ export const ADMIN_USER_CART_TABLE_CONFIG: TableManagementConfig = {
   export: {
     enabled: true,
     filename: 'user-carts-export',
-    columns: ['userId', 'userName', 'email', 'firstname', 'isActive']
+    columns: ['id', 'username', 'email', 'firstname', 'isActive']
   },
   
   // Pagination configuration
@@ -345,12 +473,311 @@ export const ADMIN_USER_CART_TABLE_CONFIG: TableManagementConfig = {
     rowsPerPageOptions: [5, 10, 20, 50],
     showCurrentPageReport: true,
     currentPageReportTemplate: 'Showing {first} to {last} of {totalRecords} carts',
-    lazy: false // Client-side pagination like other configs
+    lazy: true // Enable server-side pagination to match backend search pattern
   },
   
   // Global filter fields
-  globalFilterFields: ['userName', 'email', 'firstname']
+  globalFilterFields: ['username', 'email', 'firstname']
 };
 
 // Export the main config as default
 export default ADMIN_USER_CART_TABLE_CONFIG;
+
+// NEW: Function to create complete dashboard tab configuration for user carts
+export function createCartDashboardConfig(
+  cartManagement: any, 
+  adminCartSearch: any, 
+  messageService: any,
+  collapseRowCallback?: (itemId: any) => void
+): DashboardTabConfig<AdminUserCartData> {
+  
+  // Get the full config with child actions
+  const fullConfig = createAdminUserCartConfig(cartManagement);
+  
+  // Define CRUD operations
+  const operations: CrudOperationsConfig<AdminUserCartData> = {
+    create: {
+      enabled: false, // Carts are created automatically when users add items
+      handler: async () => false,
+      errorMessage: 'Cart creation not supported from admin dashboard'
+    },
+    
+    update: {
+      enabled: true,
+      handler: async (itemData: any) => {
+        // Handle different types of updates based on item level
+        if (itemData.hasOwnProperty('productId') && itemData.hasOwnProperty('parentUserId')) {
+          // This is a cart item (level 1) - remove from cart
+          const userId = itemData.parentUserId;
+          const productId = itemData.productId;
+          
+          await cartManagement.removeItemFromUserCart(userId, productId);
+        } else if (itemData.hasOwnProperty('userId')) {
+          // This is a user (level 0) - clear their entire cart
+          const userId = itemData.userId;
+          
+          await cartManagement.clearUserCart(userId);
+        }
+        return true;
+      },
+      successMessage: 'Cart Updated Successfully! 📝',
+      errorMessage: 'Cart Update Failed! ❌',
+      refreshAfterUpdate: true,
+      refreshParams: { page: 1, size: 25, sorts: [], filters: {} }
+    },
+    
+    delete: {
+      enabled: true,
+      handler: async (itemData: any) => {
+        // Handle different types of deletion based on item level
+        if (itemData.productId && itemData.parentUserId) {
+          // This is a cart item (level 1) - remove from cart
+          const userId = itemData.parentUserId;
+          const productId = itemData.productId;
+          
+          await cartManagement.removeItemFromUserCart(userId, productId);
+          
+          // Force a small delay to ensure backend state is updated
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+        } else if (itemData.userId && !itemData.parentUserId) {
+          // This is a user (level 0) - clear their entire cart
+          const userId = itemData.userId;
+          
+          await cartManagement.clearUserCart(userId);
+        } else {
+          console.error('❌ CRUD: Invalid item data for deletion:', itemData);
+          throw new Error('Invalid item data for deletion');
+        }
+        
+        return true;
+      },
+      successMessage: 'Item Removed Successfully! 🗑️',
+      errorMessage: 'Item Removal Failed! ❌',
+      refreshAfterDelete: true,
+      onSuccessCallback: (itemData: any) => {
+        // Check if this was a cart clearing operation (level 0 user)
+        if (itemData.userId && !itemData.parentUserId) {
+          // This was a user cart clear - collapse the parent row
+          if (collapseRowCallback) {
+            collapseRowCallback(itemData.userId);
+          }
+        }
+      }
+    },
+    
+    bulkDelete: {
+      enabled: false,
+      handler: async () => false,
+      errorMessage: 'Bulk cart deletion not supported'
+    },
+    
+    export: {
+      enabled: true,
+      handler: async () => {
+        return adminCartSearch.state().items;
+      },
+      filename: 'user-carts-export',
+      format: 'csv',
+      successMessage: 'Cart Data Exported Successfully! 📋',
+      errorMessage: 'Cart Export Failed! ❌'
+    }
+  };
+  
+  // Define data loader
+  const dataLoader: DataLoaderConfig<AdminUserCartData> = {
+    handler: async (searchParams: any) => {
+      const params: Partial<AdminSearchParams> = {
+        page: searchParams.page || 1,
+        limit: searchParams.limit || 25,
+        filters: searchParams.filters || {},
+        sorts: searchParams.sorts || []
+      };
+      
+      await adminCartSearch.search(params);
+      const state = adminCartSearch.state();
+      
+      return {
+        items: state.items,
+        total: state.total,
+        page: state.page,
+        limit: state.limit,
+        totalPages: state.totalPages
+      };
+    },
+    searchParamsConverter: (event: any) => {
+      return {
+        page: event.page || 1,
+        size: event.size || 25,
+        limit: event.size || 25,
+        sorts: event.sorts || [],
+        filters: event.filters || {}
+      };
+    },
+    refreshTrigger: async (params?: any) => {
+      const refreshParams = params || { page: 1, size: 25, limit: 25, sorts: [], filters: {}, search: '' };
+      await adminCartSearch.search(refreshParams);
+    },
+    initialParams: { page: 1, limit: 25 }
+  };
+  
+  // Define notifications
+  const notifications: NotificationConfig = {
+    showSuccessMessages: true,
+    showErrorMessages: true,
+    successDuration: 3000,
+    errorDuration: 5000
+  };
+  
+  return {
+    ...fullConfig,
+    
+    // Enhanced dashboard configuration
+    operations,
+    dataLoader,
+    notifications,
+    
+    // Tab configuration
+    tabTitle: 'User Carts',
+    tabIcon: 'pi pi-shopping-cart',
+    tabOrder: 3,
+    
+    // Data binding signals
+    dataSignal: () => adminCartSearch.state().items,
+    loadingSignal: () => adminCartSearch.state().isLoading,
+    errorSignal: () => adminCartSearch.state().error,
+    
+    // Row control functions
+    collapseRow: collapseRowCallback,
+    
+    // Bridge methods for TabManagementComponent compatibility
+    deleteItem: async (itemData: any) => {
+      try {
+        let userIdToCheck: number | null = null;
+        
+        // Handle case where itemData is just a string (cart item ID like "3_79")
+        if (typeof itemData === 'string' && itemData.includes('_')) {
+          const parts = itemData.split('_');
+          if (parts.length === 2) {
+            const userId = parseInt(parts[0], 10);
+            const productId = parseInt(parts[1], 10);
+            userIdToCheck = userId;
+            
+            const result = await cartManagement.removeItemFromUserCart(userId, productId);
+          }
+        }
+        
+        // Handle object-based itemData (preferred approach)
+        else if (typeof itemData === 'object' && itemData !== null) {
+          if (itemData.productId !== undefined && itemData.parentUserId !== undefined) {
+            // This is a cart item - use productId and parentUserId
+            const userId = itemData.parentUserId;
+            const productId = itemData.productId;
+            userIdToCheck = userId;
+            
+            const result = await cartManagement.removeItemFromUserCart(userId, productId);
+            
+          } else if (itemData.userId && !itemData.parentUserId) {
+            // This is a user (level 0) - clear their entire cart
+            const userId = itemData.userId;
+            userIdToCheck = userId;
+            
+            const result = await cartManagement.clearUserCart(userId);
+            
+            // For cart clearing via deleteItem, show toast message directly
+            try {
+              messageService.add({
+                severity: 'success',
+                summary: 'Cart Cleared Successfully! 🛒',
+                detail: `All items have been successfully removed from user ${userId}'s shopping cart.`
+              });
+            } catch (toastError) {
+              console.error('❌ deleteItem: Error adding cart cleared toast message:', toastError);
+            }
+            
+          } else {
+            console.error('❌ Unable to determine delete type. Expected productId+parentUserId or userId without parentUserId');
+            console.error('❌ Actual itemData structure:', {
+              hasProductId: itemData.productId !== undefined,
+              hasParentUserId: itemData.parentUserId !== undefined,
+              hasUserId: itemData.userId !== undefined,
+              productId: itemData.productId,
+              parentUserId: itemData.parentUserId,
+              userId: itemData.userId,
+              keys: Object.keys(itemData)
+            });
+          }
+        } else {
+          console.error('❌ Invalid itemData format:', itemData);
+        }
+        
+        // Check if we need to collapse the row after deletion
+        if (userIdToCheck && collapseRowCallback) {
+          // Wait a moment for the backend to update, then check if cart is empty
+          setTimeout(async () => {
+            try {
+              // Refresh data to get updated cart state
+              await adminCartSearch.search({ page: 1, size: 25, sorts: [], filters: {} });
+              const currentState = adminCartSearch.state();
+              
+              // Find the user in the updated data
+              const userCart = currentState.items.find((item: AdminUserCartData) => item.id === userIdToCheck);
+              
+              // If user has no cart items left, collapse the row
+              if (userCart && (!userCart.cart || userCart.cart.length === 0)) {
+                collapseRowCallback(userIdToCheck);
+              }
+            } catch (error) {
+              console.error('❌ Error checking cart state after deletion:', error);
+            }
+          }, 100);
+        }
+        
+        return true;
+      } catch (error) {
+        console.error('💥 Error in deleteItem:', error);
+        throw error;
+      }
+    },
+    
+    executeCustomAction: async (action: string, userId: number) => {
+      try {
+        if (action === 'clear-cart') {
+          await cartManagement.clearUserCart(userId);
+          
+          // Collapse the parent row since cart is now empty
+          if (collapseRowCallback) {
+            collapseRowCallback(userId);
+          }
+          
+          // Show success message through messageService (config-based messaging)
+          try {
+            messageService.add({
+              severity: 'success',
+              summary: 'Cart Cleared Successfully! 🛒',
+              detail: `All items have been successfully removed from user ${userId}'s shopping cart.`
+            });
+          } catch (toastError) {
+            console.error('❌ Error adding toast message:', toastError);
+          }
+        }
+        
+        // Refresh the data
+        await adminCartSearch.search({ page: 1, size: 25, sorts: [], filters: {} });
+        
+      } catch (error: any) {
+        try {
+          messageService.add({
+            severity: 'error',
+            summary: 'Cart Action Failed! ❌',
+            detail: error.message || `Unable to ${action.replace('-', ' ')}. Please try again or check your connection.`
+          });
+        } catch (toastError) {
+          console.error('❌ Error adding error toast message:', toastError);
+        }
+        
+        throw error;
+      }
+    }
+  };
+}

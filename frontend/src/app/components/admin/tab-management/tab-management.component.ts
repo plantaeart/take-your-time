@@ -8,7 +8,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService, MessageService } from 'primeng/api';
-import { TableManagementConfig, ColumnConfig, FilterType, HierarchyConfig, LevelConfig } from '../object-management-config/table-config.interface';
+import { TableManagementConfig, ColumnConfig, FilterType, HierarchyConfig, LevelConfig, ChildActionConfig } from '../object-management-config/table-config.interface';
 import { RowTabComponent } from '../row-tab/row-tab.component';
 import { TabColumnsHeaderComponent } from '../tab-columns-header/tab-columns-header.component';
 import { ButtonConfirmPopupComponent, FilterButtonConfig } from '../../ui/button-confirm-popup/button-confirm-popup.component';
@@ -50,7 +50,7 @@ interface HierarchicalItem<T = any> {
     TabColumnsHeaderComponent,
     GlobalSearchComponent
   ],
-  providers: [ConfirmationService, MessageService],
+  providers: [ConfirmationService],
   templateUrl: './tab-management.component.html',
   styleUrl: './tab-management.component.css'
 })
@@ -85,14 +85,13 @@ export class TabManagementComponent<T = any> implements OnInit {
   editItemData = signal<Partial<T>>({});
   globalFilterValue = signal<string>('');
   
-  // Cart item addition state
-  isAddingCartItem = signal<boolean>(false);
-  addingCartItemForUserId = signal<number | null>(null);
-  newCartItem = signal<any>({
-    productId: null,
-    selectedProduct: null,
-    quantity: 1
-  });
+  // Generic child action state (replaces cart-specific signals)
+  currentChildAction = signal<{
+    type: string;
+    parentId: any;
+    data: any;
+  } | null>(null);
+  newChildData = signal<any>({});
   
   // Hierarchical data state
   hierarchicalData = signal<HierarchicalItem<T>[]>([]);
@@ -206,8 +205,12 @@ export class TabManagementComponent<T = any> implements OnInit {
     const globalFilter = this.globalFilterValue().toLowerCase();
     if (globalFilter) {
       filtered = filtered.filter(item => {
-        return this.visibleColumns().some(column => {
-          const value = (item as any)[column.field];
+        // Use globalFilterFields if specified in config, otherwise use visible columns
+        const fieldsToSearch = this.config().globalFilterFields || 
+                               this.visibleColumns().map(col => col.field);
+        
+        return fieldsToSearch.some(field => {
+          const value = (item as any)[field];
           return value?.toString().toLowerCase().includes(globalFilter);
         });
       });
@@ -738,21 +741,19 @@ export class TabManagementComponent<T = any> implements OnInit {
           if (deleteFunction) {
             await deleteFunction(itemId);
             
-            // Custom success message for cart items
-            let successMessage: string;
+            // Only show success message for cart items since regular items 
+            // (products, users) show messages through their config methods
             if (isCartItem) {
               const productName = (item as any).productName || 'Unknown Product';
               const userId = (item as any).parentUserId;
-              successMessage = `"${productName}" has been removed from user ${userId}'s cart successfully.`;
-            } else {
-              successMessage = `${this.config().objectName} "${itemName}" has been deleted successfully.`;
+              const successMessage = `"${productName}" has been removed from user ${userId}'s cart successfully.`;
+              
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Success',
+                detail: successMessage
+              });
             }
-            
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Success',
-              detail: successMessage
-            });
 
             // Remove the item from selected items if it was selected
             const currentSelected = this.selectedItems();
@@ -790,7 +791,24 @@ export class TabManagementComponent<T = any> implements OnInit {
    */
   async handleCustomAction(event: { action: string; item: T; actionData?: any }): Promise<void> {
     const { action, item, actionData } = event;
+    const config = this.config();
     
+    // Check if this action requires confirmation
+    if (actionData?.confirm) {
+      const confirmMessage = actionData.confirmMessage || 'Are you sure you want to proceed?';
+      
+      this.confirmationService.confirm({
+        message: confirmMessage,
+        accept: async () => {
+          await this.executeCustomActionLogic(action, item, config);
+        }
+      });
+    } else {
+      await this.executeCustomActionLogic(action, item, config);
+    }
+  }
+
+  private async executeCustomActionLogic(action: string, item: T, config: any): Promise<void> {
     // Handle admin cart-specific actions
     if (action === 'remove-item') {
       await this.handleRemoveCartItem(item);
@@ -798,9 +816,15 @@ export class TabManagementComponent<T = any> implements OnInit {
       // For edit-quantity, we don't need to do anything special here since 
       // the quantity controls component handles the quantity change directly
     } else if (action === 'clear-cart') {
-      await this.handleClearCart(item);
+      // Use config's executeCustomAction instead of direct hooks call
+      if (config.executeCustomAction && (item as any).userId) {
+        await config.executeCustomAction(action, (item as any).userId);
+      } else {
+        // Fallback to old method if config doesn't have executeCustomAction
+        await this.handleClearCart(item);
+      }
     } else if (action === 'add-product') {
-      await this.handleAddProductToCart(item);
+      await this.executeChildAction('ADD_CART_ITEM', item);
     } else {
       // Unknown custom action
     }
@@ -870,50 +894,61 @@ export class TabManagementComponent<T = any> implements OnInit {
   }
 
   /**
-   * Handle adding a product to user's cart
+   * Generic method to handle child actions (replaces handleAddProductToCart)
    */
-  private async handleAddProductToCart(item: any): Promise<void> {
-    const userId = item.userId;
+  private async executeChildAction(actionType: string, parentItem: any): Promise<void> {
+    const config = this.config();
+    const actionConfig = config.childActions?.[actionType];
     
-    if (!userId) {
+    if (!actionConfig) {
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
-        detail: 'Unable to add product: missing user information'
+        detail: `Child action '${actionType}' is not configured`
       });
       return;
     }
 
-    // Set add cart state to show the add row
-    this.isAddingCartItem.set(true);
-    this.addingCartItemForUserId.set(userId);
+    const parentId = parentItem[actionConfig.parentIdField];
     
-    // Reset the new cart item
-    this.newCartItem.set({
-      productId: null,
-      selectedProduct: null,
-      quantity: 1
-    });
+    if (!parentId) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: `Unable to execute action: missing ${actionConfig.parentIdField}`
+      });
+      return;
+    }
 
-    // Expand the user's cart section to show the add row
-    // Find the hierarchical item for this user and expand it
+    // Set generic child action state
+    this.currentChildAction.set({
+      type: actionType,
+      parentId: parentId,
+      data: { ...actionConfig.childTemplate }
+    });
+    
+    // Reset the new child data
+    this.newChildData.set({ ...actionConfig.childTemplate });
+
+    // Expand the parent section to show the add row
+    // Find the hierarchical item for this parent and expand it
     const hierarchicalData = this.hierarchicalData();
-    const userHierarchicalItem = hierarchicalData.find(hierarchicalItem => 
-      hierarchicalItem.level === 0 && (hierarchicalItem.data as any).userId === userId
+    const parentHierarchicalItem = hierarchicalData.find(hierarchicalItem => 
+      hierarchicalItem.level === 0 && (hierarchicalItem.data as any)[actionConfig.parentIdField] === parentId
     );
     
-    if (userHierarchicalItem) {
-      const itemId = (userHierarchicalItem.data as any)[this.config().dataKey];
+    if (parentHierarchicalItem) {
+      const itemId = (parentHierarchicalItem.data as any)[this.config().dataKey];
       const expandedSet = new Set(this.expandedItems());
       expandedSet.add(itemId);
       this.expandedItems.set(expandedSet);
       
       // Also set the expanded flag on the hierarchical item
-      userHierarchicalItem.expanded = true;
+      parentHierarchicalItem.expanded = true;
     } else {
       // If hierarchical item not found yet, at least set the expanded state
       // This will be preserved when hierarchy is rebuilt
-      const itemId = userId; // Assuming userId is the dataKey for user items
+      const itemId = parentId; // Assuming parentId is the dataKey for parent items
       const expandedSet = new Set(this.expandedItems());
       expandedSet.add(itemId);
       this.expandedItems.set(expandedSet);
@@ -929,63 +964,78 @@ export class TabManagementComponent<T = any> implements OnInit {
   }
 
   /**
-   * Cancel adding cart item
+   * Cancel current child action (replaces cancelAddCartItem)
    */
-  cancelAddCartItem(): void {
-    const userId = this.addingCartItemForUserId();
+  cancelChildAction(): void {
+    const action = this.currentChildAction();
+    if (!action) return;
     
-    this.isAddingCartItem.set(false);
-    this.addingCartItemForUserId.set(null);
-    this.newCartItem.set({
-      productId: null,
-      selectedProduct: null,
-      quantity: 1
-    });
+    const config = this.config();
+    const actionConfig = config.childActions?.[action.type];
+    
+    if (!actionConfig) return;
 
-    // If the user doesn't have existing cart items, collapse their section
-    if (userId) {
-      const hierarchicalData = this.hierarchicalData();
-      const userHierarchicalItem = hierarchicalData.find(hierarchicalItem => 
-        hierarchicalItem.level === 0 && (hierarchicalItem.data as any).userId === userId
-      );
+    // Reset action state
+    this.currentChildAction.set(null);
+    this.newChildData.set({});
+
+    // Check if parent should be collapsed based on config
+    const hierarchicalData = this.hierarchicalData();
+    const parentHierarchicalItem = hierarchicalData.find(hierarchicalItem => 
+      hierarchicalItem.level === 0 && (hierarchicalItem.data as any)[actionConfig.parentIdField] === action.parentId
+    );
+    
+    if (parentHierarchicalItem && actionConfig.shouldCollapseOnCancel(parentHierarchicalItem.data)) {
+      // Parent should be collapsed
+      const itemId = (parentHierarchicalItem.data as any)[this.config().dataKey];
+      const expandedSet = new Set(this.expandedItems());
+      expandedSet.delete(itemId);
+      this.expandedItems.set(expandedSet);
       
-      // Check if user has existing cart items
-      if (userHierarchicalItem && !this.hasExistingCartItems(userHierarchicalItem.data)) {
-        // User has no existing cart items, so collapse their section
-        const itemId = (userHierarchicalItem.data as any)[this.config().dataKey];
-        const expandedSet = new Set(this.expandedItems());
-        expandedSet.delete(itemId);
-        this.expandedItems.set(expandedSet);
-        
-        // Also set the expanded flag on the hierarchical item
-        userHierarchicalItem.expanded = false;
-      }
+      // Also set the expanded flag on the hierarchical item
+      parentHierarchicalItem.expanded = false;
     }
   }
 
   /**
-   * Helper method to check if we're adding a cart item for a specific user
+   * Helper method to check if we're executing a child action for a specific parent (replaces isAddingCartItemForUser)
    */
-  isAddingCartItemForUser(userData: any): boolean {
-    return this.isAddingCartItem() && 
-           this.addingCartItemForUserId() === userData.userId;
+  isExecutingChildActionForParent(parentData: any, actionType?: string): boolean {
+    const action = this.currentChildAction();
+    if (!action) return false;
+    
+    const config = this.config();
+    const actionConfig = config.childActions?.[action.type];
+    if (!actionConfig) return false;
+    
+    // Check if action type matches (if specified)
+    if (actionType && action.type !== actionType) return false;
+    
+    // Check if this is the correct parent
+    const parentId = parentData[actionConfig.parentIdField];
+    return action.parentId === parentId;
   }
 
   /**
-   * Save the new cart item
+   * Save new child data for the active action (replaces saveNewCartItem)
    */
-  async saveNewCartItem(cartItemData?: any): Promise<void> {
-    const userId = this.addingCartItemForUserId();
-    
-    // Use cartItemData from row-tab component if provided, otherwise fallback to newCartItem signal
-    const dataToUse = cartItemData || this.newCartItem();
+  async saveNewChildData(childData?: any): Promise<void> {
+    const action = this.currentChildAction();
+    if (!action) return;
+
+    const config = this.config();
+    const actionConfig = config.childActions?.[action.type];
+    if (!actionConfig) return;
+
+    // Use childData from row-tab component if provided, otherwise fallback to newChildData signal
+    const dataToUse = childData || this.newChildData();
     
     // Check if we have the necessary data (either selectedProduct or productId)
     const hasProduct = dataToUse.selectedProduct || dataToUse.productId;
     const productId = dataToUse.selectedProduct?.id || dataToUse.productId;
     const quantity = dataToUse.quantity || 1;
-    
-    if (!userId || !hasProduct || !productId) {
+
+    if (!action.parentId || !hasProduct || !productId) {
       this.messageService.add({
         severity: 'error',
         summary: 'Validation Error',
@@ -995,79 +1045,99 @@ export class TabManagementComponent<T = any> implements OnInit {
     }
 
     try {
-      // Call the admin cart service to add the item
-      const success = await this.adminCart.addItemToCart(userId, {
-        productId: productId,
-        quantity: quantity
-      });
-
-      if (success) {
-        // Store the userId before resetting state
-        const userIdToKeepExpanded = userId;
-        
-        // Reset the adding state but don't collapse the user section
-        this.isAddingCartItem.set(false);
-        this.addingCartItemForUserId.set(null);
-        this.newCartItem.set({
-          productId: null,
-          selectedProduct: null,
-          quantity: 1
+      // Call the save handler if it exists
+      if (actionConfig.saveHandler) {
+        const success = await actionConfig.saveHandler(action.parentId, {
+          productId: productId,
+          quantity: quantity
         });
 
-        // Trigger a data reload to refresh the cart display
-        this.dataLoad.emit({ 
-          page: this.currentPage(), 
-          size: this.rowsPerPage(), 
-          sorts: [], 
-          filters: this.columnFilters() 
-        });
-
-        // After data reload, ensure the user section stays expanded to show the new item
-        setTimeout(() => {
-          const hierarchicalData = this.hierarchicalData();
-          const userHierarchicalItem = hierarchicalData.find(hierarchicalItem => 
-            hierarchicalItem.level === 0 && (hierarchicalItem.data as any).userId === userIdToKeepExpanded
-          );
+        if (success) {
+          // Store the parentId before resetting state
+          const parentIdToKeepExpanded = action.parentId;
           
-          if (userHierarchicalItem) {
-            const itemId = (userHierarchicalItem.data as any)[this.config().dataKey];
-            const expandedSet = new Set(this.expandedItems());
-            expandedSet.add(itemId);
-            this.expandedItems.set(expandedSet);
-            
-            // Also set the expanded flag on the hierarchical item
-            userHierarchicalItem.expanded = true;
+          // Reset the action state
+          this.currentChildAction.set(null);
+          this.newChildData.set({
+            productId: null,
+            selectedProduct: null,
+            quantity: 1
+          });
+
+          // Trigger a data reload to refresh the display
+          this.dataLoad.emit({ 
+            page: this.currentPage(), 
+            size: this.rowsPerPage(), 
+            sorts: [], 
+            filters: this.columnFilters() 
+          });
+
+          // After data reload, ensure the parent section stays expanded if configured
+          if (actionConfig.shouldKeepExpandedOnSave) {
+            setTimeout(() => {
+              const hierarchicalData = this.hierarchicalData();
+              const parentHierarchicalItem = hierarchicalData.find(hierarchicalItem => 
+                hierarchicalItem.level === 0 && (hierarchicalItem.data as any)[actionConfig.parentIdField] === parentIdToKeepExpanded
+              );
+              
+              if (parentHierarchicalItem) {
+                const itemId = (parentHierarchicalItem.data as any)[this.config().dataKey];
+                const expandedSet = new Set(this.expandedItems());
+                expandedSet.add(itemId);
+                this.expandedItems.set(expandedSet);
+                
+                // Also set the expanded flag on the hierarchical item
+                parentHierarchicalItem.expanded = true;
+              }
+            }, 100); // Small delay to allow data reload to complete
           }
-        }, 100); // Small delay to allow data reload to complete
+        }
       }
 
     } catch (error: any) {
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
-        detail: error.message || 'Failed to add product to cart'
+        detail: error.message || 'Failed to save data'
       });
       throw error;
     }
   }
 
   /**
-   * Create a cart item object for display in the row-tab component
+   * Create child data object for display in the row-tab component (replaces newCartItemForDisplay)
    */
-  newCartItemForDisplay(): any {
-    const cartItem = this.newCartItem();
+  newChildDataForDisplay(): any {
+    const childData = this.newChildData();
+    const action = this.currentChildAction();
     
-    return {
-      productId: cartItem.productId || null,
-      productName: cartItem.selectedProduct?.name || '',
-      quantity: cartItem.quantity,
-      productPrice: cartItem.selectedProduct?.price || 0,
-      productStockQuantity: cartItem.selectedProduct?.quantity || 0,
-      subtotal: (cartItem.selectedProduct?.price || 0) * cartItem.quantity,
+    if (!action) return {};
+    
+    const config = this.config();
+    const calculatedFields = config.calculatedFields || {};
+    
+    // Start with base child data
+    const displayData = {
+      productId: childData.productId || null,
+      productName: childData.selectedProduct?.name || '',
+      quantity: childData.quantity,
+      productPrice: childData.selectedProduct?.price || 0,
+      productStockQuantity: childData.selectedProduct?.quantity || 0,
       // Additional properties for the row-tab component
-      _isNewCartItem: true,
-      _selectedProduct: cartItem.selectedProduct
+      _isNewChild: true,
+      _selectedProduct: childData.selectedProduct,
+      ...childData
     };
+    
+    // Apply calculated fields from config
+    Object.keys(calculatedFields).forEach(fieldName => {
+      const calculator = calculatedFields[fieldName];
+      if (typeof calculator === 'function') {
+        displayData[fieldName] = calculator(displayData);
+      }
+    });
+    
+    return displayData;
   }
 
   /**

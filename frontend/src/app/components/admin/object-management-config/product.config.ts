@@ -17,15 +17,27 @@
     validations: [
       { rule: 'required', message: 'Price is required' },
       { rule: 'min', value: 0, message: 'Price must be greater than or equal to 0' }
-    ],
-    editComponent: 'currency-input'
-  },ration
+/**
+ * Product Table Management Configuration
+ * Following Angular 18 best practices with comprehensive typing
  */
 
-import { TableManagementConfig, ColumnConfig, ActionConfig, SearchConfig, ExportConfig, PaginationConfig } from './table-config.interface';
-import { Product } from '../../../models/product.model';
+import { 
+  TableManagementConfig, 
+  ColumnConfig, 
+  ActionConfig, 
+  SearchConfig, 
+  ExportConfig, 
+  PaginationConfig,
+  DashboardTabConfig,
+  CrudOperationsConfig,
+  DataLoaderConfig,
+  NotificationConfig
+} from './table-config.interface';
+import { Product, ProductCreateRequest, ProductUpdateRequest } from '../../../models/product.model';
 import { Category } from '../../../enums/category.enum';
 import { InventoryStatus } from '../../../enums/inventory-status.enum';
+import { AdminSearchParams } from '../../../models/adminSearch.model';
 
 // Column definitions for Product table
 const productColumns: ColumnConfig[] = [
@@ -239,3 +251,200 @@ export const PRODUCT_TABLE_CONFIG: TableManagementConfig<Product> = {
   dataKey: 'id',
   globalFilterFields: ['name', 'description']
 };
+
+// NEW: Function to create complete dashboard tab configuration for products
+export function createProductDashboardConfig(
+  productHooks: any, 
+  adminProductSearch: any, 
+  messageService: any
+): DashboardTabConfig<Product> {
+  
+  // Define CRUD operations
+  const operations: CrudOperationsConfig<Product> = {
+    create: {
+      enabled: true,
+      handler: async (item: ProductCreateRequest) => {
+        await productHooks.createProduct(item);
+        return true;
+      },
+      successMessage: 'Product created successfully',
+      errorMessage: 'Failed to create product',
+      refreshAfterCreate: true,
+      refreshParams: { page: 1, size: 10, sorts: [], filters: {} }
+    },
+    
+    update: {
+      enabled: true,
+      handler: async (id: number, item: ProductUpdateRequest) => {
+        await productHooks.updateProduct(id, item);
+        return true;
+      },
+      successMessage: 'Product updated successfully',
+      errorMessage: 'Failed to update product',
+      refreshAfterUpdate: true,
+      refreshParams: { page: 1, size: 10, sorts: [], filters: {} }
+    },
+    
+    delete: {
+      enabled: true,
+      handler: async (id: number) => {
+        await productHooks.deleteProduct(id);
+        // Refresh the product list after deletion
+        await adminProductSearch.search({});
+        return true;
+      },
+      successMessage: 'Product deleted successfully',
+      errorMessage: 'Failed to delete product',
+      confirmMessage: 'Are you sure you want to delete this product?',
+      refreshAfterDelete: false // We manually refresh above
+    },
+    
+    bulkDelete: {
+      enabled: true,
+      handler: async (ids: number[]) => {
+        const result = await productHooks.bulkDeleteProducts(ids);
+        // Refresh the product list after deletion
+        await adminProductSearch.search({});
+        return result;
+      },
+      successMessage: 'Products deleted successfully',
+      errorMessage: 'Failed to delete products',
+      confirmMessage: 'Are you sure you want to delete the selected products?',
+      refreshAfterDelete: false // We manually refresh above
+    },
+    
+    export: {
+      enabled: true,
+      handler: async () => {
+        return adminProductSearch.state().items;
+      },
+      filename: 'products-export',
+      format: 'csv',
+      successMessage: 'Products exported successfully',
+      errorMessage: 'Failed to export products'
+    }
+  };
+  
+  // Define data loader
+  const dataLoader: DataLoaderConfig<Product> = {
+    handler: async (searchParams: any) => {
+      const params: Partial<AdminSearchParams> = {
+        page: searchParams.page || 1,
+        limit: searchParams.limit || 10,
+        ...searchParams
+      };
+      
+      await adminProductSearch.search(params);
+      const state = adminProductSearch.state();
+      
+      return {
+        items: state.items,
+        total: state.total,
+        page: state.page,
+        limit: state.limit,
+        totalPages: state.totalPages
+      };
+    },
+    searchParamsConverter: (event: any) => {
+      return {
+        page: event.page || 1,
+        size: event.size || 10,
+        sorts: event.sorts || [],
+        filters: event.filters || {}
+      };
+    },
+    refreshTrigger: async (params?: any) => {
+      const refreshParams = params || { page: 1, size: 10, sorts: [], filters: {} };
+      await adminProductSearch.search(refreshParams);
+    },
+    initialParams: { page: 1, limit: 10 }
+  };
+  
+  // Define notifications
+  const notifications: NotificationConfig = {
+    showSuccessMessages: true,
+    showErrorMessages: true,
+    successDuration: 3000,
+    errorDuration: 5000
+  };
+  
+  return {
+    ...PRODUCT_TABLE_CONFIG,
+    
+    // Enhanced dashboard configuration
+    operations,
+    dataLoader,
+    notifications,
+    
+    // Tab configuration
+    tabTitle: 'Products',
+    tabIcon: 'pi pi-box',
+    tabOrder: 1,
+    
+    // Data binding signals
+    dataSignal: () => adminProductSearch.state().items,
+    loadingSignal: () => adminProductSearch.state().isLoading,
+    errorSignal: () => adminProductSearch.state().error,
+    
+    // Bridge methods for TabManagementComponent compatibility
+    createItem: async (item: ProductCreateRequest) => {
+      try {
+        await productHooks.createProduct(item);
+        messageService.add({
+          severity: 'success',
+          summary: 'Product Created! 🎉',
+          detail: `"${item.name}" has been successfully added to your inventory with ${item.quantity} units in stock.`
+        });
+        // Refresh data
+        await adminProductSearch.search({ page: 1, size: 10, sorts: [], filters: {} });
+      } catch (error: any) {
+        messageService.add({
+          severity: 'error',
+          summary: 'Creation Failed ❌',
+          detail: error.message || 'Unable to create the product. Please check your input and try again.'
+        });
+        throw error;
+      }
+    },
+    
+    updateItem: async (id: number, item: ProductUpdateRequest) => {
+      try {
+        await productHooks.updateProduct(id, item);
+        messageService.add({
+          severity: 'success',
+          summary: 'Product Updated! ✅',
+          detail: `"${item.name}" has been successfully updated with your latest changes.`
+        });
+        // Refresh data
+        await adminProductSearch.search({ page: 1, size: 10, sorts: [], filters: {} });
+      } catch (error: any) {
+        messageService.add({
+          severity: 'error',
+          summary: 'Update Failed ❌',
+          detail: error.message || 'Unable to update the product. Please check your changes and try again.'
+        });
+        throw error;
+      }
+    },
+    
+    deleteItem: async (id: number) => {
+      try {
+        const result = await productHooks.deleteProduct(id);
+        messageService.add({
+          severity: 'success',
+          summary: 'Product Deleted! 🗑️',
+          detail: `"${result.productName}" has been permanently removed from your inventory.`
+        });
+        // Refresh data
+        await adminProductSearch.search({});
+      } catch (error: any) {
+        messageService.add({
+          severity: 'error',
+          summary: 'Deletion Failed ❌',
+          detail: error.message || 'Unable to delete the product. It may be referenced in active orders.'
+        });
+        throw error;
+      }
+    }
+  };
+}

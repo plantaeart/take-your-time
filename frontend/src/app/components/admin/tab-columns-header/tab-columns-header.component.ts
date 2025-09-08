@@ -23,6 +23,7 @@ export class TabColumnsHeaderComponent {
   hierarchyConfig = input<HierarchyConfig | null>(null);
   isAllSelected = input<boolean>(false);
   gridTemplateColumns = input<string>(''); // Add grid template columns support
+  data = input<any[]>([]); // Add data input for dynamic range calculations
   
   // Event outputs
   sort = output<string>();
@@ -70,13 +71,78 @@ export class TabColumnsHeaderComponent {
    * Get filter button configuration for a column
    */
   getFilterButtonConfig(column: ColumnConfig): any {
-    return {
+    const config: any = {
       header: column.header,
       field: column.field,
       type: column.type || 'text',
       placeholder: `Filter by ${column.header}`,
       column: column
     };
+
+    // Add range filter properties if this is a range filter
+    if (column.filterType === 'range') {
+      const { min, max, step } = this.getCalculatedRangeValues(column);
+      
+      config.filterType = 'range';
+      config.min = min;
+      config.max = max;
+      config.step = step;
+      config.displayFormat = column.displayFormat;
+    }
+
+    return config;
+  }
+
+  /**
+   * Calculate min/max values for range filters based on actual data
+   */
+  private getCalculatedRangeValues(column: ColumnConfig): { min: number; max: number; step: number } {
+    const data = this.data();
+    
+    // Default fallbacks if no data is available
+    let min = column.filterMin ?? 0;
+    let max = column.filterMax ?? 100;
+    const step = column.filterStep ?? 1;
+    
+    // Calculate actual min/max from data if available
+    if (data.length > 0) {
+      const values = data
+        .map((item: any) => Number(item[column.field]))
+        .filter((value: number) => !isNaN(value));
+      
+      if (values.length > 0) {
+        const dataMin = Math.min(...values);
+        const dataMax = Math.max(...values);
+        
+        // If no filterMin/filterMax configured, use data-driven values
+        if (column.filterMin === undefined) {
+          min = Math.max(0, Math.floor(dataMin)); // Never go below 0, round down
+        }
+        
+        if (column.filterMax === undefined) {
+          // Round up max to a nice number for better UX
+          if (column.displayFormat === 'currency') {
+            max = Math.ceil(dataMax / 10) * 10; // Round up to nearest 10
+          } else if (column.field === 'quantity') {
+            max = Math.ceil(dataMax / 5) * 5; // Round up to nearest 5
+          } else if (column.displayFormat === 'rating') {
+            max = 5; // Ratings are always 0-5
+          } else {
+            max = Math.ceil(dataMax);
+          }
+        }
+        
+        // If filterMin/filterMax are configured, respect them but expand if data exceeds
+        if (column.filterMin !== undefined) {
+          min = Math.min(column.filterMin, dataMin);
+        }
+        if (column.filterMax !== undefined) {
+          max = Math.max(column.filterMax, dataMax);
+        }
+      }
+    }
+    
+    return { min, max, step };
   }
 
   /**

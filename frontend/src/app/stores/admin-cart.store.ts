@@ -118,6 +118,7 @@ export class AdminCartStore {
 
     try {
       const response = await firstValueFrom(this.adminCartService.clearUserCart(userId));      
+      
       // Backend returns {message: '...'} without success property
       if (response?.message && !response?.error) {
         this._lastUpdatedUserId.set(userId);

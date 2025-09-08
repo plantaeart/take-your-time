@@ -187,8 +187,8 @@ export class CartStore {
       
       this.messageService.add({
         severity: 'success',
-        summary: 'Added to Cart',
-        detail: `Product added to cart successfully`
+        summary: 'Added to Cart! 🛒',
+        detail: `Product successfully added to your cart (Quantity: ${quantity}).`
       });
       
       return true;

@@ -17,21 +17,6 @@ export function useAdminCart() {
   const addItemToCart = async (userId: number, payload: CartItemAddRequest): Promise<boolean> => {
     const success = await store.addItemToCart(userId, payload);
     
-    if (success) {
-      messageService.add({
-        severity: 'success',
-        summary: 'Success',
-        detail: 'Product added to cart successfully'
-      });
-    } else {
-      const error = store.error();
-      messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: error || 'Failed to add product to cart'
-      });
-    }
-    
     return success;
   };
 
@@ -40,21 +25,6 @@ export function useAdminCart() {
    */
   const updateCartItemQuantity = async (userId: number, productId: number, quantity: number): Promise<boolean> => {
     const success = await store.updateCartItemQuantity(userId, productId, quantity);
-    
-    if (success) {
-      messageService.add({
-        severity: 'success',
-        summary: 'Success',
-        detail: 'Cart item quantity updated successfully'
-      });
-    } else {
-      const error = store.error();
-      messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: error || 'Failed to update cart item quantity'
-      });
-    }
     
     return success;
   };
@@ -65,21 +35,6 @@ export function useAdminCart() {
   const removeCartItem = async (userId: number, productId: number): Promise<boolean> => {
     const success = await store.removeCartItem(userId, productId);
     
-    if (success) {
-      messageService.add({
-        severity: 'success',
-        summary: 'Success',
-        detail: 'Item removed from cart successfully'
-      });
-    } else {
-      const error = store.error();
-      messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: error || 'Failed to remove item from cart'
-      });
-    }
-    
     return success;
   };
 
@@ -88,22 +43,6 @@ export function useAdminCart() {
    */
   const clearUserCart = async (userId: number): Promise<boolean> => {
     const success = await store.clearUserCart(userId);
-    
-    if (success) {
-      messageService.add({
-        severity: 'success',
-        summary: 'Success',
-        detail: 'User cart cleared successfully'
-      });
-    } else {
-      const error = store.error();
-      messageService.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: error || 'Failed to clear user cart'
-      });
-    }
-    
     return success;
   };
 

@@ -405,6 +405,11 @@ export class RowTabComponent<T = any> {
     return action.condition(this.item());
   }
 
+  isCustomActionDisabled(action: any): boolean {
+    if (!action.disabled) return false;
+    return action.disabled(this.item());
+  }
+
   // ============= PRODUCT SELECT METHODS =============
   
   getSelectedProduct(column: ColumnConfig): any {

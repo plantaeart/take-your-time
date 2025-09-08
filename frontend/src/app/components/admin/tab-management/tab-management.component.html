@@ -1,6 +1,3 @@
-<!-- Toast for notifications -->
-<p-toast></p-toast>
-
 <!-- Confirmation dialog -->
 <p-confirmDialog></p-confirmDialog>
 
@@ -73,6 +70,7 @@
         [hierarchyConfig]="hierarchyConfig()"
         [isAllSelected]="isAllSelected()"
         [gridTemplateColumns]="gridTemplateColumns()"
+        [data]="data()"
         (sort)="onSort($event)"
         (filterApply)="onFilterApply($event.field, $event.value)"
         (filterClear)="onFilterClear($event)"
@@ -133,6 +131,7 @@
             [hierarchyConfig]="hierarchyConfig()"
             [isAllSelected]="false"
             [gridTemplateColumns]="childGridTemplateColumns()"
+            [data]="data()"
             (sort)="onSort($event)"
             (filterApply)="onFilterApply($event.field, $event.value)"
             (filterClear)="onFilterClear($event)"
@@ -140,9 +139,9 @@
           </app-tab-columns-header>
           
           <!-- Add Product Row (when adding cart item for this user) -->
-          @if (isAddingCartItem() && isAddingCartItemForUser(hierarchicalItem.data)) {
+          @if (currentChildAction() && isExecutingChildActionForParent(hierarchicalItem.data)) {
             <app-row-tab
-              [item]="newCartItemForDisplay()"
+              [item]="newChildDataForDisplay()"
               [columns]="getColumnsForLevel(1)"
               [config]="getConfigForLevel(1)"
               [isEditing]="true"
@@ -151,8 +150,8 @@
               [hierarchyLevel]="1"
               [canExpand]="false"
               [hierarchyConfig]="hierarchyConfig()"
-              (save)="saveNewCartItem($event)"
-              (cancel)="cancelAddCartItem()">
+              (save)="saveNewChildData($event)"
+              (cancel)="cancelChildAction()">
             </app-row-tab>
           }
           

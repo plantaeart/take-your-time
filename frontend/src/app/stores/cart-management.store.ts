@@ -115,8 +115,8 @@ export class CartManagementStore {
 
       this.messageService.add({
         severity: 'success',
-        summary: 'Item Added',
-        detail: 'Item successfully added to user cart'
+        summary: 'Item Added! 🛒',
+        detail: `Product ${item.productId} successfully added to user ${userId}'s cart with quantity ${item.quantity}.`
       });
 
       // Refresh cart details if currently viewing this user's cart
@@ -127,8 +127,8 @@ export class CartManagementStore {
       this._error.set(error.message || 'Failed to add item to cart');
       this.messageService.add({
         severity: 'error',
-        summary: 'Add Failed',
-        detail: error.message || 'Failed to add item to cart'
+        summary: 'Add Failed! ❌',
+        detail: error.message || `Failed to add product ${item.productId} to user ${userId}'s cart.`
       });
       throw error;
     } finally {
@@ -193,12 +193,6 @@ export class CartManagementStore {
         timestamp: new Date()
       });
 
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Item Removed',
-        detail: 'Item removed from cart successfully'
-      });
-
       // Refresh cart details if currently viewing this user's cart
       if (this._selectedCartDetails()?.userId === userId) {
         await this.loadUserCartDetails(userId);
@@ -232,23 +226,12 @@ export class CartManagementStore {
         timestamp: new Date()
       });
 
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Cart Cleared',
-        detail: 'User cart cleared successfully'
-      });
-
       // Refresh cart details if currently viewing this user's cart
       if (this._selectedCartDetails()?.userId === userId) {
         await this.loadUserCartDetails(userId);
       }
     } catch (error: any) {
       this._error.set(error.message || 'Failed to clear cart');
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Clear Failed',
-        detail: error.message || 'Failed to clear cart'
-      });
       throw error;
     } finally {
       this._isDeleting.set(false);

@@ -18,12 +18,13 @@ export interface AdminUserCartItem {
  * Flattened cart data structure with user information
  */
 export interface AdminUserCartData {
-  userId: number;
-  userName: string;
+  id: number;
+  username: string;
   email: string;
   firstname: string | null;
   isActive: boolean;
   cart: AdminUserCartItem[];
+  cartTotalValue: number;
 }
 
 /**

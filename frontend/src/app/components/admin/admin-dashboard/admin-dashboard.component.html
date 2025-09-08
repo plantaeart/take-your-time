@@ -1,11 +1,8 @@
-<!-- Toast for notifications -->
-<p-toast></p-toast>
-
 <!-- Admin Dashboard Header -->
 <div class="admin-header">
   <div class="admin-info">
     <img src="assets/icons/icon-512x512.png" alt="Logo" class="admin-logo">
-    <span class="admin-email">Welcome {{ adminEmail }}</span>
+    <span class="admin-email">Welcome {{ getAdminEmail() }}</span>
   </div>
   <app-sign-out-button [isAdmin]="true"></app-sign-out-button>
 </div>
@@ -14,10 +11,11 @@
 <div class="admin-content">
   <p-tabView [scrollable]="true" styleClass="admin-tabs">
     
+    @if (dashboardConfig) {
     <!-- Products Management Tab -->
     <p-tabPanel header="Products" leftIcon="pi pi-box">
       <app-tab-management 
-        [config]="productTableConfig"
+        [config]="dashboardConfig.tabs.products"
         [data]="productData()"
         [loading]="isLoadingProducts()"
         [totalRecordsInput]="adminProductSearch.state().total"
@@ -28,7 +26,7 @@
     <!-- Users Management Tab -->
     <p-tabPanel header="Users" leftIcon="pi pi-users">
       <app-tab-management 
-        [config]="userTableConfig"
+        [config]="dashboardConfig.tabs.users"
         [data]="userData()"
         [loading]="isLoadingUsers()"
         [totalRecordsInput]="adminUserSearch.state().total"
@@ -39,13 +37,15 @@
     <!-- User Carts Management Tab -->
     <p-tabPanel header="User Carts" leftIcon="pi pi-shopping-cart">
       <app-tab-management 
-        [config]="cartTableConfig"
+        #cartTabManagement
+        [config]="dashboardConfig.tabs.carts"
         [data]="cartData()"
         [loading]="isLoadingCarts()"
         [totalRecordsInput]="adminCartSearch.state().total"
         (dataLoad)="onCartDataLoad($event)">
       </app-tab-management>
     </p-tabPanel>
+    }
 
     <!-- User Wishlists Management Tab -->
     <p-tabPanel header="User Wishlists" leftIcon="pi pi-heart">
