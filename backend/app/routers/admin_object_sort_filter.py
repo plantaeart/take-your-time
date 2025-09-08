@@ -179,9 +179,9 @@ async def search_cart_admin(
     Filters format: {"search": "john", "userId": 123, "isActive": true}
     Sorts format: [{"field": "username", "direction": "asc"}]
     
-    Available search fields: username, email (via global search)
-    Available filter fields: userId, username, email, isActive, createdAt, updatedAt
-    Available sort fields: userId, username, email, isActive, createdAt, updatedAt
+    Available search fields: username, email, firstname (via global search)
+    Available filter fields: id, username, email, firstname, isActive, cartTotalValue, createdAt, updatedAt
+    Available sort fields: id, username, email, firstname, isActive, cartTotalValue, createdAt, updatedAt
     """
     # Parse JSON filters and sorts
     try:
@@ -193,24 +193,31 @@ async def search_cart_admin(
             detail="Invalid JSON format in filters or sorts"
         )
     
-    # Define allowed fields for user search (we'll search users, not carts directly)
-    allowed_fields = [
-        "id", "username", "email", "isActive", "isAdmin", "createdAt", "updatedAt"
-    ]
+    # Separate user fields from cart-specific fields
+    user_fields = ["id", "username", "email", "firstname", "isActive", "isAdmin", "createdAt", "updatedAt"]
+    cart_fields = ["cartTotalValue"]
+    
+    # Split filters into user and cart categories
+    user_filters = {k: v for k, v in parsed_filters.items() if k in user_fields or k == "search"}
+    cart_filters = {k: v for k, v in parsed_filters.items() if k in cart_fields}
+    
+    # Split sorts into user and cart categories
+    user_sorts = [s for s in parsed_sorts if s.get("field") in user_fields]
+    cart_sorts = [s for s in parsed_sorts if s.get("field") in cart_fields]
     
     try:
-        # Add filter to exclude admin users (same pattern as regular user search)
-        if "isAdmin" not in parsed_filters:
-            parsed_filters["isAdmin"] = False
+        # Add filter to exclude admin users
+        if "isAdmin" not in user_filters:
+            user_filters["isAdmin"] = False
         
-        # Use generic admin search utility for users
+        # First, search users with user-specific filters and sorts
         result = await admin_search_objects(
             collection_name="users",
             page=page,
             limit=limit,
-            filters=parsed_filters,
-            sorts=parsed_sorts,
-            allowed_fields=allowed_fields
+            filters=user_filters,
+            sorts=user_sorts,
+            allowed_fields=user_fields
         )
         
         # Transform user results to cart format by adding cart information
@@ -229,23 +236,65 @@ async def search_cart_admin(
                 # User has no cart, create empty cart entry
                 from app.schemas.admin_user_cart import AdminUserCartData
                 empty_cart = AdminUserCartData(
-                    userId=user_doc["id"],
-                    userName=user_doc.get("username", f"User {user_doc['id']}"),
+                    id=user_doc["id"],
+                    username=user_doc.get("username", f"User {user_doc['id']}"),
                     email=user_doc.get("email", f"user{user_doc['id']}@example.com"),
                     firstname=user_doc.get("firstname"),
                     isActive=user_doc.get("isActive", True),
-                    cart=[]
+                    cart=[],
+                    cartTotalValue=0.0
                 )
                 enhanced_user_carts.append(empty_cart)
         
+        # Apply cart-specific filters
+        if cart_filters:
+            filtered_carts = []
+            for cart_data in enhanced_user_carts:
+                include_cart = True
+                
+                for field, value in cart_filters.items():
+                    if field == "cartTotalValue":
+                        cart_total = cart_data.cartTotalValue
+                        if isinstance(value, list) and len(value) == 2:
+                            # Range filter [min, max]
+                            min_val, max_val = value
+                            if cart_total < min_val or cart_total > max_val:
+                                include_cart = False
+                                break
+                        elif isinstance(value, (int, float)):
+                            # Exact match
+                            if cart_total != value:
+                                include_cart = False
+                                break
+                
+                if include_cart:
+                    filtered_carts.append(cart_data)
+            
+            enhanced_user_carts = filtered_carts
+        
+        # Apply cart-specific sorting
+        if cart_sorts:
+            for sort_config in reversed(cart_sorts):  # Apply in reverse order for stable sorting
+                field = sort_config.get("field")
+                direction = sort_config.get("direction", "asc")
+                
+                if field == "cartTotalValue":
+                    enhanced_user_carts.sort(
+                        key=lambda x: x.cartTotalValue,
+                        reverse=(direction == "desc")
+                    )
+        
+        # Update pagination info based on filtered results
+        total_filtered = len(enhanced_user_carts)
+        
         return AdminUserCartListResponse(
             items=enhanced_user_carts,
-            total=result["total"],
-            page=result["page"],
-            limit=result["limit"],
-            totalPages=result["totalPages"],
-            hasNext=result["hasNext"],
-            hasPrev=result["hasPrev"]
+            total=total_filtered,
+            page=page,
+            limit=limit,
+            totalPages=(total_filtered + limit - 1) // limit,
+            hasNext=page * limit < total_filtered,
+            hasPrev=page > 1
         )
         
     except Exception as e:

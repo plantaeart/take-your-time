@@ -29,12 +29,16 @@ async def _transform_user_cart_simple(cart_doc: Dict[str, Any], user_doc: Dict[s
             )
             cart_items.append(cart_item)
     
+    # Calculate cart total value
+    cart_total_value = sum(item.quantity * item.productPrice for item in cart_items)
+    
     # Create flattened user cart data structure
     return AdminUserCartData(
-        userId=user_doc["id"],
-        userName=user_doc.get("username", f"User {user_doc['id']}"),
+        id=user_doc["id"],
+        username=user_doc.get("username", f"User {user_doc['id']}"),
         email=user_doc.get("email", f"user{user_doc['id']}@example.com"),
         firstname=user_doc.get("firstname"),
         isActive=user_doc.get("isActive", True),
-        cart=cart_items
+        cart=cart_items,
+        cartTotalValue=cart_total_value
     )

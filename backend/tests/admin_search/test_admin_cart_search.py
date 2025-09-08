@@ -55,7 +55,7 @@ class TestAdminUserCartSearch:
         headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
         
         # Test user ID filter
-        filters: Dict[str, Any] = {"userId": 123}
+        filters: Dict[str, Any] = {"id": 123}
         filtersJson: str = json.dumps(filters)
         
         response = client.get(
@@ -106,7 +106,7 @@ class TestAdminUserCartSearch:
         
         # Test multiple sort fields
         sorts: List[Dict[str, str]] = [
-            {"field": "userId", "direction": "asc"},
+            {"field": "id", "direction": "asc"},
             {"field": "createdAt", "direction": "desc"}
         ]
         sortsJson: str = json.dumps(sorts)
@@ -147,7 +147,7 @@ class TestAdminUserCartSearch:
         
         # Test complex filtering and sorting
         filters: Dict[str, Any] = {
-            "userId": 123,
+            "id": 123,
             "createdAt": ["2024-01-01", "2024-06-30"]
         }
         sorts: List[Dict[str, str]] = [
@@ -215,19 +215,21 @@ class TestAdminUserCartSearch:
             cart: Dict[str, Any] = responseData["items"][0]  # Changed from 'carts' to 'items'
             
             # Verify flattened cart structure
-            assert "userId" in cart
-            assert "userName" in cart
+            assert "id" in cart
+            assert "username" in cart
             assert "email" in cart
             assert "firstname" in cart  # Can be null
             assert "isActive" in cart
             assert "cart" in cart
+            assert "cartTotalValue" in cart  # New field
             
             # Verify data types
-            assert isinstance(cart["userId"], int)
-            assert isinstance(cart["userName"], str)
+            assert isinstance(cart["id"], int)
+            assert isinstance(cart["username"], str)
             assert isinstance(cart["email"], str)
             assert isinstance(cart["isActive"], bool)
             assert isinstance(cart["cart"], list)
+            assert isinstance(cart["cartTotalValue"], (int, float))
             
             # If cart has items, verify cart item structure
             if cart["cart"]:
@@ -310,19 +312,24 @@ class TestAdminUserCartSearch:
         # Find our test user's cart
         testUserCart: Dict[str, Any] = None
         for cart in searchData["items"]:
-            if cart["userName"] == "testuser":
+            if cart["username"] == "testuser":
                 testUserCart = cart
                 break
         
         assert testUserCart is not None, "Test user cart not found in search results"
         
         # Verify flattened structure
-        assert testUserCart["userName"] == "testuser"
+        assert testUserCart["username"] == "testuser"
         assert testUserCart["email"] == "testuser@example.com"
         assert testUserCart["firstname"] == "Test"
         assert testUserCart["isActive"] is True
         assert isinstance(testUserCart["cart"], list)
         assert len(testUserCart["cart"]) == 1
+        
+        # Verify cart total value
+        expectedTotal = 2 * 29.99  # quantity * price
+        assert "cartTotalValue" in testUserCart
+        assert testUserCart["cartTotalValue"] == expectedTotal
         
         # Verify cart item structure
         cartItem: Dict[str, Any] = testUserCart["cart"][0]
@@ -330,3 +337,44 @@ class TestAdminUserCartSearch:
         assert cartItem["productName"] == "Test Cart Product"
         assert cartItem["quantity"] == 2
         assert cartItem["productPrice"] == 29.99
+
+    def test_search_carts_cart_total_value_filtering_and_sorting(self, client: TestClient, admin_token: str) -> None:
+        """Test filtering and sorting by cart total value."""
+        headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
+        
+        # Test cart total value range filtering
+        filters: Dict[str, Any] = {"cartTotalValue": [50.0, 100.0]}  # Range filter
+        response = client.get("/api/admin/cart/search", 
+                             params={"filters": json.dumps(filters)}, 
+                             headers=headers)
+        assert response.status_code == HTTPStatus.OK.value
+        
+        # Test cart total value sorting
+        sorts: List[Dict[str, str]] = [{"field": "cartTotalValue", "direction": "desc"}]
+        response = client.get("/api/admin/cart/search", 
+                             params={"sorts": json.dumps(sorts)}, 
+                             headers=headers)
+        assert response.status_code == HTTPStatus.OK.value
+        
+        responseData: Dict[str, Any] = response.json()
+        
+        # Verify sorting order if there are multiple items
+        if len(responseData["items"]) > 1:
+            for i in range(len(responseData["items"]) - 1):
+                current_total = responseData["items"][i]["cartTotalValue"]
+                next_total = responseData["items"][i + 1]["cartTotalValue"]
+                assert current_total >= next_total, "Cart totals should be sorted in descending order"
+
+    def test_search_carts_cart_item_filtering(self, client: TestClient, admin_token: str) -> None:
+        """Test filtering by cart item properties (future feature)."""
+        headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
+        
+        # Test filtering by product name within cart items
+        # This would require enhanced backend support for nested filtering
+        filters: Dict[str, Any] = {"cart.productName": "Test Product"}
+        response = client.get("/api/admin/cart/search", 
+                             params={"filters": json.dumps(filters)}, 
+                             headers=headers)
+        
+        # For now, this should still return OK but may not filter by nested fields
+        assert response.status_code == HTTPStatus.OK.value
