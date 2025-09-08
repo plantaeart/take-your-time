@@ -51,12 +51,9 @@ export class StorageTestComponent implements OnInit {
     if (this.storageAvailable) {
       const testData = `Test-${Date.now()}`;
       localStorage.setItem('test_value', testData);
-      console.log('Set test value:', testData);
       
       // Immediate check
       const retrieved = localStorage.getItem('test_value');
-      console.log('Retrieved test value:', retrieved);
-      console.log('Values match:', retrieved === testData);
       
       this.checkStorage();
     }
@@ -72,12 +69,10 @@ export class StorageTestComponent implements OnInit {
   showAll() {
     if (this.storageAvailable) {
       this.allKeys = Object.keys(localStorage);
-      console.log('All localStorage keys:', this.allKeys);
       
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         const value = localStorage.getItem(key || '');
-        console.log(`localStorage[${key}]:`, value?.substring(0, 50) + (value && value.length > 50 ? '...' : ''));
       }
     }
   }

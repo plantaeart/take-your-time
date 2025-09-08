@@ -31,6 +31,9 @@ export interface ColumnConfig {
   filterMin?: number; // Minimum value for range filters
   filterMax?: number; // Maximum value for range filters
   filterStep?: number; // Step size for range filters
+  // Hierarchy configuration
+  hierarchyLevel?: number; // Visual indentation level (0 = root, 1 = first child, etc.)
+  parentField?: string; // Field that references parent ID for building hierarchy
 }
 
 export interface ActionConfig {
@@ -82,6 +85,9 @@ export interface TableManagementConfig<T = any> {
   dataKey: string; // Primary key field
   globalFilterFields?: string[];
   
+  // N-Level Hierarchy Configuration
+  hierarchyConfig?: HierarchyConfig<T>;
+  
   // CRUD Operations - will be provided by the component using this config
   loadData?: (page: number, limit: number, filters: any) => Promise<{ data: T[]; total: number }>;
   createItem?: (item: any) => Promise<any>;
@@ -89,4 +95,38 @@ export interface TableManagementConfig<T = any> {
   deleteItem?: (id: any) => Promise<any>;
   bulkDelete?: (ids: any[]) => Promise<any>;
   exportData?: () => Promise<T[]>;
+}
+
+// Enhanced hierarchy configuration for N-level depth
+export interface HierarchyConfig<T = any> {
+  enabled: boolean;
+  maxDepth?: number; // Maximum depth levels (undefined = unlimited)
+  parentIdField: string; // Field that contains parent ID (e.g., 'parentId', 'userId') - for flattened data
+  levelField?: string; // Optional field that explicitly stores hierarchy level
+  
+  // NEW: Support for attribute-based hierarchy (nested arrays)
+  childAttributeField?: string; // Field that contains child array (e.g., 'cart', 'children')
+  
+  // Child data loading strategies
+  loadStrategy: 'lazy' | 'eager' | 'hybrid';
+  childDataLoader: (parentId: any, level: number) => Promise<T[]>;
+  
+  // Visual configuration
+  indentSize?: number; // Pixels per hierarchy level (default: 20)
+  expandIcon?: string; // Icon for expandable rows (default: 'pi pi-chevron-right')
+  collapseIcon?: string; // Icon for collapsible rows (default: 'pi pi-chevron-down')
+  
+  // Level-specific configurations
+  levelConfigs?: LevelConfig<T>[]; // Different configs per hierarchy level
+}
+
+// Configuration for specific hierarchy levels
+export interface LevelConfig<T = any> {
+  level: number; // Hierarchy level (0 = root, 1 = first child, etc.)
+  columns?: ColumnConfig[]; // Override columns for this level
+  actions?: ActionConfig; // Override actions for this level
+  pagination?: PaginationConfig; // Override pagination for this level
+  search?: SearchConfig; // Override search for this level
+  rowClass?: string; // CSS class for rows at this level
+  allowExpansion?: boolean; // Whether rows at this level can be expanded
 }

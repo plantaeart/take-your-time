@@ -201,15 +201,7 @@ const productActions: ActionConfig = {
   canBulkDelete: true,
   canExport: true,
   confirmDelete: true,
-  customActions: [
-    {
-      label: 'Duplicate',
-      icon: 'pi pi-copy',
-      action: 'duplicate',
-      severity: 'info',
-      condition: (product: Product) => product.quantity > 0
-    }
-  ]
+  customActions: [] // Removed duplicate action
 };
 
 // Search configuration

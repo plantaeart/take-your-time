@@ -4,6 +4,7 @@ import { AdminSearchParams, CartSearchResponse, WishlistSearchResponse } from '.
 import { ProductListResponse, Product } from '../models/product.model';
 import { UserListResponse, User } from '../models/user.model';
 import { ContactSubmissionsResponse, ContactSubmission } from '../models/contact.model';
+import { AdminUserCartData } from '../models/admin-user-cart.model';
 
 /**
  * Entity types supported by admin search
@@ -78,7 +79,7 @@ export class AdminSearchStore {
     sorts: []
   });
 
-  private _cartsState = signal<SearchState<any>>({
+  private _cartsState = signal<SearchState<AdminUserCartData>>({
     items: [],
     total: 0,
     page: 1,
@@ -270,7 +271,7 @@ export class AdminSearchStore {
       const response = await this.adminSearchService.searchCarts(searchParams).toPromise();
       this._cartsState.update(state => ({
         ...state,
-        items: response!.carts,
+        items: response!.items,
         total: response!.total,
         page: response!.page,
         limit: response!.limit,

@@ -1,4 +1,31 @@
-<div class="table-row" [class.editing]="isEditing()" [class.selected]="isSelected()">
+<div [class]="rowClass()" 
+     [class.editing]="isEditing()" 
+     [class.selected]="isSelected()">
+  
+  <!-- Hierarchy indentation spacers for child levels -->
+  @for (i of Array(hierarchyLevel()); track i) {
+    <div class="hierarchy-indent-spacer"></div>
+  }
+  
+  <!-- Hierarchy Expansion Button (only for first column area) -->
+  @if (canExpand()) {
+    <div class="expansion-cell">
+      <p-button 
+        [icon]="expandIcon()" 
+        [text]="true"
+        size="small"
+        [severity]="isCartEmpty() ? 'help' : 'secondary'"
+        [disabled]="isCartEmpty()"
+        [loading]="isLoadingChildren()"
+        (onClick)="onToggleExpansion()"
+        [pTooltip]="isCartEmpty() ? 'No items in cart' : (isExpanded() ? 'Collapse' : 'Expand')">
+      </p-button>
+    </div>
+  } @else if (hierarchyLevel() > 0) {
+    <!-- Spacer for non-expandable child items -->
+    <div class="expansion-cell hierarchy-spacer"></div>
+  }
+
   <!-- Select Checkbox -->
   @if (showSelect()) {
     <div class="table-cell select-cell">
@@ -55,6 +82,20 @@
             (onClick)="onDelete()"
             pTooltip="Delete">
           </p-button>
+        }
+        
+        <!-- Custom Actions -->
+        @if (customActions() && customActions().length > 0) {
+          @for (action of customActions(); track action.action) {
+            <p-button 
+              [icon]="action.icon" 
+              [severity]="action.severity || 'secondary'"
+              size="small"
+              [text]="true"
+              (onClick)="onCustomAction(action)"
+              [pTooltip]="action.label">
+            </p-button>
+          }
         }
       </div>
     }
@@ -127,6 +168,26 @@
                 [label]="column.header || column.field"
                 [invalid]="!isFieldValid(column)">
               </app-checkbox-input>
+            }
+            @case ('quantity-controls') {
+              <app-quantity-controls
+                [productId]="getColumnValue('productId')"
+                [currentQuantity]="getColumnValue(column)"
+                [maxQuantity]="getColumnValue('productStockQuantity')"
+                [minQuantity]="1"
+                [disabled]="!getColumnValue('productId') || getColumnValue('productStockQuantity') === 0"
+                [showLabel]="false"
+                [size]="'small'"
+                [hasError]="!isFieldValid(column)"
+                (quantityChange)="setColumnValue(column, $event)">
+              </app-quantity-controls>
+            }
+            @case ('product-select') {
+              <app-product-select
+                [selectedProduct]="null"
+                [excludeProductIds]="getExistingCartProductIds()"
+                (productChange)="onProductSelected($event)">
+              </app-product-select>
             }
             @default {
               <!-- Fallback to text input -->

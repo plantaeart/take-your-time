@@ -7,10 +7,14 @@ import { SignOutButtonComponent } from '../../ui/sign-out-button/sign-out-button
 import { TabManagementComponent } from '../tab-management/tab-management.component';
 import { useAuth } from '../../../hooks/auth.hooks';
 import { useProducts } from '../../../hooks/product.hooks';
-import { useAdminProductSearch, useAdminUserSearch, TabManagementConverter } from '../../../hooks/admin-search.hooks';
+import { useAdminProductSearch, useAdminUserSearch, useAdminCartSearch, TabManagementConverter } from '../../../hooks/admin-search.hooks';
 import { useUserManagement } from '../../../hooks/user-management.hooks';
+import { useCartManagement } from '../../../hooks/cart-management.hooks';
 import { PRODUCT_TABLE_CONFIG } from '../object-management-config/product.config';
 import { USER_TABLE_CONFIG } from '../object-management-config/user.config';
+import { AdminSearchStore } from '../../../stores/admin-search.store';
+import { ADMIN_USER_CART_TABLE_CONFIG } from '../object-management-config/admin-user-cart.config';
+import { AdminUserCartData } from '../../../models/admin-user-cart.model';
 import { Product, ProductCreateRequest, ProductUpdateRequest } from '../../../models/product.model';
 import { User } from '../../../models/user.model';
 import { AdminSearchParams } from '../../../models/adminSearch.model';
@@ -32,6 +36,7 @@ import { AdminSearchParams } from '../../../models/adminSearch.model';
 export class AdminDashboardComponent implements OnInit {
   // Services
   private messageService = inject(MessageService);
+  private adminSearchStore = inject(AdminSearchStore);
   
   // Use auth hook to get admin user info
   auth = useAuth();
@@ -47,6 +52,12 @@ export class AdminDashboardComponent implements OnInit {
   
   // Use user management hook for CRUD operations
   userManagement = useUserManagement();
+  
+  // Use cart management hook for cart CRUD operations
+  cartManagement = useCartManagement();
+  
+  // Use admin cart search hook (now returns AdminUserCartData)
+  adminCartSearch = useAdminCartSearch();
   
   // Product table configuration with CRUD operations
   productTableConfig = {
@@ -75,7 +86,6 @@ export class AdminDashboardComponent implements OnInit {
         // Refresh the data
         await this.onProductDataLoad({ page: 1, size: 10, sorts: [], filters: {} });
       } catch (error: any) {
-        console.error('❌ AdminDashboard createItem error:', error);
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
@@ -142,6 +152,19 @@ export class AdminDashboardComponent implements OnInit {
   
   // User loading state computed from admin search state  
   isLoadingUsers = computed(() => this.adminUserSearch.state().isLoading);
+
+  // Cart data computed from admin search state (original format for hierarchy)
+  cartData = computed(() => {
+    const state = this.adminCartSearch.state();
+    
+    // Filter out admin users (userId 1 is typically the admin)
+    const nonAdminCarts = state.items.filter((cart: AdminUserCartData) => cart.userId !== 1);
+    
+    return nonAdminCarts;
+  });
+
+  // Cart loading state computed from admin search state  
+  isLoadingCarts = computed(() => this.adminCartSearch.state().isLoading);
 
   // User table configuration with CRUD operations using hooks
   userTableConfig = {
@@ -214,10 +237,77 @@ export class AdminDashboardComponent implements OnInit {
     }
   };
 
+  // Cart table configuration with CRUD operations using new flattened structure
+  cartTableConfig = {
+    ...ADMIN_USER_CART_TABLE_CONFIG,
+    deleteItem: async (itemData: any) => {
+      try {
+        // Handle different types of deletion based on item level
+        if (itemData.hasOwnProperty('productId') && itemData.hasOwnProperty('parentUserId')) {
+          // This is a cart item (level 1) - remove from cart
+          const userId = itemData.parentUserId;
+          const productId = itemData.productId;
+          
+          await this.cartManagement.removeItemFromUserCart(userId, productId);
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Success',
+            detail: 'Item removed from cart successfully'
+          });
+        } else if (itemData.hasOwnProperty('userId')) {
+          // This is a user (level 0) - clear their entire cart
+          const userId = itemData.userId;
+          
+          await this.cartManagement.clearUserCart(userId);
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Success',
+            detail: 'User cart cleared successfully'
+          });
+        }
+        
+        // Refresh the data
+        await this.onCartDataLoad({ page: 1, size: 25, sorts: [], filters: {} });
+      } catch (error: any) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: error.message || 'Failed to delete item'
+        });
+        throw error;
+      }
+    },
+    executeCustomAction: async (action: string, userId: number) => {
+      try {
+        if (action === 'clear-cart') {
+          await this.cartManagement.clearUserCart(userId);
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Success',
+            detail: 'Cart cleared successfully'
+          });
+        } else if (action === 'add-product') {
+          // The add-product action is now handled directly in the tab-management component
+          // No additional action needed here as the UI is handled by the component
+        }
+        // Refresh the data
+        await this.onCartDataLoad({ page: 1, size: 25, sorts: [], filters: {} });
+      } catch (error: any) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: error.message || `Failed to ${action}`
+        });
+        throw error;
+      }
+    }
+  };
+
   ngOnInit(): void {
-    // Trigger initial data load for both products and users
+    // Trigger initial data load for products, users, and carts
     this.onProductDataLoad({ page: 1, size: 25, sorts: [], filters: {} });
     this.onUserDataLoad({ page: 1, size: 25, sorts: [], filters: {} });
+    this.onCartDataLoad({ page: 1, size: 25, sorts: [], filters: {} });
   }
 
   /**
@@ -233,7 +323,7 @@ export class AdminDashboardComponent implements OnInit {
     try {
       await this.adminProductSearch.search(searchParams);
     } catch (error) {
-      console.error('Failed to load products:', error);
+      // Error loading products
     }
   }
 
@@ -250,7 +340,24 @@ export class AdminDashboardComponent implements OnInit {
     try {
       await this.adminUserSearch.search(searchParams);
     } catch (error) {
-      console.error('Failed to load users:', error);
+      // Error loading users
+    }
+  }
+
+  /**
+   * Handle data load requests from cart tab-management component
+   */
+  async onCartDataLoad(event: { page: number; size: number; sorts: any[]; filters: any }): Promise<void> {
+    try {
+      // Convert tab-management event to AdminSearchParams using the converter
+      const searchParams = TabManagementConverter.convertTabManagementEvent(
+        event,
+        ADMIN_USER_CART_TABLE_CONFIG.globalFilterFields || ['userName', 'email', 'firstname']
+      );
+      
+      await this.adminCartSearch.search(searchParams);
+    } catch (error) {
+      // Error loading cart data
     }
   }
 

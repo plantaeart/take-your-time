@@ -1,0 +1,124 @@
+/* Main header styling */
+.table-grid-header {
+  display: grid; /* Use CSS Grid for precise alignment */
+  /* grid-template-columns set dynamically via [style.grid-template-columns] */
+  gap: 0;
+  background-color: var(--surface-section);
+  border-bottom: 2px solid var(--surface-border);
+  font-weight: 600;
+  color: var(--text-color);
+  min-width: max-content;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* Child level header - uses same design as parent but with subtle styling */
+.table-grid-header.hierarchy-level-1 {
+  background-color: var(--surface-50);
+  border-bottom: 1px solid var(--surface-border);
+  font-weight: 500;
+  margin-top: 0.5rem;
+}
+
+/* Header cell styling - works for both grid layouts */
+.header-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-right: 1px solid var(--surface-border);
+  min-height: 3rem;
+}
+
+.header-cell:last-child {
+  border-right: none;
+}
+
+.header-cell.select-header {
+  justify-content: center;
+  padding: 0.5rem 0.3rem;
+  min-height: 3rem;
+}
+
+.header-cell.actions-header {
+  justify-content: center;
+  padding: 0.5rem 0.3rem;
+  min-height: 3rem;
+  font-weight: 600;
+  color: var(--text-color);
+  text-align: center;
+}
+
+.header-cell.data-header {
+  overflow: hidden;
+}
+
+/* Child header adjustments - smaller cells for child level */
+.table-grid-header.hierarchy-level-1 .header-cell {
+  min-height: 2.5rem;
+  padding: 0.4rem 0.5rem;
+}
+
+.table-grid-header.hierarchy-level-1 .header-cell.select-header,
+.table-grid-header.hierarchy-level-1 .header-cell.actions-header {
+  padding: 0.4rem 0.3rem;
+  min-height: 2.5rem;
+}
+
+/* Column header content layout */
+.column-header-content {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.column-title {
+  font-weight: 600;
+  color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Child header column titles - more subtle styling */
+.table-grid-header.hierarchy-level-1 .column-title {
+  font-weight: 500;
+  color: var(--text-color-secondary);
+  font-size: 0.9rem;
+}
+
+/* Sort and filter icons */
+.sort-icon {
+  cursor: pointer;
+  color: var(--text-color-secondary);
+  transition: color 0.2s ease;
+}
+
+.sort-icon:hover {
+  color: var(--primary-color);
+}
+
+.filter-button {
+  margin-left: auto;
+}
+
+/* Hierarchy level styling */
+.hierarchy-level-0 {
+  font-weight: 500;
+  background-color: var(--surface-0);
+}
+
+.hierarchy-level-1 {
+  background-color: var(--surface-50);
+  border-left: 2px solid var(--primary-color-300);
+}
+
+/* Hierarchy indentation spacers - same as row component */
+.hierarchy-indent-spacer {
+  width: 2rem;
+  min-width: 2rem;
+  flex-shrink: 0;
+}

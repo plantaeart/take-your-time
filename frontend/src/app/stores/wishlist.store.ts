@@ -56,14 +56,6 @@ export class WishlistStore {
         if (this.isValidWishlistData(wishlistData)) {
           this._wishlist.set(wishlistData);
           this.isInitializedFromStorage = true;
-          
-          if (environment.debug) {
-            console.log('Wishlist restored from localStorage - items:', wishlistData.totalItems);
-          }
-        }
-      } else {
-        if (environment.debug) {
-          console.log('No wishlist found in localStorage for user:', userId);
         }
       }
     } catch (error) {
@@ -76,9 +68,6 @@ export class WishlistStore {
    * Public method to initialize wishlist - call this after authentication is established
    */
   initializeWishlist(): void {
-    if (environment.debug) {
-      console.log('WishlistStore.initializeWishlist() called - isInitializedFromStorage:', this.isInitializedFromStorage);
-    }
     this.initializeWishlistFromStorage();
   }
 
@@ -95,10 +84,6 @@ export class WishlistStore {
           `${this.WISHLIST_STORAGE_KEY}_${userId}`,
           JSON.stringify(currentWishlist)
         );
-        
-        if (environment.debug) {
-          console.log('Wishlist saved to localStorage - items:', currentWishlist.totalItems);
-        }
       } catch (error) {
         console.error('Error saving wishlist to localStorage:', error);
       }
@@ -113,10 +98,6 @@ export class WishlistStore {
     if (userId) {
       try {
         localStorage.removeItem(`${this.WISHLIST_STORAGE_KEY}_${userId}`);
-        
-        if (environment.debug) {
-          console.log('Wishlist cleared from localStorage');
-        }
       } catch (error) {
         console.error('Error clearing wishlist from localStorage:', error);
       }
@@ -161,10 +142,6 @@ export class WishlistStore {
       
       // Save to localStorage after successful load
       this.saveWishlistToStorage();
-      
-      if (environment.debug) {
-        console.log('Wishlist loaded for user:', wishlist.userId, 'with', wishlist.totalItems, 'items');
-      }
     } catch (error: any) {
       console.error('Failed to load wishlist:', error);
       
@@ -244,10 +221,6 @@ export class WishlistStore {
         detail: 'Product added to wishlist successfully'
       });
       
-      if (environment.debug) {
-        console.log(`Added product ${productId} to wishlist`);
-      }
-      
       return true;
     } catch (error: any) {
       // Rollback to previous state on error
@@ -303,10 +276,6 @@ export class WishlistStore {
         summary: 'Item Removed',
         detail: 'Product removed from wishlist'
       });
-      
-      if (environment.debug) {
-        console.log(`Removed product ${productId} from wishlist`);
-      }
       
       return true;
     } catch (error: any) {
@@ -364,10 +333,6 @@ export class WishlistStore {
         detail: 'All items removed from wishlist'
       });
       
-      if (environment.debug) {
-        console.log('Wishlist cleared');
-      }
-      
       return true;
     } catch (error: any) {
       // Rollback to previous state on error
@@ -412,10 +377,6 @@ export class WishlistStore {
     
     // Clear wishlist from localStorage when resetting
     this.clearWishlistFromStorage();
-    
-    if (environment.debug) {
-      console.log('Wishlist state reset and cleared from localStorage');
-    }
   }
 
   /**
@@ -452,10 +413,6 @@ export class WishlistStore {
       
       // Update localStorage with fresh data
       this.saveWishlistToStorage();
-      
-      if (environment.debug) {
-        console.log('Wishlist refreshed from database - items:', wishlist.totalItems);
-      }
     } catch (error: any) {
       console.error('Failed to refresh wishlist from database:', error);
       
@@ -527,10 +484,6 @@ export class WishlistStore {
       
       // Save fresh data to localStorage
       this.saveWishlistToStorage();
-      
-      if (environment.debug) {
-        console.log('Wishlist force refreshed for user:', wishlist.userId, 'with', wishlist.totalItems, 'items');
-      }
     } catch (error: any) {
       console.error('Failed to force refresh wishlist:', error);
       

@@ -55,10 +55,6 @@ export class AuthStore {
         // Mark as initialized BEFORE validating to ensure interceptor works
         this._isInitialized.set(true);
         
-        if (environment.debug) {
-          console.log('Auth state restored from localStorage - user:', userData.username);
-        }
-        
         // Validate token in background with small delay to ensure interceptor is ready
         setTimeout(() => this.validateSession(), 100);
       } else {
@@ -79,18 +75,9 @@ export class AuthStore {
     this._isLoading.set(true);
     
     try {
-      if (environment.debug) {
-        console.log('Starting login...');
-      }
       const response = await firstValueFrom(this.authService.login(credentials));
-      if (environment.debug) {
-        console.log('Login response received:', response);
-      }
       
       this.setSession(response);
-      if (environment.debug) {
-        console.log('Session set - user:', this._user(), 'token:', !!this._token(), 'isAuthenticated:', this.isAuthenticated());
-      }
       
       this.messageService.add({
         severity: 'success',
@@ -100,9 +87,6 @@ export class AuthStore {
       
       // Small delay to ensure auth state is properly set before navigation
       setTimeout(() => {
-        if (environment.debug) {
-          console.log('Navigating to appropriate page...');
-        }
         // Navigate to admin dashboard if user is admin, otherwise to home
         // This ensures admins go directly to their dashboard and don't hit user pages
         if (response.user.isAdmin) {
@@ -232,17 +216,11 @@ export class AuthStore {
     try {
       const isValid = await firstValueFrom(this.authService.validateToken());
       if (!isValid) {
-        if (environment.debug) {
-          console.log('Session validation failed - token invalid');
-        }
         this.handleSessionExpired();
       }
     } catch (error: any) {
       // Only clear session if it's a 401/403 error, not network errors
       if (error.status === 401 || error.status === 403) {
-        if (environment.debug) {
-          console.log('Unauthorized error - clearing session');
-        }
         this.clearSession();
       }
     }
@@ -261,10 +239,6 @@ export class AuthStore {
     
     // Setup automatic logout timer
     this.setupTokenExpirationTimer(authResponse.access_token);
-    
-    if (environment.debug) {
-      console.log('Session data saved to localStorage - user:', authResponse.user.username);
-    }
   }
 
   /**
@@ -280,10 +254,6 @@ export class AuthStore {
     // Clear localStorage
     localStorage.removeItem('auth_token');
     localStorage.removeItem('auth_user');
-    
-    if (environment.debug) {
-      console.log('Session data cleared from localStorage');
-    }
   }
 
   /**
@@ -355,15 +325,8 @@ export class AuthStore {
       return;
     }
 
-    if (environment.debug) {
-      console.log(`Token expires in ${Math.round(timeUntilExpiration / 1000 / 60)} minutes`);
-    }
-
     // Set timer to automatically logout when token expires
     this.tokenExpirationTimer = setTimeout(() => {
-      if (environment.debug) {
-        console.log('Token expired - logging out automatically');
-      }
       this.handleSessionExpired();
     }, timeUntilExpiration);
   }

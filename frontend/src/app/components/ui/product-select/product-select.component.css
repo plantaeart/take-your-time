@@ -1,0 +1,34 @@
+:host {
+  overflow: visible !important;
+  position: relative;
+}
+
+:host ::ng-deep .p-dropdown {
+  overflow: visible !important;
+  width: 10rem;
+}
+
+:host ::ng-deep .p-dropdown .p-dropdown-label {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+:host ::ng-deep .p-dropdown-panel {
+  z-index: 1000 !important;
+  overflow-y: auto !important;
+}
+
+:host ::ng-deep .p-overlay {
+  z-index: 1000 !important;
+}
+
+/* Ensure parent containers don't clip the dropdown */
+:host ::ng-deep .p-dropdown-items-wrapper {
+  max-height: 200px !important;
+  overflow-y: auto !important;
+}
+
+:host ::ng-deep .p-dropdown-filter-container {
+  overflow: visible !important;
+}

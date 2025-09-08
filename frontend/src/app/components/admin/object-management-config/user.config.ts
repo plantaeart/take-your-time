@@ -95,22 +95,7 @@ const userActions: ActionConfig = {
   canBulkDelete: true,
   canExport: true,
   confirmDelete: true,
-  customActions: [
-    {
-      label: 'Activate',
-      icon: 'pi pi-check',
-      action: 'activate',
-      severity: 'success',
-      condition: (user: User) => !user.isActive
-    },
-    {
-      label: 'Deactivate',
-      icon: 'pi pi-times',
-      action: 'deactivate',
-      severity: 'warning',
-      condition: (user: User) => user.isActive && !user.isAdmin // Can't deactivate admin
-    }
-  ]
+  customActions: [] // Removed activate/deactivate actions
 };
 
 // Search configuration

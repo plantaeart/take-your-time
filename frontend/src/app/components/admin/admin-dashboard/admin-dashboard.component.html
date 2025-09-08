@@ -38,11 +38,13 @@
 
     <!-- User Carts Management Tab -->
     <p-tabPanel header="User Carts" leftIcon="pi pi-shopping-cart">
-      <div class="tab-content">
-        <h3>User Carts Management (CRUD)</h3>
-        <p>Create, Read, Update, Delete user carts</p>
-        <!-- TODO: Implement user carts CRUD component -->
-      </div>
+      <app-tab-management 
+        [config]="cartTableConfig"
+        [data]="cartData()"
+        [loading]="isLoadingCarts()"
+        [totalRecordsInput]="adminCartSearch.state().total"
+        (dataLoad)="onCartDataLoad($event)">
+      </app-tab-management>
     </p-tabPanel>
 
     <!-- User Wishlists Management Tab -->

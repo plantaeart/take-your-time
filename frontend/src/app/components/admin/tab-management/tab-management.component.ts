@@ -1,16 +1,19 @@
 import { Component, OnInit, input, signal, computed, ViewChild, TemplateRef, output, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { PaginatorModule } from 'primeng/paginator';
 import { TooltipModule } from 'primeng/tooltip';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService, MessageService } from 'primeng/api';
-import { TableManagementConfig, ColumnConfig, FilterType } from '../object-management-config/table-config.interface';
+import { TableManagementConfig, ColumnConfig, FilterType, HierarchyConfig, LevelConfig } from '../object-management-config/table-config.interface';
 import { RowTabComponent } from '../row-tab/row-tab.component';
+import { TabColumnsHeaderComponent } from '../tab-columns-header/tab-columns-header.component';
 import { ButtonConfirmPopupComponent, FilterButtonConfig } from '../../ui/button-confirm-popup/button-confirm-popup.component';
 import { GlobalSearchComponent } from '../../ui/global-search/global-search.component';
+import { useAdminCart } from '../../../hooks/admin-cart.hooks';
 
 interface FilterState {
   [key: string]: any;
@@ -19,6 +22,17 @@ interface FilterState {
 interface SortState {
   field: string;
   order: 'asc' | 'desc';
+}
+
+// Enhanced interface for hierarchical data items
+interface HierarchicalItem<T = any> {
+  data: T;
+  level: number;
+  parentId?: any;
+  children?: HierarchicalItem<T>[];
+  expanded?: boolean;
+  loading?: boolean;
+  hasChildren?: boolean;
 }
 
 @Component({
@@ -33,7 +47,7 @@ interface SortState {
     ToastModule,
     ConfirmDialogModule,
     RowTabComponent,
-    ButtonConfirmPopupComponent,
+    TabColumnsHeaderComponent,
     GlobalSearchComponent
   ],
   providers: [ConfirmationService, MessageService],
@@ -44,6 +58,10 @@ export class TabManagementComponent<T = any> implements OnInit {
   // Services
   private confirmationService = inject(ConfirmationService);
   private messageService = inject(MessageService);
+  private router = inject(Router);
+  
+  // Admin cart hooks for handling cart-specific actions
+  private adminCart = useAdminCart();
 
   // Inputs
   config = input.required<TableManagementConfig<T>>();
@@ -66,6 +84,30 @@ export class TabManagementComponent<T = any> implements OnInit {
   editingItem = signal<T | null>(null);
   editItemData = signal<Partial<T>>({});
   globalFilterValue = signal<string>('');
+  
+  // Cart item addition state
+  isAddingCartItem = signal<boolean>(false);
+  addingCartItemForUserId = signal<number | null>(null);
+  newCartItem = signal<any>({
+    productId: null,
+    selectedProduct: null,
+    quantity: 1
+  });
+  
+  // Hierarchical data state
+  hierarchicalData = signal<HierarchicalItem<T>[]>([]);
+  expandedItems = signal<Set<any>>(new Set());
+  loadingChildren = signal<Set<any>>(new Set());
+  
+  // Check if hierarchy is enabled
+  isHierarchyEnabled = computed(() => 
+    this.config().hierarchyConfig?.enabled || false
+  );
+  
+  // Get hierarchy configuration
+  hierarchyConfig = computed(() => 
+    this.config().hierarchyConfig || null
+  );
   
   // Computed total records - use input for lazy loading or data length for client-side
   totalRecords = computed(() => {
@@ -97,12 +139,27 @@ export class TabManagementComponent<T = any> implements OnInit {
         this.currentPage.set(1);
       }
     }, { allowSignalWrites: true });
+
+    // Initialize hierarchy when data changes
+    effect(() => {
+      const data = this.data();
+      
+      if (this.isHierarchyEnabled() && data.length > 0) {
+        this.initializeHierarchy();
+      }
+    }, { allowSignalWrites: true });
   }
 
   // Computed properties
-  visibleColumns = computed(() => 
-    this.config().columns.filter(col => col.type !== 'actions')
-  );
+  visibleColumns = computed(() => {
+    const allColumns = this.config().columns;
+    const isHierarchy = this.isHierarchyEnabled();
+    return allColumns.filter(col => 
+      col.type !== 'actions' && 
+      // Exclude 'expand' column when hierarchy is enabled (handled separately)
+      !(isHierarchy && col.field === 'expand')
+    );
+  });
   
   hasSelectedItems = computed(() => 
     this.selectedItems().length > 0
@@ -206,33 +263,89 @@ export class TabManagementComponent<T = any> implements OnInit {
     return filtered;
   });
 
-  // Computed property for paginated data
+  // Computed property for paginated data (handles both flat and hierarchical)
   paginatedData = computed(() => {
+    // For hierarchical data, use flattened hierarchy
+    if (this.isHierarchyEnabled()) {
+      const flattenedData = this.flattenedHierarchyData();
+      
+      // For lazy loading, return data as-is (server handles pagination)
+      if (this.config().pagination.lazy) {
+        return flattenedData;
+      }
+      
+      // For client-side pagination, slice the data
+      const start = (this.currentPage() - 1) * this.rowsPerPage();
+      const end = start + this.rowsPerPage();
+      return flattenedData.slice(start, end);
+    }
+    
+    // For flat data, use regular pagination
     // For lazy loading, return filtered data as-is (server handles pagination)
     if (this.config().pagination.lazy) {
-      return this.filteredData();
+      return this.filteredData().map(item => ({ 
+        data: item, 
+        level: 0, 
+        expanded: false, 
+        loading: false, 
+        hasChildren: false 
+      } as HierarchicalItem<T>));
     }
     
     // For client-side pagination, slice the data
     const data = this.filteredData();
     const start = (this.currentPage() - 1) * this.rowsPerPage();
     const end = start + this.rowsPerPage();
-    return data.slice(start, end);
+    return data.slice(start, end).map(item => ({ 
+      data: item, 
+      level: 0, 
+      expanded: false, 
+      loading: false, 
+      hasChildren: false 
+    } as HierarchicalItem<T>));
   });
 
   // Computed property for grid template columns
   gridTemplateColumns = computed(() => {
-    const selectWidth = this.config().actions.canBulkDelete ? '60px ' : '';
-    const actionsWidth = '120px ';
+    const selectWidth = this.config().actions.canBulkDelete ? '3.75rem ' : '';
+    const actionsWidth = '7.5rem ';
     
-    // Use column.width directly for all columns
+    // Add hierarchy/expansion column width if hierarchy is enabled
+    const hierarchyWidth = this.isHierarchyEnabled() ? '3.75rem ' : '';
+    
+    // Use column.width directly for all columns (excluding expand column)
     const columnWidths: string[] = [];
     this.visibleColumns().forEach(column => {
+      // Skip the 'expand' column as it's handled by hierarchy column
+      if (column.field !== 'expand') {
+        columnWidths.push(column.width || 'auto');
+      }
+    });
+    
+    const dataColumns = columnWidths.join(' ');
+    return hierarchyWidth + selectWidth + actionsWidth + dataColumns;
+  });
+  
+  // Computed property for child level grid template columns
+  childGridTemplateColumns = computed(() => {
+    const selectWidth = this.config().actions.canBulkDelete ? '3.75rem ' : '';
+    const actionsWidth = '7.5rem ';
+    
+    // Add hierarchy/expansion column width if hierarchy is enabled
+    const hierarchyWidth = this.isHierarchyEnabled() ? '3.75rem ' : '';
+    
+    // Add hierarchy indentation spacers for child level (level 1 = 1 spacer of 2rem)
+    const hierarchyIndentWidth = '2rem '; // One spacer for level 1
+    
+    // Use child level column widths
+    const childColumns = this.getColumnsForLevel(1);
+    const columnWidths: string[] = [];
+    childColumns.forEach(column => {
       columnWidths.push(column.width || 'auto');
     });
     
     const dataColumns = columnWidths.join(' ');
-    return selectWidth + actionsWidth + dataColumns;
+    return hierarchyIndentWidth + hierarchyWidth + selectWidth + actionsWidth + dataColumns;
   });
 
   // Table reference for advanced operations
@@ -471,6 +584,23 @@ export class TabManagementComponent<T = any> implements OnInit {
   // ============= UTILITY METHODS =============
   
   getColumnValue(item: any, column: { field: string }): any {
+    // Handle calculated fields for cart total value
+    if (column.field === 'cartTotalValue') {
+      if (item && item.cart && Array.isArray(item.cart)) {
+        return item.cart.reduce((total: number, cartItem: any) => 
+          total + (cartItem.quantity * cartItem.productPrice), 0);
+      }
+      return 0;
+    }
+    
+    // Handle calculated fields for cart item subtotal
+    if (column.field === 'subtotal') {
+      if (item && item.quantity && item.productPrice) {
+        return item.quantity * item.productPrice;
+      }
+      return 0;
+    }
+    
     return item[column.field];
   }
 
@@ -510,14 +640,13 @@ export class TabManagementComponent<T = any> implements OnInit {
       if (this.config().createItem) {
         await this.config().createItem!(newItemData as any);
       } else {
-        console.warn('⚠️ No createItem function configured');
+        // No createItem function configured
       }
       // Close the new item form on success
       this.isCreatingNew.set(false);
       this.newItem.set({});
     } catch (error) {
       // Error handling is done in the parent component
-      console.error('❌ Failed to save new item:', error);
       throw error; // Re-throw so parent can handle it
     }
   }
@@ -534,16 +663,48 @@ export class TabManagementComponent<T = any> implements OnInit {
 
   async saveEdit(editedData: Partial<T>): Promise<void> {
     try {
-      if (this.config().updateItem) {
+      // Check if this is a cart item update (has productId and userId)
+      const isCartItem = (editedData as any).productId && ((editedData as any).userId || (editedData as any).parentUserId);
+      
+      if (isCartItem) {
+        // Handle cart item quantity update
+        await this.handleCartItemUpdate(editedData as any);
+      } else if (this.config().updateItem) {
+        // Handle regular item update
         const itemId = (editedData as any)[this.config().dataKey];
         await this.config().updateItem!(itemId, editedData as any);
       }
+      
       // Close the edit form on success
       this.editingItem.set(null);
       this.editItemData.set({});
+      
+      // Refresh data to show updated values - expansion state will be preserved
+      this.triggerDataLoad();
     } catch (error) {
       // Error handling is done in the parent component
-      console.error('Failed to save edit:', error);
+      throw error; // Re-throw to maintain error propagation
+    }
+  }
+
+  /**
+   * Handle cart item quantity update
+   */
+  private async handleCartItemUpdate(cartItem: any): Promise<void> {
+    // For cart items (level 1), use parentUserId as the actual user ID
+    // cartItem.userId contains composite ID like "2_1", parentUserId contains actual user ID
+    const userId = cartItem.parentUserId || cartItem.userId;
+    const productId = cartItem.productId;
+    const quantity = cartItem.quantity;
+    
+    if (!userId || !productId || !quantity) {
+      throw new Error('Missing required cart item information');
+    }
+
+    const success = await this.adminCart.updateCartItemQuantity(userId, productId, quantity);
+    if (!success) {
+      const storeError = this.adminCart.error();
+      throw new Error(`Failed to update cart item quantity${storeError ? ': ' + storeError : ''}`);
     }
   }
 
@@ -551,8 +712,22 @@ export class TabManagementComponent<T = any> implements OnInit {
     const itemId = (item as any)[this.config().dataKey];
     const itemName = (item as any).name || `${this.config().objectName} #${itemId}`;
     
+    // Check if this is a cart item (has productId and parentUserId)
+    const isCartItem = (item as any).productId && (item as any).parentUserId;
+    
+    let confirmationMessage: string;
+    if (isCartItem) {
+      // Custom message for cart items: "Are you sure you want to delete <productName> for user <userID>?"
+      const productName = (item as any).productName || 'Unknown Product';
+      const userId = (item as any).parentUserId;
+      confirmationMessage = `Are you sure you want to delete "${productName}" for user ${userId}?`;
+    } else {
+      // Default message for other items
+      confirmationMessage = `Are you sure you want to delete "${itemName}"?`;
+    }
+    
     this.confirmationService.confirm({
-      message: `Are you sure you want to delete "${itemName}"?`,
+      message: confirmationMessage,
       header: `Delete ${this.config().objectName}`,
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',
@@ -563,10 +738,20 @@ export class TabManagementComponent<T = any> implements OnInit {
           if (deleteFunction) {
             await deleteFunction(itemId);
             
+            // Custom success message for cart items
+            let successMessage: string;
+            if (isCartItem) {
+              const productName = (item as any).productName || 'Unknown Product';
+              const userId = (item as any).parentUserId;
+              successMessage = `"${productName}" has been removed from user ${userId}'s cart successfully.`;
+            } else {
+              successMessage = `${this.config().objectName} "${itemName}" has been deleted successfully.`;
+            }
+            
             this.messageService.add({
               severity: 'success',
               summary: 'Success',
-              detail: `${this.config().objectName} "${itemName}" has been deleted successfully.`
+              detail: successMessage
             });
 
             // Remove the item from selected items if it was selected
@@ -598,6 +783,227 @@ export class TabManagementComponent<T = any> implements OnInit {
     } else {
       this.selectedItems.set([...selected, item]);
     }
+  }
+
+  /**
+   * Handle custom actions triggered from row components
+   */
+  async handleCustomAction(event: { action: string; item: T; actionData?: any }): Promise<void> {
+    const { action, item, actionData } = event;
+    
+    // Handle admin cart-specific actions
+    if (action === 'remove-item') {
+      await this.handleRemoveCartItem(item);
+    } else if (action === 'edit-quantity') {
+      // For edit-quantity, we don't need to do anything special here since 
+      // the quantity controls component handles the quantity change directly
+    } else if (action === 'clear-cart') {
+      await this.handleClearCart(item);
+    } else if (action === 'add-product') {
+      await this.handleAddProductToCart(item);
+    } else {
+      // Unknown custom action
+    }
+  }
+
+  /**
+   * Handle removing a cart item
+   */
+  private async handleRemoveCartItem(item: any): Promise<void> {
+    // For cart items (level 1), use parentUserId as the actual user ID
+    const userId = item.parentUserId || item.userId;
+    const productId = item.productId;
+    
+    if (!userId || !productId) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Unable to remove item: missing user or product information'
+      });
+      return;
+    }
+
+    // Show confirmation dialog
+    this.confirmationService.confirm({
+      message: `Are you sure you want to remove "${item.productName}" from the cart?`,
+      header: 'Confirm Removal',
+      icon: 'pi pi-exclamation-triangle',
+      accept: async () => {
+        const success = await this.adminCart.removeCartItem(userId, productId);
+        if (success) {
+          // Refresh data to show updated cart
+          this.triggerDataLoad();
+        }
+      }
+    });
+  }
+
+  /**
+   * Handle clearing entire cart for a user
+   */
+  private async handleClearCart(item: any): Promise<void> {
+    const userId = item.userId;
+    
+    if (!userId) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Unable to clear cart: missing user information'
+      });
+      return;
+    }
+
+    // Show confirmation dialog
+    this.confirmationService.confirm({
+      message: `Are you sure you want to clear all items from ${item.userName || item.firstname || 'this user'}'s cart? This action cannot be undone.`,
+      header: 'Clear Cart',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: async () => {
+        const success = await this.adminCart.clearUserCart(userId);
+        if (success) {
+          // Refresh data to show updated cart
+          this.triggerDataLoad();
+        }
+      }
+    });
+  }
+
+  /**
+   * Handle adding a product to user's cart
+   */
+  private async handleAddProductToCart(item: any): Promise<void> {
+    const userId = item.userId;
+    
+    if (!userId) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Unable to add product: missing user information'
+      });
+      return;
+    }
+
+    // Set add cart state to show the add row
+    this.isAddingCartItem.set(true);
+    this.addingCartItemForUserId.set(userId);
+    
+    // Reset the new cart item
+    this.newCartItem.set({
+      productId: null,
+      selectedProduct: null,
+      quantity: 1
+    });
+
+    // Expand the user's cart section to show the add row
+    // Find the hierarchical item for this user and expand it
+    const hierarchicalData = this.hierarchicalData();
+    const userHierarchicalItem = hierarchicalData.find(hierarchicalItem => 
+      hierarchicalItem.level === 0 && (hierarchicalItem.data as any).userId === userId
+    );
+    
+    if (userHierarchicalItem) {
+      const itemId = (userHierarchicalItem.data as any)[this.config().dataKey];
+      const expandedSet = new Set(this.expandedItems());
+      expandedSet.add(itemId);
+      this.expandedItems.set(expandedSet);
+      
+      // Also set the expanded flag on the hierarchical item
+      userHierarchicalItem.expanded = true;
+    }
+  }
+
+  /**
+   * Cancel adding cart item
+   */
+  cancelAddCartItem(): void {
+    this.isAddingCartItem.set(false);
+    this.addingCartItemForUserId.set(null);
+    this.newCartItem.set({
+      productId: null,
+      selectedProduct: null,
+      quantity: 1
+    });
+  }
+
+  /**
+   * Helper method to check if we're adding a cart item for a specific user
+   */
+  isAddingCartItemForUser(userData: any): boolean {
+    return this.isAddingCartItem() && 
+           this.addingCartItemForUserId() === userData.userId;
+  }
+
+  /**
+   * Save the new cart item
+   */
+  async saveNewCartItem(cartItemData?: any): Promise<void> {
+    const userId = this.addingCartItemForUserId();
+    
+    // Use cartItemData from row-tab component if provided, otherwise fallback to newCartItem signal
+    const dataToUse = cartItemData || this.newCartItem();
+    
+    // Check if we have the necessary data (either selectedProduct or productId)
+    const hasProduct = dataToUse.selectedProduct || dataToUse.productId;
+    const productId = dataToUse.selectedProduct?.id || dataToUse.productId;
+    const quantity = dataToUse.quantity || 1;
+    
+    if (!userId || !hasProduct || !productId) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Validation Error',
+        detail: 'Please select a product to add to cart'
+      });
+      return;
+    }
+
+    try {
+      // Call the admin cart service to add the item
+      const success = await this.adminCart.addItemToCart(userId, {
+        productId: productId,
+        quantity: quantity
+      });
+
+      if (success) {
+        // Reset the state
+        this.cancelAddCartItem();
+
+        // Trigger a data reload to refresh the cart display
+        this.dataLoad.emit({ 
+          page: this.currentPage(), 
+          size: this.rowsPerPage(), 
+          sorts: [], 
+          filters: this.columnFilters() 
+        });
+      }
+
+    } catch (error: any) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: error.message || 'Failed to add product to cart'
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Create a cart item object for display in the row-tab component
+   */
+  newCartItemForDisplay(): any {
+    const cartItem = this.newCartItem();
+    
+    return {
+      productId: cartItem.productId || null,
+      productName: cartItem.selectedProduct?.name || '',
+      quantity: cartItem.quantity,
+      productPrice: cartItem.selectedProduct?.price || 0,
+      productStockQuantity: cartItem.selectedProduct?.quantity || 0,
+      subtotal: (cartItem.selectedProduct?.price || 0) * cartItem.quantity,
+      // Additional properties for the row-tab component
+      _isNewCartItem: true,
+      _selectedProduct: cartItem.selectedProduct
+    };
   }
 
   isEditing(item: T): boolean {
@@ -706,4 +1112,314 @@ export class TabManagementComponent<T = any> implements OnInit {
     const hasFilters = this.hasActiveFilters();
     return hasFilters ? 'Clear all filters and reset table' : 'No active filters to clear';
   });
+
+  // ============= HIERARCHICAL DATA METHODS =============
+  
+  /**
+   * Transform flat data into hierarchical structure
+   */
+  private buildHierarchy(flatData: T[], parentId: any = null, level: number = 0): HierarchicalItem<T>[] {
+    const config = this.hierarchyConfig();
+    const configInfo = this.config();
+    if (!config) return flatData.map(item => ({ data: item, level: 0 }));
+    
+    const hierarchicalItems: HierarchicalItem<T>[] = [];
+    const expandedItems = this.expandedItems(); // Get current expanded state
+    
+    // Handle attribute-based hierarchy (nested arrays)
+    if (config.childAttributeField && level === 0) {
+      // For root level with attribute-based hierarchy, process each item
+      for (const item of flatData) {
+        const itemId = (item as any)[this.config().dataKey];
+        const isExpanded = expandedItems.has(itemId); // Preserve expansion state
+        
+        const hierarchicalItem: HierarchicalItem<T> = {
+          data: item,
+          level: 0,
+          parentId: null,
+          children: [],
+          expanded: isExpanded, // Use preserved state
+          loading: false,
+          hasChildren: this.hasChildItems(item, flatData, config.parentIdField)
+        };
+        
+        // Build children from the child attribute array
+        if (config.loadStrategy === 'eager' && hierarchicalItem.hasChildren) {
+          const childArray = (item as any)[config.childAttributeField];
+          
+          if (Array.isArray(childArray)) {
+            hierarchicalItem.children = childArray.map((childItem, index) => {
+              const childId = `${itemId}_${childItem.productId || index}`;
+              const isChildExpanded = expandedItems.has(childId); // Preserve child expansion state
+              
+              const childHierarchicalItem = {
+                data: {
+                  ...childItem,
+                  // Add unique ID for child items
+                  [`${this.config().dataKey}`]: childId,
+                  // Add parent reference
+                  parentUserId: itemId
+                },
+                level: 1,
+                parentId: itemId,
+                children: [],
+                expanded: isChildExpanded, // Use preserved state
+                loading: false,
+                hasChildren: false
+              } as HierarchicalItem<T>;
+              
+              return childHierarchicalItem;
+            });
+          }
+        }
+        
+        hierarchicalItems.push(hierarchicalItem);
+      }
+      
+      return hierarchicalItems;
+    }
+    
+    // Original logic for flattened hierarchy data
+    for (const item of flatData) {
+      const itemParentId = (item as any)[config.parentIdField];
+      
+      if (itemParentId === parentId) {
+        const itemId = (item as any)[this.config().dataKey];
+        const isExpanded = expandedItems.has(itemId); // Preserve expansion state
+        
+        const hierarchicalItem: HierarchicalItem<T> = {
+          data: item,
+          level,
+          parentId: itemParentId,
+          children: [],
+          expanded: isExpanded, // Use preserved state
+          loading: false,
+          hasChildren: this.hasChildItems(item, flatData, config.parentIdField)
+        };
+        
+        // Recursively build children if loading strategy is 'eager'
+        if (config.loadStrategy === 'eager') {
+          hierarchicalItem.children = this.buildHierarchy(
+            flatData, 
+            (item as any)[this.config().dataKey], 
+            level + 1
+          );
+        }
+        
+        hierarchicalItems.push(hierarchicalItem);
+      }
+    }
+    
+    return hierarchicalItems;
+  }
+  
+  /**
+   * Check if item has children
+   */
+  private hasChildItems(item: T, allData: T[], parentIdField: string): boolean {
+    const itemId = (item as any)[this.config().dataKey];
+    const config = this.hierarchyConfig();
+    
+    // NEW: Check if using attribute-based hierarchy (nested arrays)
+    if (config?.childAttributeField) {
+      const childArray = (item as any)[config.childAttributeField];
+      const hasChildren = Array.isArray(childArray) && childArray.length > 0;
+      
+      return hasChildren;
+    }
+    
+    // Original logic for flattened hierarchy data
+    return allData.some(otherItem => (otherItem as any)[parentIdField] === itemId);
+  }
+  
+  /**
+   * Get flattened view of hierarchical data for rendering
+   */
+  flattenedHierarchyData = computed(() => {
+    if (!this.isHierarchyEnabled()) {
+      return this.data().map(item => ({ 
+        data: item, 
+        level: 0, 
+        expanded: false, 
+        loading: false, 
+        hasChildren: false 
+      } as HierarchicalItem<T>));
+    }
+    
+    return this.flattenHierarchy(this.hierarchicalData());
+  });
+  
+  /**
+   * Flatten hierarchical data for table rendering
+   * Only includes top-level items (level 0) since children are handled in template
+   */
+  private flattenHierarchy(items: HierarchicalItem<T>[]): HierarchicalItem<T>[] {
+    const flattened: HierarchicalItem<T>[] = [];
+    
+    for (const item of items) {
+      // Only include top-level items (level 0)
+      // Children are handled separately in the template's children section
+      if (item.level === 0) {
+        flattened.push(item);
+      }
+    }
+    
+    return flattened;
+  }
+  
+  /**
+   * Toggle expansion of hierarchical item
+   */
+  async toggleExpansion(item: HierarchicalItem<T>): Promise<void> {
+    const config = this.hierarchyConfig();
+    if (!config) return;
+    
+    const itemId = (item.data as any)[this.config().dataKey];
+    const expanded = this.expandedItems();
+    
+    if (item.expanded) {
+      // Collapse
+      item.expanded = false;
+      expanded.delete(itemId);
+    } else {
+      // Expand
+      item.expanded = true;
+      expanded.add(itemId);
+      
+      // Load children if not already loaded and using lazy loading
+      if (config.loadStrategy === 'lazy' && (!item.children || item.children.length === 0)) {
+        await this.loadChildren(item);
+      }
+    }
+    
+    this.expandedItems.set(new Set(expanded));
+  }
+  
+  /**
+   * Load children for a hierarchical item
+   */
+  private async loadChildren(item: HierarchicalItem<T>): Promise<void> {
+    const config = this.hierarchyConfig();
+    if (!config) return;
+    
+    const itemId = (item.data as any)[this.config().dataKey];
+    const loadingSet = this.loadingChildren();
+    
+    // Set loading state
+    item.loading = true;
+    loadingSet.add(itemId);
+    this.loadingChildren.set(new Set(loadingSet));
+    
+    try {
+      // Load child data
+      const childData = await config.childDataLoader(itemId, item.level + 1);
+      
+      // Convert to hierarchical items
+      item.children = childData.map(childItem => ({
+        data: childItem,
+        level: item.level + 1,
+        parentId: itemId,
+        children: [],
+        expanded: false,
+        loading: false,
+        hasChildren: this.hasChildItems(childItem, childData, config.parentIdField)
+      }));
+      
+    } catch (error) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to load child items'
+      });
+    } finally {
+      // Clear loading state
+      item.loading = false;
+      loadingSet.delete(itemId);
+      this.loadingChildren.set(new Set(loadingSet));
+    }
+  }
+  
+  /**
+   * Get configuration for specific hierarchy level
+   */
+  getLevelConfig(level: number): LevelConfig<T> | null {
+    const config = this.hierarchyConfig();
+    if (!config?.levelConfigs) return null;
+    
+    return config.levelConfigs.find(lc => lc.level === level) || null;
+  }
+  
+  /**
+   * Get columns for specific hierarchy level
+   */
+  getColumnsForLevel(level: number): ColumnConfig[] {
+    const levelConfig = this.getLevelConfig(level);
+    return levelConfig?.columns || this.config().columns;
+  }
+  
+  /**
+   * Get actions for specific hierarchy level
+   */
+  getActionsForLevel(level: number) {
+    const levelConfig = this.getLevelConfig(level);
+    return levelConfig?.actions || this.config().actions;
+  }
+  
+  /**
+   * Get config for specific hierarchy level with level-specific actions
+   */
+  getConfigForLevel(level: number) {
+    const levelActions = this.getActionsForLevel(level);
+    return {
+      ...this.config(),
+      actions: levelActions
+    };
+  }
+  
+  /**
+   * Check if item can be expanded
+   */
+  canExpand(item: HierarchicalItem<T>): boolean {
+    const levelConfig = this.getLevelConfig(item.level);
+    const allowExpansion = levelConfig?.allowExpansion !== false; // Default to true
+    const config = this.hierarchyConfig();
+    const withinMaxDepth = !config?.maxDepth || item.level < config.maxDepth;
+    
+    // For level 0 (users), always show expand icon to maintain layout consistency
+    // Even if cart is empty, show grey disabled icon
+    if (item.level === 0 && config?.childAttributeField === 'cart') {
+      return allowExpansion && withinMaxDepth;
+    }
+    
+    // For other levels, use original logic
+    const hasChildren = item.hasChildren || false;
+    return allowExpansion && withinMaxDepth && hasChildren;
+  }
+
+  /**
+   * Check if a cart is empty (for styling purposes)
+   */
+  isCartEmpty(item: HierarchicalItem<T>): boolean {
+    if (item.level !== 0) return false; // Only check for level 0 (users)
+    
+    const config = this.hierarchyConfig();
+    if (config?.childAttributeField === 'cart') {
+      const cartArray = (item.data as any)[config.childAttributeField];
+      return !Array.isArray(cartArray) || cartArray.length === 0;
+    }
+    
+    return false;
+  }
+  
+  /**
+   * Initialize hierarchical data from flat data
+   */
+  private initializeHierarchy(): void {
+    if (!this.isHierarchyEnabled()) {
+      return;
+    }
+    
+    const hierarchyData = this.buildHierarchy(this.data());
+    this.hierarchicalData.set(hierarchyData);
+  }
 }

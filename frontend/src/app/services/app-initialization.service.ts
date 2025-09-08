@@ -32,10 +32,6 @@ export class AppInitializationService {
       const isAuthenticated = this.authStore.isAuthenticated();
       const isInitialized = this.authStore.isInitialized();
       
-      if (environment.debug) {
-        console.log('Auth state changed - authenticated:', isAuthenticated, 'initialized:', isInitialized, 'cartInitialized:', this.cartInitialized, 'wishlistInitialized:', this.wishlistInitialized);
-      }
-      
       if (isInitialized && isAuthenticated && !this.cartInitialized) {
         // Initialize cart when user is authenticated (only once)
         this.cartInitialized = true;
@@ -82,14 +78,7 @@ export class AppInitializationService {
       
       // If no cart data was found in localStorage, load from database
       if (this.cartStore.cartItems().length === 0) {
-        if (environment.debug) {
-          console.log('No cart found in localStorage, loading from database...');
-        }
         await this.cartStore.loadCart();
-      }
-      
-      if (environment.debug) {
-        console.log('User cart initialization complete - items:', this.cartStore.cartItems().length);
       }
     } catch (error) {
       console.error('Failed to initialize user cart:', error);
@@ -106,14 +95,7 @@ export class AppInitializationService {
       
       // If no wishlist data was found in localStorage, load from database
       if (this.wishlistStore.wishlistItems().length === 0) {
-        if (environment.debug) {
-          console.log('No wishlist found in localStorage, loading from database...');
-        }
         await this.wishlistStore.loadWishlist();
-      }
-      
-      if (environment.debug) {
-        console.log('User wishlist initialization complete - items:', this.wishlistStore.wishlistItems().length);
       }
     } catch (error) {
       console.error('Failed to initialize user wishlist:', error);

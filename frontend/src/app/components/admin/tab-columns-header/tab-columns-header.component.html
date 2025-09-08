@@ -1,0 +1,66 @@
+<div [class]="getHeaderRowClass()" [style.grid-template-columns]="gridTemplateColumns()">
+  <!-- Hierarchy indentation spacers for child levels (same as rows) -->
+  @if (hierarchyLevel() > 0) {
+    @for (i of Array(hierarchyLevel()); track i) {
+      <div class="hierarchy-indent-spacer"></div>
+    }
+  }
+  
+  <!-- Hierarchy/Expansion Column Header -->
+  @if (isHierarchyEnabled()) {
+    <div class="header-cell hierarchy-header">
+      <span class="column-title"></span>
+    </div>
+  }
+  
+  <!-- Select All Checkbox -->
+  @if (showSelect()) {
+    <div class="header-cell select-header">
+      @if (hierarchyLevel() === 0) {
+        <input 
+          type="checkbox" 
+          [checked]="isAllSelected()"
+          (change)="onToggleSelectAll()"
+          class="select-checkbox">
+      } @else {
+        <!-- Empty space for child headers - no selection functionality -->
+        <span class="column-title"></span>
+      }
+    </div>
+  }
+
+  <!-- Actions Column -->
+  <div class="header-cell actions-header">
+    <span class="column-title">Actions</span>
+  </div>
+
+  <!-- Data Columns -->
+  @for (column of columns(); track column.field) {
+    <div class="header-cell data-header">
+      <div class="column-header-content">
+        <span class="column-title">{{ column.header }}</span>
+        
+        <!-- Sort Icon (only when column is sortable) -->
+        @if (column.sortable) {
+          <i 
+            [class]="getSortIcon(column.field)"
+            (click)="onSort(column.field)"
+            class="sort-icon">
+          </i>
+        }
+
+        <!-- Filter (only when column is filterable) -->
+        @if (column.filterable) {
+          <app-button-confirm-popup
+            [config]="getFilterButtonConfig(column)"
+            buttonIcon="pi pi-filter"
+            [buttonTooltip]="'Filter ' + column.header"
+            (apply)="onFilterApply(column.field, $event)"
+            (clear)="onFilterClear(column.field)"
+            class="filter-button">
+          </app-button-confirm-popup>
+        }
+      </div>
+    </div>
+  }
+</div>

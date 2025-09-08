@@ -91,6 +91,7 @@
   color: var(--text-color-secondary);
   font-style: italic;
   font-size: 0.875rem;
+  width: 100%;
 }
 
 .table-cell.data-cell .display-field i {
@@ -154,4 +155,125 @@
   font-style: italic;
   font-size: 0.875rem;
   opacity: 0.8;
+}
+
+/* ============= HIERARCHICAL STYLES ============= */
+
+/* Expansion button cell */
+.expansion-cell {
+  width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-right: 0.5rem;
+}
+
+.hierarchy-spacer {
+  width: 40px;
+  height: 100%;
+}
+
+/* Hierarchy indentation spacers */
+.hierarchy-indent-spacer {
+  width: 40px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-right: 1px solid var(--surface-border);
+  background-color: var(--surface-50);
+  position: relative;
+}
+
+.hierarchy-indent-spacer::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: var(--primary-color-300);
+  opacity: 0.5;
+}
+
+/* Hierarchy level styling */
+.hierarchy-level-0 {
+  font-weight: 500;
+  background-color: var(--surface-0);
+}
+
+.hierarchy-level-1 {
+  background-color: var(--surface-50);
+  border-left: 2px solid var(--primary-color-300);
+}
+
+.hierarchy-level-2 {
+  background-color: var(--surface-100);
+  border-left: 2px solid var(--primary-color-400);
+}
+
+.hierarchy-level-3 {
+  background-color: var(--surface-150);
+  border-left: 2px solid var(--primary-color-500);
+}
+
+.hierarchy-level-4 {
+  background-color: var(--surface-200);
+  border-left: 2px solid var(--primary-color-600);
+}
+
+/* Additional levels */
+.table-row[class*="hierarchy-level-"] {
+  position: relative;
+}
+
+.table-row[class*="hierarchy-level-"]:before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(
+    to bottom,
+    var(--primary-color-300),
+    var(--primary-color-500)
+  );
+}
+
+/* Hover effects for hierarchy */
+.hierarchy-level-0:hover {
+  background-color: var(--surface-hover);
+}
+
+.hierarchy-level-1:hover {
+  background-color: var(--surface-100);
+}
+
+.hierarchy-level-2:hover {
+  background-color: var(--surface-150);
+}
+
+.hierarchy-level-3:hover {
+  background-color: var(--surface-200);
+}
+
+.hierarchy-level-4:hover {
+  background-color: var(--surface-250);
+}
+
+/* Loading state for expansion */
+.expansion-cell .p-button[loading] .pi {
+  animation: rotation 1s infinite linear;
+}
+
+@keyframes rotation {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(359deg);
+  }
 }

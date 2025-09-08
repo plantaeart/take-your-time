@@ -1,0 +1,40 @@
+<p-dropdown 
+  [options]="availableProducts()" 
+  [(ngModel)]="internalSelection" 
+  optionLabel="name" 
+  [filter]="true" 
+  filterBy="name" 
+  [showClear]="true" 
+  [placeholder]="placeholder()"
+  [disabled]="disabled()"
+  [loading]="productSearch.state().isLoading"
+  (onChange)="onProductChange($event.value)"
+  (onFilter)="onFilter($event)"
+  class="w-full">
+  
+  <!-- Selected item template -->
+  <ng-template #selectedItem let-selectedOption>
+    @if (selectedOption) {
+      <div class="flex items-center gap-2">
+        <i class="pi pi-box text-primary"></i>
+        <div class="flex flex-column">
+          <span class="font-medium">{{ selectedOption.name }}</span>
+          <small class="text-muted">${{ selectedOption.price }} • Stock: {{ selectedOption.quantity }}</small>
+        </div>
+      </div>
+    }
+  </ng-template>
+  
+  <!-- Dropdown item template -->
+  <ng-template let-product #item>
+    <div class="flex items-center gap-2 p-2">
+      <i class="pi pi-box text-primary"></i>
+      <div class="flex flex-column flex-1">
+        <span class="font-medium">{{ product.name }}</span>
+        <small class="text-muted">
+          {{ product.category }} • ${{ product.price }} • Stock: {{ product.quantity }}
+        </small>
+      </div>
+    </div>
+  </ng-template>
+</p-dropdown>

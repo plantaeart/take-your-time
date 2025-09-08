@@ -64,54 +64,20 @@
   <!-- Table Container -->
   <div class="table-content">
     <div class="table-grid" [class.loading]="loading()">
-      <!-- Column Headers -->
-      <div class="table-grid-header" [style.grid-template-columns]="gridTemplateColumns()">
-      <!-- Select All Checkbox -->
-      @if (config().actions.canBulkDelete) {
-        <div class="header-cell select-header">
-          <input 
-            type="checkbox" 
-            [checked]="isAllSelected()"
-            (change)="toggleSelectAll()"
-            class="select-checkbox">
-        </div>
-      }
-
-      <!-- Actions Column -->
-      <div class="header-cell actions-header">
-        Actions
-      </div>
-
-      <!-- Data Columns -->
-      @for (column of visibleColumns(); track column.field) {
-        <div class="header-cell data-header">
-          <div class="column-header-content">
-            <span class="column-title">{{ column.header }}</span>
-            
-            <!-- Sort Icon -->
-            @if (column.sortable) {
-              <i 
-                [class]="getSortIcon(column.field)"
-                (click)="onSort(column.field)"
-                class="sort-icon">
-              </i>
-            }
-
-            <!-- Filter -->
-            @if (column.filterable) {
-              <app-button-confirm-popup
-                [config]="getFilterButtonConfig(column)"
-                buttonIcon="pi pi-filter"
-                [buttonTooltip]="'Filter ' + column.header"
-                (apply)="onFilterApply(column.field, $event)"
-                (clear)="onFilterClear(column.field)"
-                class="filter-button">
-              </app-button-confirm-popup>
-            }
-          </div>
-        </div>
-      }
-    </div>
+      <!-- Main Column Headers -->
+      <app-tab-columns-header
+        [columns]="visibleColumns()"
+        [config]="config()"
+        [hierarchyLevel]="0"
+        [showSelect]="config().actions.canBulkDelete || false"
+        [hierarchyConfig]="hierarchyConfig()"
+        [isAllSelected]="isAllSelected()"
+        [gridTemplateColumns]="gridTemplateColumns()"
+        (sort)="onSort($event)"
+        (filterApply)="onFilterApply($event.field, $event.value)"
+        (filterClear)="onFilterClear($event)"
+        (toggleSelectAll)="toggleSelectAll()">
+      </app-tab-columns-header>
 
     <!-- Table Body -->
     <div class="table-grid-body" [style.--grid-template-columns]="gridTemplateColumns()">
@@ -120,7 +86,7 @@
         <app-row-tab
           [item]="newItem()"
           [columns]="visibleColumns()"
-          [config]="config()"
+          [config]="getConfigForLevel(0)"
           [isEditing]="true"
           [isNew]="true"
           [showSelect]="config().actions.canBulkDelete || false"
@@ -130,20 +96,91 @@
       }
 
     <!-- Data Rows -->
-    @for (item of paginatedData(); track getColumnValue(item, {field: config().dataKey})) {
+    @for (hierarchicalItem of paginatedData(); track getColumnValue(hierarchicalItem.data, {field: config().dataKey})) {
+      <!-- Parent Row -->
       <app-row-tab
-        [item]="item"
-        [columns]="visibleColumns()"
-        [config]="config()"
-        [isEditing]="isEditing(item)"
-        [isSelected]="isItemSelected(item)"
+        [item]="hierarchicalItem.data"
+        [columns]="getColumnsForLevel(hierarchicalItem.level)"
+        [config]="getConfigForLevel(hierarchicalItem.level)"
+        [isEditing]="isEditing(hierarchicalItem.data)"
+        [isSelected]="isItemSelected(hierarchicalItem.data)"
         [showSelect]="config().actions.canBulkDelete || false"
-        (edit)="startEdit(item)"
+        [hierarchyLevel]="hierarchicalItem.level"
+        [canExpand]="canExpand(hierarchicalItem)"
+        [isExpanded]="hierarchicalItem.expanded || false"
+        [isLoadingChildren]="hierarchicalItem.loading || false"
+        [hierarchyConfig]="hierarchyConfig()"
+        [isCartEmpty]="isCartEmpty(hierarchicalItem)"
+        (edit)="startEdit(hierarchicalItem.data)"
         (save)="saveEdit($event)"
         (cancel)="cancelEdit()"
-        (delete)="deleteItem(item)"
-        (toggleSelect)="toggleSelectItem(item)">
+        (delete)="deleteItem(hierarchicalItem.data)"
+        (toggleSelect)="toggleSelectItem(hierarchicalItem.data)"
+        (toggleExpansion)="toggleExpansion(hierarchicalItem)"
+        (customAction)="handleCustomAction($event)">
       </app-row-tab>
+      
+      <!-- Children Section (when expanded) -->
+      @if (hierarchicalItem.expanded && hierarchicalItem.children && hierarchicalItem.children.length > 0) {
+        <!-- Child Level Container with proper grid template -->
+        <div [style.--grid-template-columns]="childGridTemplateColumns()">
+          <!-- Child Level Header -->
+          <app-tab-columns-header
+            [columns]="getColumnsForLevel(1)"
+            [config]="config()"
+            [hierarchyLevel]="1"
+            [showSelect]="config().actions.canBulkDelete || false"
+            [hierarchyConfig]="hierarchyConfig()"
+            [isAllSelected]="false"
+            [gridTemplateColumns]="childGridTemplateColumns()"
+            (sort)="onSort($event)"
+            (filterApply)="onFilterApply($event.field, $event.value)"
+            (filterClear)="onFilterClear($event)"
+            (toggleSelectAll)="toggleSelectAll()">
+          </app-tab-columns-header>
+          
+          <!-- Add Product Row (when adding cart item for this user) -->
+          @if (isAddingCartItem() && isAddingCartItemForUser(hierarchicalItem.data)) {
+            <app-row-tab
+              [item]="newCartItemForDisplay()"
+              [columns]="getColumnsForLevel(1)"
+              [config]="getConfigForLevel(1)"
+              [isEditing]="true"
+              [isNew]="true"
+              [showSelect]="false"
+              [hierarchyLevel]="1"
+              [canExpand]="false"
+              [hierarchyConfig]="hierarchyConfig()"
+              (save)="saveNewCartItem($event)"
+              (cancel)="cancelAddCartItem()">
+            </app-row-tab>
+          }
+          
+          <!-- Child Data Rows -->
+          @for (childItem of hierarchicalItem.children; track getColumnValue(childItem.data, {field: config().dataKey})) {
+            <app-row-tab
+              [item]="childItem.data"
+              [columns]="getColumnsForLevel(childItem.level)"
+              [config]="getConfigForLevel(childItem.level)"
+              [isEditing]="isEditing(childItem.data)"
+              [isSelected]="isItemSelected(childItem.data)"
+              [showSelect]="config().actions.canBulkDelete || false"
+              [hierarchyLevel]="childItem.level"
+              [canExpand]="canExpand(childItem)"
+              [isExpanded]="childItem.expanded || false"
+              [isLoadingChildren]="childItem.loading || false"
+              [hierarchyConfig]="hierarchyConfig()"
+              (edit)="startEdit(childItem.data)"
+              (save)="saveEdit($event)"
+              (cancel)="cancelEdit()"
+              (delete)="deleteItem(childItem.data)"
+              (toggleSelect)="toggleSelectItem(childItem.data)"
+              (toggleExpansion)="toggleExpansion(childItem)"
+              (customAction)="handleCustomAction($event)">
+            </app-row-tab>
+          }
+        </div>
+      }
     }
 
     <!-- Empty State -->

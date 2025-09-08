@@ -6,6 +6,7 @@ import { ProductListResponse } from '../models/product.model';
 import { UserListResponse } from '../models/user.model';
 import { ContactSubmissionsResponse } from '../models/contact.model';
 import { AdminSearchParams, CartSearchResponse, WishlistSearchResponse } from '../models/adminSearch.model';
+import { AdminUserCartListResponse, AdminUserCartSearchParams } from '../models/admin-user-cart.model';
 
 /**
  * Unified Admin Search Service
@@ -45,10 +46,19 @@ export class AdminSearchService {
 
   /**
    * Search carts with advanced filtering and sorting
+   * Uses the new flattened cart structure with user information
    */
-  searchCarts(params: AdminSearchParams): Observable<CartSearchResponse> {
+  searchCarts(params: AdminSearchParams): Observable<AdminUserCartListResponse> {
     const httpParams = this.buildHttpParams(params);
-    return this.http.get<CartSearchResponse>(`${this.apiUrl}/api/admin/cart/search`, { params: httpParams });
+    return this.http.get<AdminUserCartListResponse>(`${this.apiUrl}/api/admin/cart/search`, { params: httpParams });
+  }
+
+  /**
+   * Search user carts with flattened structure (alternative method name for clarity)
+   */
+  searchUserCarts(params: AdminUserCartSearchParams): Observable<AdminUserCartListResponse> {
+    const httpParams = this.buildHttpParams(params);
+    return this.http.get<AdminUserCartListResponse>(`${this.apiUrl}/api/admin/cart/search`, { params: httpParams });
   }
 
   /**

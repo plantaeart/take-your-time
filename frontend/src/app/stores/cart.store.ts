@@ -56,14 +56,6 @@ export class CartStore {
         if (this.isValidCartData(cartData)) {
           this._cart.set(cartData);
           this.isInitializedFromStorage = true;
-          
-          if (environment.debug) {
-            console.log('Cart restored from localStorage - items:', cartData.totalItems);
-          }
-        }
-      } else {
-        if (environment.debug) {
-          console.log('No cart found in localStorage for user:', userId);
         }
       }
     } catch (error) {
@@ -76,9 +68,6 @@ export class CartStore {
    * Public method to initialize cart - call this after authentication is established
    */
   initializeCart(): void {
-    if (environment.debug) {
-      console.log('CartStore.initializeCart() called - isInitializedFromStorage:', this.isInitializedFromStorage);
-    }
     this.initializeCartFromStorage();
   }
 
@@ -95,10 +84,6 @@ export class CartStore {
           `${this.CART_STORAGE_KEY}_${userId}`,
           JSON.stringify(currentCart)
         );
-        
-        if (environment.debug) {
-          console.log('Cart saved to localStorage - items:', currentCart.totalItems);
-        }
       } catch (error) {
         console.error('Error saving cart to localStorage:', error);
       }
@@ -113,10 +98,6 @@ export class CartStore {
     if (userId) {
       try {
         localStorage.removeItem(`${this.CART_STORAGE_KEY}_${userId}`);
-        
-        if (environment.debug) {
-          console.log('Cart cleared from localStorage');
-        }
       } catch (error) {
         console.error('Error clearing cart from localStorage:', error);
       }
@@ -161,10 +142,6 @@ export class CartStore {
       
       // Save to localStorage after successful load
       this.saveCartToStorage();
-      
-      if (environment.debug) {
-        console.log('Cart loaded for user:', cart.userId, 'with', cart.totalItems, 'items');
-      }
     } catch (error: any) {
       console.error('Failed to load cart:', error);
       
@@ -213,10 +190,6 @@ export class CartStore {
         summary: 'Added to Cart',
         detail: `Product added to cart successfully`
       });
-      
-      if (environment.debug) {
-        console.log(`Added product ${productId} (qty: ${quantity}) to cart`);
-      }
       
       return true;
     } catch (error: any) {
@@ -288,10 +261,6 @@ export class CartStore {
         detail: 'Cart item updated successfully'
       });
       
-      if (environment.debug) {
-        console.log(`Updated product ${productId} quantity to ${quantity}`);
-      }
-      
       return true;
     } catch (error: any) {
       // Rollback to previous state on error
@@ -333,10 +302,6 @@ export class CartStore {
         detail: 'Product removed from cart'
       });
       
-      if (environment.debug) {
-        console.log(`Removed product ${productId} from cart`);
-      }
-      
       return true;
     } catch (error: any) {
       this.messageService.add({
@@ -375,10 +340,6 @@ export class CartStore {
         summary: 'Cart Cleared',
         detail: 'All items removed from cart'
       });
-      
-      if (environment.debug) {
-        console.log('Cart cleared');
-      }
       
       return true;
     } catch (error: any) {
@@ -429,10 +390,6 @@ export class CartStore {
     
     // Clear cart from localStorage when resetting
     this.clearCartFromStorage();
-    
-    if (environment.debug) {
-      console.log('Cart state reset and cleared from localStorage');
-    }
   }
 
   /**
@@ -463,10 +420,6 @@ export class CartStore {
       
       // Update localStorage with fresh data
       this.saveCartToStorage();
-      
-      if (environment.debug) {
-        console.log('Cart refreshed from database - items:', cart.totalItems);
-      }
     } catch (error: any) {
       console.error('Failed to refresh cart from database:', error);
       
@@ -524,10 +477,6 @@ export class CartStore {
       
       // Save fresh data to localStorage
       this.saveCartToStorage();
-      
-      if (environment.debug) {
-        console.log('Cart force refreshed for user:', cart.userId, 'with', cart.totalItems, 'items');
-      }
     } catch (error: any) {
       console.error('Failed to force refresh cart:', error);
       
