@@ -7,6 +7,7 @@ import { UserListResponse } from '../models/user.model';
 import { ContactSubmissionsResponse } from '../models/contact.model';
 import { AdminSearchParams, CartSearchResponse, WishlistSearchResponse } from '../models/adminSearch.model';
 import { AdminUserCartListResponse, AdminUserCartSearchParams } from '../models/user-cart.model';
+import { AdminUserWishlistListResponse, AdminUserWishlistSearchParams } from '../models/user-wishlist.model';
 
 /**
  * Unified Admin Search Service
@@ -64,9 +65,17 @@ export class AdminSearchService {
   /**
    * Search wishlists with advanced filtering and sorting
    */
-  searchWishlists(params: AdminSearchParams): Observable<WishlistSearchResponse> {
+  searchWishlists(params: AdminSearchParams): Observable<AdminUserWishlistListResponse> {
     const httpParams = this.buildHttpParams(params);
-    return this.http.get<WishlistSearchResponse>(`${this.apiUrl}/api/admin/wishlist/search`, { params: httpParams });
+    return this.http.get<AdminUserWishlistListResponse>(`${this.apiUrl}/api/admin/wishlist/search`, { params: httpParams });
+  }
+
+  /**
+   * Search user wishlists with flattened structure (alternative method name for clarity)
+   */
+  searchUserWishlists(params: AdminUserWishlistSearchParams): Observable<AdminUserWishlistListResponse> {
+    const httpParams = this.buildHttpParams(params);
+    return this.http.get<AdminUserWishlistListResponse>(`${this.apiUrl}/api/admin/wishlist/search`, { params: httpParams });
   }
 
   /**

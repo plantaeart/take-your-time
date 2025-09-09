@@ -1,10 +1,12 @@
 import { Injectable, signal, computed } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { AdminSearchService } from '../services/admin-search.service';
 import { AdminSearchParams, CartSearchResponse, WishlistSearchResponse } from '../models/adminSearch.model';
 import { ProductListResponse, Product } from '../models/product.model';
 import { UserListResponse, User } from '../models/user.model';
 import { ContactSubmissionsResponse, ContactSubmission } from '../models/contact.model';
 import { AdminUserCartData } from '../models/user-cart.model';
+import { AdminUserWishlistData } from '../models/user-wishlist.model';
 
 /**
  * Entity types supported by admin search
@@ -93,7 +95,7 @@ export class AdminSearchStore {
     sorts: []
   });
 
-  private _wishlistsState = signal<SearchState<any>>({
+  private _wishlistsState = signal<SearchState<AdminUserWishlistData>>({
     items: [],
     total: 0,
     page: 1,
@@ -145,7 +147,7 @@ export class AdminSearchStore {
     }));
 
     try {
-      const response = await this.adminSearchService.searchProducts(searchParams).toPromise();
+      const response = await firstValueFrom(this.adminSearchService.searchProducts(searchParams));
       this._productsState.update(state => ({
         ...state,
         items: response!.products,
@@ -186,7 +188,7 @@ export class AdminSearchStore {
     }));
 
     try {
-      const response = await this.adminSearchService.searchUsers(searchParams).toPromise();
+      const response = await firstValueFrom(this.adminSearchService.searchUsers(searchParams));
       this._usersState.update(state => ({
         ...state,
         items: response!.users,
@@ -227,7 +229,7 @@ export class AdminSearchStore {
     }));
 
     try {
-      const response = await this.adminSearchService.searchContacts(searchParams).toPromise();
+      const response = await firstValueFrom(this.adminSearchService.searchContacts(searchParams));
       this._contactsState.update(state => ({
         ...state,
         items: response!.submissions,
@@ -268,7 +270,7 @@ export class AdminSearchStore {
     }));
 
     try {
-      const response = await this.adminSearchService.searchCarts(searchParams).toPromise();
+      const response = await firstValueFrom(this.adminSearchService.searchCarts(searchParams));
       this._cartsState.update(state => ({
         ...state,
         items: response!.items,
@@ -309,10 +311,10 @@ export class AdminSearchStore {
     }));
 
     try {
-      const response = await this.adminSearchService.searchWishlists(searchParams).toPromise();
+      const response = await firstValueFrom(this.adminSearchService.searchWishlists(searchParams));
       this._wishlistsState.update(state => ({
         ...state,
-        items: response!.wishlists,
+        items: response!.items,
         total: response!.total,
         page: response!.page,
         limit: response!.limit,

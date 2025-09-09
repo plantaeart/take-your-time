@@ -49,11 +49,14 @@
 
     <!-- User Wishlists Management Tab -->
     <p-tabPanel header="User Wishlists" leftIcon="pi pi-heart">
-      <div class="tab-content">
-        <h3>User Wishlists Management (CRUD)</h3>
-        <p>Create, Read, Update, Delete user wishlists</p>
-        <!-- TODO: Implement user wishlists CRUD component -->
-      </div>
+      <app-tab-management 
+        #wishlistTabManagement
+        [config]="dashboardConfig.tabs.wishlists"
+        [data]="wishlistData()"
+        [loading]="isLoadingWishlists()"
+        [totalRecordsInput]="adminWishlistSearch.state().total"
+        (dataLoad)="onWishlistDataLoad($event)">
+      </app-tab-management>
     </p-tabPanel>
 
     <!-- Contact Mails Management Tab -->

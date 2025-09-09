@@ -1,4 +1,5 @@
 import { Injectable, signal, computed } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { ContactService } from '../services/contact.service';
 import { ContactRequest, ContactResponse, ContactSubmission, ContactUpdate } from '../models/contact.model';
 
@@ -37,7 +38,7 @@ export class ContactStore {
     this._lastResponse.set(null);
 
     try {
-      const response = await this.contactService.sendContactMessage(contactData).toPromise();
+      const response = await firstValueFrom(this.contactService.sendContactMessage(contactData));
       this._lastResponse.set(response!);
     } catch (error: any) {
       const errorMessage = error?.error?.detail || 'Failed to send message. Please try again.';
@@ -55,7 +56,7 @@ export class ContactStore {
     this._error.set(null);
 
     try {
-      const response = await this.contactService.getContactSubmissions(skip, limit).toPromise();
+      const response = await firstValueFrom(this.contactService.getContactSubmissions(skip, limit));
       this._submissions.set(response!.submissions);
       this._submissionsTotal.set(response!.total);
     } catch (error: any) {
@@ -73,7 +74,7 @@ export class ContactStore {
     this._error.set(null);
 
     try {
-      const updatedSubmission = await this.contactService.updateContactSubmission(contactId, updateData).toPromise();
+      const updatedSubmission = await firstValueFrom(this.contactService.updateContactSubmission(contactId, updateData));
       
       // Update the submission in the local state
       const currentSubmissions = this._submissions();

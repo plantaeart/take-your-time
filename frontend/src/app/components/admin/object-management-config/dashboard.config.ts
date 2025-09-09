@@ -16,9 +16,11 @@ import { DashboardTabConfig } from './table-config.interface';
 import { createProductDashboardConfig } from './product.config';
 import { createUserDashboardConfig } from './user.config';
 import { createCartDashboardConfig } from './user-cart.config';
+import { createWishlistDashboardConfig } from './user-wishlist.config';
 import { Product } from '../../../models/product.model';
 import { User } from '../../../models/user.model';
 import { AdminUserCartData } from '../../../models/user-cart.model';
+import { AdminUserWishlistData } from '../../../models/user-wishlist.model';
 
 // Dashboard tab configuration type
 export interface DashboardConfig {
@@ -26,6 +28,7 @@ export interface DashboardConfig {
     products: DashboardTabConfig<Product>;
     users: DashboardTabConfig<User>;
     carts: DashboardTabConfig<AdminUserCartData>;
+    wishlists: DashboardTabConfig<AdminUserWishlistData>;
   };
 }
 
@@ -43,11 +46,16 @@ export interface DashboardDependencies {
   cartManagement: any;
   adminCartSearch: any;
   
+  // Wishlist hooks and services
+  wishlistManagement: any;
+  adminWishlistSearch: any;
+  
   // Shared services
   messageService: any;
   
   // Row control functions
   collapseCartRow?: (itemId: any) => void;
+  collapseWishlistRow?: (itemId: any) => void;
 }
 
 /**
@@ -73,6 +81,13 @@ export function createDashboardConfig(deps: DashboardDependencies): DashboardCon
         deps.adminCartSearch,
         deps.messageService,
         deps.collapseCartRow
+      ),
+      
+      wishlists: createWishlistDashboardConfig(
+        deps.wishlistManagement,
+        deps.adminWishlistSearch,
+        deps.messageService,
+        deps.collapseWishlistRow
       )
     }
   };

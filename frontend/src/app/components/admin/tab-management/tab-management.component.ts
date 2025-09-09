@@ -824,7 +824,17 @@ export class TabManagementComponent<T = any> implements OnInit {
         await this.handleClearCart(item);
       }
     } else if (action === 'add-product') {
-      await this.executeChildAction('ADD_CART_ITEM', item);
+      // Determine the correct child action based on the configuration
+      const hierarchyConfig = this.hierarchyConfig();
+      let childActionName = 'ADD_CART_ITEM'; // Default fallback
+      
+      if (hierarchyConfig?.childAttributeField === 'cart') {
+        childActionName = 'ADD_CART_ITEM';
+      } else if (hierarchyConfig?.childAttributeField === 'wishlist') {
+        childActionName = 'ADD_WISHLIST_ITEM';
+      }
+      
+      await this.executeChildAction(childActionName, item);
     } else {
       // Unknown custom action
     }
@@ -1562,8 +1572,8 @@ export class TabManagementComponent<T = any> implements OnInit {
     const withinMaxDepth = !config?.maxDepth || item.level < config.maxDepth;
     
     // For level 0 (users), always show expand icon to maintain layout consistency
-    // Even if cart is empty, show grey disabled icon
-    if (item.level === 0 && config?.childAttributeField === 'cart') {
+    // Even if cart/wishlist is empty, show grey disabled icon
+    if (item.level === 0 && (config?.childAttributeField === 'cart' || config?.childAttributeField === 'wishlist')) {
       return allowExpansion && withinMaxDepth;
     }
     
@@ -1573,15 +1583,15 @@ export class TabManagementComponent<T = any> implements OnInit {
   }
 
   /**
-   * Check if a cart is empty (for styling purposes)
+   * Check if a cart/wishlist is empty (for styling purposes)
    */
   isCartEmpty(item: HierarchicalItem<T>): boolean {
     if (item.level !== 0) return false; // Only check for level 0 (users)
     
     const config = this.hierarchyConfig();
-    if (config?.childAttributeField === 'cart') {
-      const cartArray = (item.data as any)[config.childAttributeField];
-      return !Array.isArray(cartArray) || cartArray.length === 0;
+    if (config?.childAttributeField === 'cart' || config?.childAttributeField === 'wishlist') {
+      const itemArray = (item.data as any)[config.childAttributeField];
+      return !Array.isArray(itemArray) || itemArray.length === 0;
     }
     
     return false;

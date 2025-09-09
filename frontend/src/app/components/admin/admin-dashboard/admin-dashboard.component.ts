@@ -7,9 +7,10 @@ import { SignOutButtonComponent } from '../../ui/sign-out-button/sign-out-button
 import { TabManagementComponent } from '../tab-management/tab-management.component';
 import { useAuth } from '../../../hooks/auth.hooks';
 import { useProducts } from '../../../hooks/product.hooks';
-import { useAdminProductSearch, useAdminUserSearch, useAdminCartSearch } from '../../../hooks/admin-search.hooks';
+import { useAdminProductSearch, useAdminUserSearch, useAdminCartSearch, useAdminWishlistSearch } from '../../../hooks/admin-search.hooks';
 import { useUserManagement } from '../../../hooks/user-management.hooks';
 import { useCartManagement } from '../../../hooks/cart-management.hooks';
+
 
 // NEW: Import the generic dashboard configuration
 import { 
@@ -18,6 +19,7 @@ import {
   DashboardDependencies,
   DashboardOperationsHandler
 } from '../object-management-config/dashboard.config';
+import { useWishlistManagement } from 'app/hooks/wishlist-management.hooks';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -35,6 +37,8 @@ import {
 export class AdminDashboardComponent implements OnInit {
   // ViewChild for cart tab management component
   @ViewChild('cartTabManagement') cartTabManagement!: TabManagementComponent;
+  // ViewChild for wishlist tab management component
+  @ViewChild('wishlistTabManagement') wishlistTabManagement!: TabManagementComponent;
   
   // Services
   private messageService = inject(MessageService);
@@ -47,6 +51,8 @@ export class AdminDashboardComponent implements OnInit {
   userManagement = useUserManagement();
   cartManagement = useCartManagement();
   adminCartSearch = useAdminCartSearch();
+  wishlistManagement = useWishlistManagement();
+  adminWishlistSearch = useAdminWishlistSearch();
   
   // NEW: Create generic dashboard configuration
   dashboardConfig!: DashboardConfig;
@@ -66,6 +72,15 @@ export class AdminDashboardComponent implements OnInit {
       }
     };
 
+    // Create collapse function for wishlist rows
+    const collapseWishlistRow = (itemId: any) => {
+      if (this.wishlistTabManagement) {
+        const expandedItems = this.wishlistTabManagement.expandedItems();
+        expandedItems.delete(itemId);
+        this.wishlistTabManagement.expandedItems.set(new Set(expandedItems));
+      }
+    };
+
     // Prepare dependencies for configuration
     const dependencies: DashboardDependencies = {
       products: this.products,
@@ -74,8 +89,11 @@ export class AdminDashboardComponent implements OnInit {
       adminUserSearch: this.adminUserSearch,
       cartManagement: this.cartManagement,
       adminCartSearch: this.adminCartSearch,
+      wishlistManagement: this.wishlistManagement,
+      adminWishlistSearch: this.adminWishlistSearch,
       messageService: this.messageService,
-      collapseCartRow: collapseCartRow
+      collapseCartRow: collapseCartRow,
+      collapseWishlistRow: collapseWishlistRow
     };
     
     // Create complete dashboard configuration
@@ -110,6 +128,11 @@ export class AdminDashboardComponent implements OnInit {
       await this.operationsHandler.handleDataLoad('carts',
         this.dashboardConfig.tabs.carts.dataLoader?.initialParams
       );
+      
+      // Load wishlists
+      await this.operationsHandler.handleDataLoad('wishlists',
+        this.dashboardConfig.tabs.wishlists.dataLoader?.initialParams
+      );
     } catch (error) {
       console.error('Error loading initial dashboard data:', error);
     }
@@ -124,6 +147,9 @@ export class AdminDashboardComponent implements OnInit {
   
   cartData = computed(() => this.dashboardConfig?.tabs.carts.dataSignal?.() || []);
   isLoadingCarts = computed(() => this.dashboardConfig?.tabs.carts.loadingSignal?.() || false);
+  
+  wishlistData = computed(() => this.dashboardConfig?.tabs.wishlists.dataSignal?.() || []);
+  isLoadingWishlists = computed(() => this.dashboardConfig?.tabs.wishlists.loadingSignal?.() || false);
 
   // NEW: Generic data loading handlers for each tab
   async onProductDataLoad(event: { page: number; size: number; sorts: any[]; filters: any }): Promise<void> {
@@ -136,6 +162,10 @@ export class AdminDashboardComponent implements OnInit {
   
   async onCartDataLoad(event: { page: number; size: number; sorts: any[]; filters: any }): Promise<void> {
     await this.operationsHandler.handleDataLoad('carts', event);
+  }
+  
+  async onWishlistDataLoad(event: { page: number; size: number; sorts: any[]; filters: any }): Promise<void> {
+    await this.operationsHandler.handleDataLoad('wishlists', event);
   }
 
   /**

@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { User } from '../models/user.model';
 
@@ -20,7 +21,7 @@ export class UserService {
    */
   async updateUser(id: number, userData: Partial<{ username: string; email: string; isActive: boolean }>): Promise<User> {
     try {
-      const updatedUser = await this.http.put<User>(`${this.apiUrl}/users/${id}`, userData).toPromise();
+      const updatedUser = await firstValueFrom(this.http.put<User>(`${this.apiUrl}/users/${id}`, userData));
       return updatedUser!;
     } catch (error: any) {
       console.error('❌ UserService: Failed to update user:', error);
@@ -33,7 +34,7 @@ export class UserService {
    */
   async deleteUser(id: number): Promise<void> {
     try {
-      await this.http.delete(`${this.apiUrl}/users/${id}`).toPromise();
+      await firstValueFrom(this.http.delete(`${this.apiUrl}/users/${id}`));
     } catch (error: any) {
       console.error('❌ UserService: Failed to delete user:', error);
       throw new Error(error.error?.detail || error.message || 'Failed to delete user');
@@ -45,7 +46,7 @@ export class UserService {
    */
   async activateUser(id: number): Promise<void> {
     try {
-      await this.http.post(`${this.apiUrl}/users/${id}/activate`, {}).toPromise();
+      await firstValueFrom(this.http.post(`${this.apiUrl}/users/${id}/activate`, {}));
     } catch (error: any) {
       console.error('❌ UserService: Failed to activate user:', error);
       throw new Error(error.error?.detail || error.message || 'Failed to activate user');
@@ -57,7 +58,7 @@ export class UserService {
    */
   async deactivateUser(id: number): Promise<void> {
     try {
-      await this.http.post(`${this.apiUrl}/users/${id}/deactivate`, {}).toPromise();
+      await firstValueFrom(this.http.post(`${this.apiUrl}/users/${id}/deactivate`, {}));
     } catch (error: any) {
       console.error('❌ UserService: Failed to deactivate user:', error);
       throw new Error(error.error?.detail || error.message || 'Failed to deactivate user');
@@ -69,7 +70,7 @@ export class UserService {
    */
   async getUserById(id: number): Promise<User> {
     try {
-      const user = await this.http.get<User>(`${this.apiUrl}/users/${id}`).toPromise();
+      const user = await firstValueFrom(this.http.get<User>(`${this.apiUrl}/users/${id}`));
       return user!;
     } catch (error: any) {
       console.error('❌ UserService: Failed to get user:', error);

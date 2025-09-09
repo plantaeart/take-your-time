@@ -291,6 +291,41 @@ export class SearchStore {
 }
 ```
 
+### **3. Modern RxJS to Promise Conversion**
+```typescript
+import { firstValueFrom, lastValueFrom } from 'rxjs';
+
+// ✅ CORRECT - Use firstValueFrom() for single HTTP requests
+export class ProductService {
+  async getProduct(id: number): Promise<Product> {
+    return await firstValueFrom(this.http.get<Product>(`/api/products/${id}`));
+  }
+  
+  async createProduct(data: ProductCreate): Promise<Product> {
+    return await firstValueFrom(this.http.post<Product>('/api/products', data));
+  }
+}
+
+// ✅ Use lastValueFrom() for streams that complete with final value
+export class DataService {
+  async getProcessedData(): Promise<ProcessedData> {
+    return await lastValueFrom(
+      this.http.get<RawData>('/api/raw-data').pipe(
+        map(data => this.processData(data)),
+        finalize(() => console.log('Processing complete'))
+      )
+    );
+  }
+}
+
+// ❌ DEPRECATED - Don't use .toPromise()
+export class OldService {
+  async getData(): Promise<Data> {
+    return await this.http.get<Data>('/api/data').toPromise(); // ❌ Deprecated
+  }
+}
+```
+
 ---
 
 ## 🎯 Type Safety
@@ -1028,10 +1063,12 @@ export class ProductComponent {
 
 ### **1. Service Error Handling**
 ```typescript
+import { firstValueFrom } from 'rxjs';
+
 export class ProductService {
   async getProducts(): Promise<ProductResponse> {
     try {
-      const response = await this.http.get<ProductResponse>('/api/products').toPromise();
+      const response = await firstValueFrom(this.http.get<ProductResponse>('/api/products'));
       return response!;
     } catch (error) {
       // ✅ Centralized error handling
