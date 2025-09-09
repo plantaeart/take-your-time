@@ -16,7 +16,7 @@ class TestContactAdminOperations:
         """Test that assigning admin requires authentication."""
         assignData: Dict[str, int] = {"adminId": 1}
         
-        response = client.post("/api/contact/admin/1/assign", json=assignData)
+        response = client.patch("/api/contact/admin/1/assign", json=assignData)
         assert response.status_code == HTTPStatus.UNAUTHORIZED.value
     
     def test_assign_admin_to_contact_forbidden(self, client: TestClient, user_token: str) -> None:
@@ -24,7 +24,7 @@ class TestContactAdminOperations:
         headers: Dict[str, str] = {"Authorization": f"Bearer {user_token}"}
         assignData: Dict[str, int] = {"adminId": 1}
         
-        response = client.post("/api/contact/admin/1/assign", json=assignData, headers=headers)
+        response = client.patch("/api/contact/admin/1/assign", json=assignData, headers=headers)
         assert response.status_code == HTTPStatus.FORBIDDEN.value
     
     def test_assign_admin_to_nonexistent_contact(self, client: TestClient, admin_token: str) -> None:
@@ -32,7 +32,7 @@ class TestContactAdminOperations:
         headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
         assignData: Dict[str, int] = {"adminId": 1}
         
-        response = client.post("/api/contact/admin/99999/assign", json=assignData, headers=headers)
+        response = client.patch("/api/contact/admin/99999/assign", json=assignData, headers=headers)
         assert response.status_code == HTTPStatus.NOT_FOUND.value
         assert "Contact submission not found" in response.json()["detail"]
     
@@ -60,7 +60,7 @@ class TestContactAdminOperations:
         
         # Try to assign non-existent admin
         assignData: Dict[str, int] = {"adminId": 99999}
-        response = client.post(f"/api/contact/admin/{contactId}/assign", json=assignData, headers=headers)
+        response = client.patch(f"/api/contact/admin/{contactId}/assign", json=assignData, headers=headers)
         assert response.status_code == HTTPStatus.NOT_FOUND.value
         assert "Admin user not found" in response.json()["detail"]
     
@@ -92,7 +92,7 @@ class TestContactAdminOperations:
         
         # Assign admin to contact
         assignData: Dict[str, int] = {"adminId": adminToAssign}
-        response = client.post(f"/api/contact/admin/{contactId}/assign", json=assignData, headers=headers)
+        response = client.patch(f"/api/contact/admin/{contactId}/assign", json=assignData, headers=headers)
         assert response.status_code == HTTPStatus.OK.value
         
         responseData: Dict[str, Any] = response.json()
@@ -109,7 +109,7 @@ class TestContactAdminOperations:
         """Test that adding admin note requires authentication."""
         noteData: Dict[str, str] = {"note": "Test note"}
         
-        response = client.post("/api/contact/admin/1/note", json=noteData)
+        response = client.patch("/api/contact/admin/1/note", json=noteData)
         assert response.status_code == HTTPStatus.UNAUTHORIZED.value
     
     def test_add_admin_note_to_contact_forbidden(self, client: TestClient, user_token: str) -> None:
@@ -117,7 +117,7 @@ class TestContactAdminOperations:
         headers: Dict[str, str] = {"Authorization": f"Bearer {user_token}"}
         noteData: Dict[str, str] = {"note": "Test note"}
         
-        response = client.post("/api/contact/admin/1/note", json=noteData, headers=headers)
+        response = client.patch("/api/contact/admin/1/note", json=noteData, headers=headers)
         assert response.status_code == HTTPStatus.FORBIDDEN.value
     
     def test_add_admin_note_to_nonexistent_contact(self, client: TestClient, admin_token: str) -> None:
@@ -125,7 +125,7 @@ class TestContactAdminOperations:
         headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
         noteData: Dict[str, str] = {"note": "Test note"}
         
-        response = client.post("/api/contact/admin/99999/note", json=noteData, headers=headers)
+        response = client.patch("/api/contact/admin/99999/note", json=noteData, headers=headers)
         assert response.status_code == HTTPStatus.NOT_FOUND.value
         assert "Contact submission not found" in response.json()["detail"]
     
@@ -143,7 +143,7 @@ class TestContactAdminOperations:
         
         # Try to add empty note
         emptyNoteData: Dict[str, str] = {"note": ""}
-        response = client.post(f"/api/contact/admin/{contactId}/note", json=emptyNoteData, headers=headers)
+        response = client.patch(f"/api/contact/admin/{contactId}/note", json=emptyNoteData, headers=headers)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY.value
     
     def test_add_admin_note_success(self, client: TestClient, admin_token: str) -> None:
@@ -166,7 +166,7 @@ class TestContactAdminOperations:
         # Add admin note
         noteText: str = "This is a test admin note for validation"
         noteData: Dict[str, str] = {"note": noteText}
-        response = client.post(f"/api/contact/admin/{contactId}/note", json=noteData, headers=headers)
+        response = client.patch(f"/api/contact/admin/{contactId}/note", json=noteData, headers=headers)
         assert response.status_code == HTTPStatus.OK.value
         
         responseData: Dict[str, Any] = response.json()
@@ -215,21 +215,21 @@ class TestContactAdminOperations:
     
     def test_unassign_admin_from_contact_unauthorized(self, client: TestClient) -> None:
         """Test that unassigning admin requires authentication."""
-        response = client.post("/api/contact/admin/1/unassign", json={})
+        response = client.patch("/api/contact/admin/1/unassign", json={})
         assert response.status_code == HTTPStatus.UNAUTHORIZED.value
     
     def test_unassign_admin_from_contact_forbidden(self, client: TestClient, user_token: str) -> None:
         """Test that regular users cannot unassign admins from contacts."""
         headers: Dict[str, str] = {"Authorization": f"Bearer {user_token}"}
         
-        response = client.post("/api/contact/admin/1/unassign", json={}, headers=headers)
+        response = client.patch("/api/contact/admin/1/unassign", json={}, headers=headers)
         assert response.status_code == HTTPStatus.FORBIDDEN.value
     
     def test_unassign_admin_from_nonexistent_contact(self, client: TestClient, admin_token: str) -> None:
         """Test unassigning admin from non-existent contact."""
         headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
         
-        response = client.post("/api/contact/admin/99999/unassign", json={}, headers=headers)
+        response = client.patch("/api/contact/admin/99999/unassign", json={}, headers=headers)
         assert response.status_code == HTTPStatus.NOT_FOUND.value
         assert "Contact submission not found" in response.json()["detail"]
     
@@ -256,11 +256,11 @@ class TestContactAdminOperations:
         adminToAssign: int = adminUsers[0]["id"]
         
         assignData: Dict[str, int] = {"adminId": adminToAssign}
-        assignResponse = client.post(f"/api/contact/admin/{contactId}/assign", json=assignData, headers=headers)
+        assignResponse = client.patch(f"/api/contact/admin/{contactId}/assign", json=assignData, headers=headers)
         assert assignResponse.status_code == HTTPStatus.OK.value
         
         # Now unassign admin
-        response = client.post(f"/api/contact/admin/{contactId}/unassign", json={}, headers=headers)
+        response = client.patch(f"/api/contact/admin/{contactId}/unassign", json={}, headers=headers)
         assert response.status_code == HTTPStatus.OK.value
         
         responseData: Dict[str, Any] = response.json()
@@ -300,19 +300,19 @@ class TestContactAdminOperationsIntegration:
         adminToAssign: int = adminUsers[0]["id"]
         
         assignData: Dict[str, int] = {"adminId": adminToAssign}
-        assignResponse = client.post(f"/api/contact/admin/{contactId}/assign", json=assignData, headers=headers)
+        assignResponse = client.patch(f"/api/contact/admin/{contactId}/assign", json=assignData, headers=headers)
         assert assignResponse.status_code == HTTPStatus.OK.value
         
         # 4. Add admin note
         noteText: str = "Initial review - customer inquiry about products"
         noteData: Dict[str, str] = {"note": noteText}
-        noteResponse = client.post(f"/api/contact/admin/{contactId}/note", json=noteData, headers=headers)
+        noteResponse = client.patch(f"/api/contact/admin/{contactId}/note", json=noteData, headers=headers)
         assert noteResponse.status_code == HTTPStatus.OK.value
         
         # 5. Add another admin note
         secondNoteText: str = "Follow-up note - sent product information"
         secondNoteData: Dict[str, str] = {"note": secondNoteText}
-        secondNoteResponse = client.post(f"/api/contact/admin/{contactId}/note", json=secondNoteData, headers=headers)
+        secondNoteResponse = client.patch(f"/api/contact/admin/{contactId}/note", json=secondNoteData, headers=headers)
         assert secondNoteResponse.status_code == HTTPStatus.OK.value
         
         # 6. Verify all changes
@@ -330,7 +330,7 @@ class TestContactAdminOperationsIntegration:
         assert secondNoteText in notes
         
         # 7. Unassign admin
-        unassignResponse = client.post(f"/api/contact/admin/{contactId}/unassign", json={}, headers=headers)
+        unassignResponse = client.patch(f"/api/contact/admin/{contactId}/unassign", json={}, headers=headers)
         assert unassignResponse.status_code == HTTPStatus.OK.value
         
         # 8. Verify unassignment (notes should remain)
@@ -362,7 +362,7 @@ class TestContactAdminOperationsIntegration:
         
         for note in notes:
             noteData: Dict[str, str] = {"note": note}
-            response = client.post(f"/api/contact/admin/{contactId}/note", json=noteData, headers=headers)
+            response = client.patch(f"/api/contact/admin/{contactId}/note", json=noteData, headers=headers)
             assert response.status_code == HTTPStatus.OK.value
         
         # Verify note ordering

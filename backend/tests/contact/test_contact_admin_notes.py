@@ -499,7 +499,7 @@ class TestContactAdminAssignment:
         assert assignedContact["adminId"] is not None
         
         # Unassign admin
-        response = client.post(f"/api/contact/admin/{contactId}/unassign", json={}, headers=headers)
+        response = client.patch(f"/api/contact/admin/{contactId}/unassign", json={}, headers=headers)
         assert response.status_code == HTTPStatus.OK.value
         
         # Verify admin was unassigned
@@ -518,17 +518,17 @@ class TestContactAdminAssignment:
         """Test unassigning admin from non-existent contact."""
         headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
         
-        response = client.post("/api/contact/admin/99999/unassign", json={}, headers=headers)
+        response = client.patch("/api/contact/admin/99999/unassign", json={}, headers=headers)
         assert response.status_code == HTTPStatus.NOT_FOUND.value
     
     def test_admin_unassignment_unauthorized(self, client: TestClient, user_token: str) -> None:
         """Test that regular users cannot unassign admins."""
         headers: Dict[str, str] = {"Authorization": f"Bearer {user_token}"}
         
-        response = client.post("/api/contact/admin/1/unassign", json={}, headers=headers)
+        response = client.patch("/api/contact/admin/1/unassign", json={}, headers=headers)
         assert response.status_code == HTTPStatus.FORBIDDEN.value
     
     def test_admin_unassignment_no_auth(self, client: TestClient) -> None:
         """Test that unauthenticated users cannot unassign admins."""
-        response = client.post("/api/contact/admin/1/unassign", json={})
+        response = client.patch("/api/contact/admin/1/unassign", json={})
         assert response.status_code == HTTPStatus.UNAUTHORIZED.value

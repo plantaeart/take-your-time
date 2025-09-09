@@ -272,7 +272,7 @@ async def delete_contact_submission(
         )
 
 
-@router.post("/admin/{contactId}/unassign", response_model=ContactResponse)
+@router.patch("/admin/{contactId}/unassign", response_model=ContactResponse)
 async def unassign_admin_from_contact(
     contactId: int,
     adminUser: Annotated[UserModel, Depends(admin_required)]
@@ -316,7 +316,7 @@ async def unassign_admin_from_contact(
         )
 
 
-@router.post("/admin/{contactId}/assign", response_model=ContactResponse)
+@router.patch("/admin/{contactId}/assign", response_model=ContactResponse)
 async def assign_admin_to_contact(
     contactId: int,
     assign_request: AdminAssignRequest,
@@ -370,7 +370,7 @@ async def assign_admin_to_contact(
         )
 
 
-@router.post("/admin/{contactId}/note", response_model=ContactResponse)
+@router.patch("/admin/{contactId}/note", response_model=ContactResponse)
 async def add_admin_note_to_contact(
     contactId: int,
     note_request: AdminNoteRequest,
