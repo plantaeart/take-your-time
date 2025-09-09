@@ -14,7 +14,7 @@ import { useAuthState, useAuthActions } from "../../../hooks/auth.hooks";
   imports: [CommonModule, RouterModule, CardModule, ButtonModule, TopPageComponent],
 })
 export class HomeComponent {
-  public readonly appTitle = "ALTEN SHOP";
+  public readonly appTitle = "TAKE YOUR TIME";
   
   // Auth hooks
   private authState = useAuthState();

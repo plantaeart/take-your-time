@@ -25,7 +25,7 @@ import { environment } from '../environments/environment';
   imports: [RouterModule, SplitterModule, ToolbarModule, ButtonModule, BadgeModule, ToastModule, PanelMenuComponent, SignOutButtonComponent],
 })
 export class AppComponent {
-  title = "ALTEN SHOP";
+  title = "TAKE YOUR TIME";
   
   private currentRoute = signal<string>('');
   auth = useAuth();
