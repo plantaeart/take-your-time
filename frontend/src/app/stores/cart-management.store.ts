@@ -169,7 +169,6 @@ export class CartManagementStore {
                             error?.message?.includes('not found in cart');
       
       if (isItemNotFound) {
-        console.log('🔄 Item not found in cart, attempting to add instead...');
         try {
           // Try to add the item instead of updating
           await this.addItemToUserCart(userId, { productId, quantity: update.quantity });

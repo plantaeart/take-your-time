@@ -40,6 +40,10 @@ export class AdminDashboardComponent implements OnInit {
   // ViewChild for wishlist tab management component
   @ViewChild('wishlistTabManagement') wishlistTabManagement!: TabManagementComponent;
   
+  // Tab state persistence
+  private readonly ACTIVE_TAB_KEY = 'admin-dashboard-active-tab';
+  activeTabIndex = signal<number>(0);
+  
   // Services
   private messageService = inject(MessageService);
   
@@ -107,6 +111,9 @@ export class AdminDashboardComponent implements OnInit {
 
     // Initialize all tabs with their initial data loads
     await this.loadInitialData();
+    
+    // Restore active tab from localStorage
+    this.restoreActiveTabState();
   }
   
   /**
@@ -174,5 +181,43 @@ export class AdminDashboardComponent implements OnInit {
   getAdminEmail(): string {
     const user = this.auth.user();
     return user?.email || 'admin@admin.com';
+  }
+
+  /**
+   * Handle tab change and save state to localStorage
+   */
+  onTabChange(event: any): void {
+    const activeIndex = event.index;
+    this.activeTabIndex.set(activeIndex);
+    this.saveActiveTabState(activeIndex);
+  }
+
+  /**
+   * Save active tab state to localStorage
+   */
+  private saveActiveTabState(tabIndex: number): void {
+    try {
+      localStorage.setItem(this.ACTIVE_TAB_KEY, tabIndex.toString());
+    } catch (error) {
+      console.warn('Failed to save tab state to localStorage:', error);
+    }
+  }
+
+  /**
+   * Restore active tab state from localStorage
+   */
+  private restoreActiveTabState(): void {
+    try {
+      const savedTabIndex = localStorage.getItem(this.ACTIVE_TAB_KEY);
+      if (savedTabIndex !== null) {
+        const tabIndex = parseInt(savedTabIndex, 10);
+        // Validate tab index (5 tabs: Products, Users, Carts, Wishlists, Contact Mails)
+        if (tabIndex >= 0 && tabIndex <= 4) {
+          this.activeTabIndex.set(tabIndex);
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to restore tab state from localStorage:', error);
+    }
   }
 }

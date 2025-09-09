@@ -9,7 +9,11 @@
 
 <!-- Admin Management Tabs -->
 <div class="admin-content">
-  <p-tabView [scrollable]="true" styleClass="admin-tabs">
+  <p-tabView 
+    [scrollable]="true" 
+    styleClass="admin-tabs"
+    [activeIndex]="activeTabIndex()"
+    (onChange)="onTabChange($event)">
     
     @if (dashboardConfig) {
     <!-- Products Management Tab -->
