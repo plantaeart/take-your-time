@@ -28,6 +28,29 @@ router = APIRouter(prefix="/admin", tags=["admin-users"])
 
 # ================== USER MANAGEMENT ==================
 
+@router.get("/users/admins", response_model=List[Dict[str, Any]])
+async def get_admin_users(
+    adminUser: Annotated[UserModel, Depends(admin_required)]
+):
+    """Get all admin users for assignment purposes."""
+    collection: Collection = db_manager.get_collection("users")
+    
+    # Find all admin users
+    cursor = collection.find({"isAdmin": True}, {"id": 1, "username": 1, "email": 1})
+    admin_users = await cursor.to_list(length=None)
+    
+    # Format response
+    result = []
+    for admin in admin_users:
+        result.append({
+            "id": admin["id"],
+            "username": admin["username"], 
+            "email": admin["email"]
+        })
+    
+    return result
+
+
 @router.get("/users", response_model=List[UserResponse])
 async def get_all_users(
     adminUser: Annotated[UserModel, Depends(admin_required)],

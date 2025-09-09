@@ -293,3 +293,80 @@ class TestAdminUserManagement:
         responseData = response.json()
         found = any("searchuser1" in user["email"] for user in responseData)
         assert found
+
+    def test_get_admin_users_unauthorized(self, client: TestClient) -> None:
+        """Test that getting admin users list requires authentication."""
+        response = client.get("/api/admin/users/admins")
+        assert response.status_code == HTTPStatus.UNAUTHORIZED.value
+
+    def test_get_admin_users_forbidden(self, client: TestClient, user_token: str) -> None:
+        """Test that regular users cannot access admin users list."""
+        headers: Dict[str, str] = {"Authorization": f"Bearer {user_token}"}
+        response = client.get("/api/admin/users/admins", headers=headers)
+        assert response.status_code == HTTPStatus.FORBIDDEN.value
+
+    def test_get_admin_users_success(self, client: TestClient, admin_token: str) -> None:
+        """Test admin can successfully get admin users list for assignment."""
+        headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
+        response = client.get("/api/admin/users/admins", headers=headers)
+        assert response.status_code == HTTPStatus.OK.value
+        
+        responseData: List[Dict[str, Any]] = response.json()
+        assert isinstance(responseData, list)
+        assert len(responseData) >= 1  # At least the current admin user
+        
+        # Verify structure of admin user data for assignment dropdown
+        if len(responseData) > 0:
+            adminUser = responseData[0]
+            assert "id" in adminUser
+            assert "username" in adminUser
+            assert "email" in adminUser
+            assert isinstance(adminUser["id"], int)
+            assert isinstance(adminUser["username"], str)
+            assert isinstance(adminUser["email"], str)
+            
+            # Verify these are only the required fields for assignment
+            expectedFields = {"id", "username", "email"}
+            actualFields = set(adminUser.keys())
+            assert actualFields == expectedFields
+
+    def test_get_admin_users_only_returns_admins(self, client: TestClient, admin_token: str) -> None:
+        """Test that admin users endpoint only returns users with admin privileges."""
+        headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
+        
+        # Create a regular user (should not appear in admin list)
+        regularUserData: Dict[str, str] = {
+            "username": "regularusertest",
+            "firstname": "Regular",
+            "email": "regulartest@example.com",
+            "password": "TestPass123!"
+        }
+        client.post("/api/account", json=regularUserData)
+        
+        # Create another admin user (should appear in admin list)
+        adminUserData: Dict[str, str] = {
+            "username": "adminusertest",
+            "firstname": "Admin",
+            "email": "admintest@example.com",
+            "password": "TestPass123!"
+        }
+        adminCreateResponse = client.post("/api/account", json=adminUserData)
+        newAdminId: int = adminCreateResponse.json()["id"]
+        
+        # Promote the new user to admin
+        promoteData: Dict[str, bool] = {"isAdmin": True}
+        client.put(f"/api/admin/users/{newAdminId}", json=promoteData, headers=headers)
+        
+        # Get admin users list
+        response = client.get("/api/admin/users/admins", headers=headers)
+        assert response.status_code == HTTPStatus.OK.value
+        
+        adminUsers: List[Dict[str, Any]] = response.json()
+        
+        # Verify all returned users are admins and regular user is not included
+        adminEmails = [user["email"] for user in adminUsers]
+        assert "admintest@example.com" in adminEmails  # New admin should be included
+        assert "regulartest@example.com" not in adminEmails  # Regular user should not be included
+        
+        # Verify we have at least 2 admins now (original + new)
+        assert len(adminUsers) >= 2

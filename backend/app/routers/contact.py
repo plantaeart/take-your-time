@@ -7,7 +7,7 @@ from typing import Annotated, Dict, Any, Optional
 from pymongo.collection import Collection
 from datetime import datetime
 
-from app.schemas.contact import ContactRequest, ContactResponse, ContactSubmissionsResponse, ContactUpdate, ContactSubmission, AdminNoteResponse
+from app.schemas.contact import ContactRequest, ContactResponse, ContactSubmissionsResponse, ContactUpdate, ContactSubmission, AdminNoteResponse, AdminAssignRequest, AdminNoteRequest
 from app.services.email import email_service
 from app.auth.dependencies import get_current_user, admin_required
 from app.models.user import UserModel
@@ -313,4 +313,103 @@ async def unassign_admin_from_contact(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to unassign admin: {str(e)}"
+        )
+
+
+@router.post("/admin/{contactId}/assign", response_model=ContactResponse)
+async def assign_admin_to_contact(
+    contactId: int,
+    assign_request: AdminAssignRequest,
+    adminUser: Annotated[UserModel, Depends(admin_required)]
+) -> ContactResponse:
+    """
+    Assign an admin to a contact submission (Admin only).
+    """
+    collection: Collection = db_manager.get_collection("contacts")
+    users_collection: Collection = db_manager.get_collection("users")
+    
+    # Verify the admin user exists and is an admin
+    admin_to_assign = await users_collection.find_one({"id": assign_request.adminId, "isAdmin": True})
+    if not admin_to_assign:
+        raise HTTPException(
+            status_code=404,
+            detail="Admin user not found"
+        )
+    
+    # Find the contact submission
+    contact_data = await collection.find_one({"id": contactId})
+    if not contact_data:
+        raise HTTPException(
+            status_code=404,
+            detail="Contact submission not found"
+        )
+    
+    # Create ContactModel from existing data
+    contact = ContactModel.from_dict(contact_data)
+    
+    # Assign admin
+    contact.assign_admin(assign_request.adminId)
+    
+    try:
+        # Save updated contact
+        await collection.replace_one(
+            {"id": contactId},
+            contact.to_dict()
+        )
+        
+        return ContactResponse(
+            success=True,
+            message=f"Admin {admin_to_assign['username']} assigned successfully",
+            messageId=None
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to assign admin: {str(e)}"
+        )
+
+
+@router.post("/admin/{contactId}/note", response_model=ContactResponse)
+async def add_admin_note_to_contact(
+    contactId: int,
+    note_request: AdminNoteRequest,
+    adminUser: Annotated[UserModel, Depends(admin_required)]
+) -> ContactResponse:
+    """
+    Add an admin note to a contact submission (Admin only).
+    """
+    collection: Collection = db_manager.get_collection("contacts")
+    
+    # Find the contact submission
+    contact_data = await collection.find_one({"id": contactId})
+    if not contact_data:
+        raise HTTPException(
+            status_code=404,
+            detail="Contact submission not found"
+        )
+    
+    # Create ContactModel from existing data
+    contact = ContactModel.from_dict(contact_data)
+    
+    # Add admin note
+    contact.add_admin_note(adminUser.id, note_request.note)
+    
+    try:
+        # Save updated contact
+        await collection.replace_one(
+            {"id": contactId},
+            contact.to_dict()
+        )
+        
+        return ContactResponse(
+            success=True,
+            message="Admin note added successfully",
+            messageId=None
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to add admin note: {str(e)}"
         )

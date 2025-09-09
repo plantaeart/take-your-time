@@ -63,3 +63,15 @@ class ContactUpdate(BaseModel):
     
     status: Optional[ContactStatus] = Field(None, description="Update contact status")
     adminNote: Optional[str] = Field(None, max_length=500, description="New admin note to add to the submission")
+
+
+class AdminAssignRequest(BaseModel):
+    """Schema for assigning admin to contact submission."""
+    
+    adminId: int = Field(..., description="ID of admin to assign")
+
+
+class AdminNoteRequest(BaseModel):
+    """Schema for adding admin note to contact submission."""
+    
+    note: str = Field(..., min_length=1, max_length=500, description="Admin note content")
