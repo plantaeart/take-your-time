@@ -40,6 +40,7 @@ class ContactSubmission(BaseModel):
     message: str = Field(..., description="Contact message")
     userId: Optional[int] = Field(None, description="User ID if authenticated")
     status: ContactStatus = Field(..., description="Email delivery status")
+    adminId: Optional[int] = Field(None, description="ID of admin currently reviewing this submission")
     messageId: Optional[str] = Field(None, description="Email service message ID")
     errorMessage: Optional[str] = Field(None, description="Error details if failed")
     adminNotes: List[AdminNoteResponse] = Field(default_factory=list, description="Admin notes for this submission")

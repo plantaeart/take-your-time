@@ -406,3 +406,171 @@ class TestContactFormIntegration:
         assert html_body.count("</html>") == 1
         assert html_body.count("<body") == 1
         assert html_body.count("</body>") == 1
+
+
+class TestContactStatusWorkflow:
+    """Test the new contact status workflow with admin assignment."""
+    
+    def test_contact_status_workflow_complete(self, client: TestClient, user_token: str, admin_token: str) -> None:
+        """Test complete contact status workflow: SENT → PENDING → DONE → CLOSED."""
+        user_headers: Dict[str, str] = {"Authorization": f"Bearer {user_token}"}
+        admin_headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
+        
+        # Step 1: User sends contact message (status: SENT)
+        contact_data: Dict[str, str] = {
+            "email": "workflow@example.com",
+            "message": "Test complete workflow message"
+        }
+        
+        with patch('app.services.email.email_service.send_contact_email') as mock_email:
+            mock_email.return_value = (True, "Email sent successfully", "msg-workflow-test")
+            
+            response = client.post("/api/contact/send", json=contact_data, headers=user_headers)
+            assert response.status_code == HTTPStatus.OK.value
+        
+        # Get contact ID
+        response = client.get("/api/contact/admin/submissions", headers=admin_headers)
+        submissions: Dict[str, Any] = response.json()
+        contactId: int = None
+        sentContact = None
+        for submission in submissions["submissions"]:
+            if submission["email"] == contact_data["email"]:
+                contactId = submission["id"]
+                sentContact = submission
+                break
+        
+        assert contactId is not None
+        assert sentContact is not None
+        assert sentContact["status"] == ContactStatus.SENT.value
+        assert sentContact["adminId"] is None
+        
+        # Step 2: Admin starts reviewing (status: SENT → PENDING)
+        updateData: Dict[str, Any] = {
+            "status": ContactStatus.PENDING.value,
+            "adminNote": "Starting review of this contact submission"
+        }
+        
+        response = client.put(f"/api/contact/admin/{contactId}", json=updateData, headers=admin_headers)
+        assert response.status_code == HTTPStatus.OK.value
+        
+        # Verify status and admin assignment
+        response = client.get("/api/contact/admin/submissions", headers=admin_headers)
+        submissions: Dict[str, Any] = response.json()
+        pendingContact = None
+        for submission in submissions["submissions"]:
+            if submission["id"] == contactId:
+                pendingContact = submission
+                break
+        
+        assert pendingContact is not None
+        assert pendingContact["status"] == ContactStatus.PENDING.value
+        assert pendingContact["adminId"] is not None
+        assert len(pendingContact["adminNotes"]) == 1
+        
+        # Step 3: Admin completes review (status: PENDING → DONE)
+        updateData = {
+            "status": ContactStatus.DONE.value,
+            "adminNote": "Review completed, issue resolved"
+        }
+        
+        response = client.put(f"/api/contact/admin/{contactId}", json=updateData, headers=admin_headers)
+        assert response.status_code == HTTPStatus.OK.value
+        
+        # Verify status update
+        response = client.get("/api/contact/admin/submissions", headers=admin_headers)
+        submissions: Dict[str, Any] = response.json()
+        doneContact = None
+        for submission in submissions["submissions"]:
+            if submission["id"] == contactId:
+                doneContact = submission
+                break
+        
+        assert doneContact is not None
+        assert doneContact["status"] == ContactStatus.DONE.value
+        assert doneContact["adminId"] is not None  # Admin still assigned
+        assert len(doneContact["adminNotes"]) == 2
+        
+        # Step 4: User validates changes (status: DONE → CLOSED)
+        updateData = {
+            "status": ContactStatus.CLOSED.value,
+            "adminNote": "User validated changes, marking as closed"
+        }
+        
+        response = client.put(f"/api/contact/admin/{contactId}", json=updateData, headers=admin_headers)
+        assert response.status_code == HTTPStatus.OK.value
+        
+        # Verify final status
+        response = client.get("/api/contact/admin/submissions", headers=admin_headers)
+        submissions: Dict[str, Any] = response.json()
+        closedContact = None
+        for submission in submissions["submissions"]:
+            if submission["id"] == contactId:
+                closedContact = submission
+                break
+        
+        assert closedContact is not None
+        assert closedContact["status"] == ContactStatus.CLOSED.value
+        assert closedContact["adminId"] is not None  # Admin still assigned for history
+        assert len(closedContact["adminNotes"]) == 3
+    
+    def test_contact_status_values_validation(self, client: TestClient, admin_token: str) -> None:
+        """Test that all new contact status values are properly validated."""
+        headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
+        
+        # Create contact submission first
+        contact_data: Dict[str, str] = {
+            "email": "statustest@example.com",
+            "message": "Test status validation"
+        }
+        
+        with patch('app.services.email.email_service.send_contact_email') as mock_email:
+            mock_email.return_value = (True, "Email sent successfully", "msg-status-test")
+            response = client.post("/api/contact/send", json=contact_data, headers=headers)
+            assert response.status_code == HTTPStatus.OK.value
+        
+        # Get contact ID
+        response = client.get("/api/contact/admin/submissions", headers=headers)
+        submissions: Dict[str, Any] = response.json()
+        contactId: int = None
+        for submission in submissions["submissions"]:
+            if submission["email"] == contact_data["email"]:
+                contactId = submission["id"]
+                break
+        
+        assert contactId is not None
+        
+        # Test each valid status
+        valid_statuses = [
+            ContactStatus.SENT.value,
+            ContactStatus.PENDING.value,
+            ContactStatus.DONE.value,
+            ContactStatus.CLOSED.value
+        ]
+        
+        for status in valid_statuses:
+            updateData: Dict[str, Any] = {
+                "status": status
+            }
+            
+            response = client.put(f"/api/contact/admin/{contactId}", json=updateData, headers=headers)
+            assert response.status_code == HTTPStatus.OK.value
+            
+            # Verify status was updated
+            response = client.get("/api/contact/admin/submissions", headers=headers)
+            submissions: Dict[str, Any] = response.json()
+            updatedContact = None
+            for submission in submissions["submissions"]:
+                if submission["id"] == contactId:
+                    updatedContact = submission
+                    break
+            
+            assert updatedContact is not None
+            assert updatedContact["status"] == status
+        
+        # Test invalid status
+        updateData = {
+            "status": "INVALID_STATUS"
+        }
+        
+        response = client.put(f"/api/contact/admin/{contactId}", json=updateData, headers=headers)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY.value

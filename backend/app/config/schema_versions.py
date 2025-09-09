@@ -14,7 +14,7 @@ class SchemaVersions:
     # Collection schema versions
     USERS = 1
     PRODUCTS = 2  # Updated for pagination enhancements and totalPages/hasNext/hasPrev fields
-    CONTACTS = 2  # Updated for AdminNote structure
+    CONTACTS = 3  # Updated to include adminId field for tracking admin assignments
     CARTS = 1
     WISHLISTS = 1
     TOKEN_BLACKLIST = 1

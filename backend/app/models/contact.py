@@ -52,7 +52,8 @@ class ContactModel:
         email: str,
         message: str,
         userId: Optional[int] = None,
-        status: ContactStatus = ContactStatus.PENDING,
+        status: ContactStatus = ContactStatus.SENT,
+        adminId: Optional[int] = None,
         messageId: Optional[str] = None,
         errorMessage: Optional[str] = None,
         adminNotes: Optional[List[AdminNote]] = None,
@@ -65,6 +66,7 @@ class ContactModel:
         self.message = message
         self.userId = userId
         self.status = status
+        self.adminId = adminId
         self.messageId = messageId
         self.errorMessage = errorMessage
         self.adminNotes = adminNotes or []
@@ -80,6 +82,7 @@ class ContactModel:
             "message": self.message,
             "userId": self.userId,
             "status": self.status,
+            "adminId": self.adminId,
             "messageId": self.messageId,
             "errorMessage": self.errorMessage,
             "adminNotes": [note.to_dict() for note in self.adminNotes] if self.adminNotes else [],
@@ -109,11 +112,23 @@ class ContactModel:
         
         return cls(**converted_data)
     
-    def update_status(self, status: ContactStatus, message_id: Optional[str] = None, error_message: Optional[str] = None):
-        """Update contact submission status."""
+    def update_status(self, status: ContactStatus, adminId: Optional[int] = None, message_id: Optional[str] = None, error_message: Optional[str] = None):
+        """Update contact submission status and optionally assign admin."""
         self.status = status
+        if adminId is not None:
+            self.adminId = adminId
         self.messageId = message_id
         self.errorMessage = error_message
+        self.updatedAt = datetime.now()
+    
+    def assign_admin(self, adminId: int):
+        """Assign an admin to this contact submission."""
+        self.adminId = adminId
+        self.updatedAt = datetime.now()
+    
+    def unassign_admin(self):
+        """Remove admin assignment from this contact submission."""
+        self.adminId = None
         self.updatedAt = datetime.now()
     
     def add_admin_note(self, adminId: int, note: str):

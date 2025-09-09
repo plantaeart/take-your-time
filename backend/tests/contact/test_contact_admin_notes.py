@@ -351,8 +351,8 @@ class TestContactEndpointAdminNotes:
         
         # Update both status and add admin note
         updateData: Dict[str, Any] = {
-            "status": ContactStatus.SENT.value,
-            "adminNote": "Contact has been processed and resolved"
+            "status": ContactStatus.PENDING.value,  # Changed to PENDING to test auto-assignment
+            "adminNote": "Contact has been processed and is under review"
         }
         
         response = client.put(f"/api/contact/admin/{contactId}", json=updateData, headers=headers)
@@ -368,9 +368,14 @@ class TestContactEndpointAdminNotes:
                 break
         
         assert updatedContact is not None
-        assert updatedContact["status"] == ContactStatus.SENT.value
+        assert updatedContact["status"] == ContactStatus.PENDING.value
         assert len(updatedContact["adminNotes"]) == 1
         assert updatedContact["adminNotes"][0]["note"] == updateData["adminNote"]
+        
+        # Verify that admin was automatically assigned when status changed to PENDING
+        assert "adminId" in updatedContact
+        assert updatedContact["adminId"] is not None
+        assert isinstance(updatedContact["adminId"], int)
         
     def test_contact_admin_note_unauthorized(self, client: TestClient, user_token: str) -> None:
         """Test that regular users cannot add admin notes."""
@@ -390,4 +395,140 @@ class TestContactEndpointAdminNotes:
         }
         
         response = client.put("/api/contact/admin/999", json=updateData)
+        assert response.status_code == HTTPStatus.UNAUTHORIZED.value
+
+
+class TestContactAdminAssignment:
+    """Test admin assignment functionality in contact submissions."""
+    
+    def test_admin_auto_assignment_on_pending_status(self, client: TestClient, admin_token: str) -> None:
+        """Test that admin is automatically assigned when status changes to PENDING."""
+        headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
+        
+        # Create contact submission
+        contactData: Dict[str, Any] = {
+            "email": "autoassign@test.com",
+            "message": "Test message for admin auto-assignment"
+        }
+        
+        response = client.post("/api/contact/send", json=contactData, headers=headers)
+        assert response.status_code == HTTPStatus.OK.value
+        
+        # Get contact ID
+        response = client.get("/api/contact/admin/submissions", headers=headers)
+        submissions: Dict[str, Any] = response.json()
+        contactId: int = None
+        originalContact = None
+        for submission in submissions["submissions"]:
+            if submission["email"] == contactData["email"]:
+                contactId = submission["id"]
+                originalContact = submission
+                break
+        
+        assert contactId is not None
+        assert originalContact is not None
+        
+        # Verify initially no admin assigned (status should be SENT)
+        assert originalContact["status"] == ContactStatus.SENT.value
+        assert originalContact["adminId"] is None
+        
+        # Update status to PENDING (should trigger auto-assignment)
+        updateData: Dict[str, Any] = {
+            "status": ContactStatus.PENDING.value
+        }
+        
+        response = client.put(f"/api/contact/admin/{contactId}", json=updateData, headers=headers)
+        assert response.status_code == HTTPStatus.OK.value
+        
+        # Verify admin was automatically assigned
+        response = client.get("/api/contact/admin/submissions", headers=headers)
+        submissions: Dict[str, Any] = response.json()
+        updatedContact = None
+        for submission in submissions["submissions"]:
+            if submission["id"] == contactId:
+                updatedContact = submission
+                break
+        
+        assert updatedContact is not None
+        assert updatedContact["status"] == ContactStatus.PENDING.value
+        assert updatedContact["adminId"] is not None
+        assert isinstance(updatedContact["adminId"], int)
+    
+    def test_admin_unassignment_endpoint(self, client: TestClient, admin_token: str) -> None:
+        """Test unassigning admin from contact submission."""
+        headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
+        
+        # Create contact submission
+        contactData: Dict[str, Any] = {
+            "email": "unassign@test.com",
+            "message": "Test message for admin unassignment"
+        }
+        
+        response = client.post("/api/contact/send", json=contactData, headers=headers)
+        assert response.status_code == HTTPStatus.OK.value
+        
+        # Get contact ID and assign admin by changing to PENDING
+        response = client.get("/api/contact/admin/submissions", headers=headers)
+        submissions: Dict[str, Any] = response.json()
+        contactId: int = None
+        for submission in submissions["submissions"]:
+            if submission["email"] == contactData["email"]:
+                contactId = submission["id"]
+                break
+        
+        assert contactId is not None
+        
+        # Assign admin by changing status to PENDING
+        updateData: Dict[str, Any] = {
+            "status": ContactStatus.PENDING.value
+        }
+        
+        response = client.put(f"/api/contact/admin/{contactId}", json=updateData, headers=headers)
+        assert response.status_code == HTTPStatus.OK.value
+        
+        # Verify admin was assigned
+        response = client.get("/api/contact/admin/submissions", headers=headers)
+        submissions: Dict[str, Any] = response.json()
+        assignedContact = None
+        for submission in submissions["submissions"]:
+            if submission["id"] == contactId:
+                assignedContact = submission
+                break
+        
+        assert assignedContact is not None
+        assert assignedContact["adminId"] is not None
+        
+        # Unassign admin
+        response = client.post(f"/api/contact/admin/{contactId}/unassign", json={}, headers=headers)
+        assert response.status_code == HTTPStatus.OK.value
+        
+        # Verify admin was unassigned
+        response = client.get("/api/contact/admin/submissions", headers=headers)
+        submissions: Dict[str, Any] = response.json()
+        unassignedContact = None
+        for submission in submissions["submissions"]:
+            if submission["id"] == contactId:
+                unassignedContact = submission
+                break
+        
+        assert unassignedContact is not None
+        assert unassignedContact["adminId"] is None
+    
+    def test_admin_unassignment_not_found(self, client: TestClient, admin_token: str) -> None:
+        """Test unassigning admin from non-existent contact."""
+        headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
+        
+        response = client.post("/api/contact/admin/99999/unassign", json={}, headers=headers)
+        assert response.status_code == HTTPStatus.NOT_FOUND.value
+    
+    def test_admin_unassignment_unauthorized(self, client: TestClient, user_token: str) -> None:
+        """Test that regular users cannot unassign admins."""
+        headers: Dict[str, str] = {"Authorization": f"Bearer {user_token}"}
+        
+        response = client.post("/api/contact/admin/1/unassign", json={}, headers=headers)
+        assert response.status_code == HTTPStatus.FORBIDDEN.value
+    
+    def test_admin_unassignment_no_auth(self, client: TestClient) -> None:
+        """Test that unauthenticated users cannot unassign admins."""
+        response = client.post("/api/contact/admin/1/unassign", json={})
         assert response.status_code == HTTPStatus.UNAUTHORIZED.value
