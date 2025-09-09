@@ -38,7 +38,7 @@
   }
 
   <!-- Actions Column -->
-  <div class="table-cell actions-cell">
+  <div class="table-cell actions-cell" [style.--actions-column-width]="actionsColumnWidth()">
     @if (isEditing()) {
       <!-- Edit Mode Actions -->
       <div class="action-buttons">
@@ -85,7 +85,14 @@
         }
         
         <!-- Custom Actions -->
-        @if (customActions() && customActions().length > 0) {
+        @if (isContactRow()) {
+          <!-- Contact-specific actions using ContactActionsComponent -->
+          <app-contact-actions
+            [contact]="getContactSubmission()!"
+            (actionCompleted)="onContactActionResult($event)">
+          </app-contact-actions>
+        } @else if (customActions() && customActions().length > 0) {
+          <!-- Generic custom actions -->
           @for (action of customActions(); track action.action) {
             @if (shouldShowCustomAction(action)) {
               <p-button 

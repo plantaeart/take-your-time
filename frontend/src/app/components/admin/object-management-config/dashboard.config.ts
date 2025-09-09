@@ -17,10 +17,12 @@ import { createProductDashboardConfig } from './product.config';
 import { createUserDashboardConfig } from './user.config';
 import { createCartDashboardConfig } from './user-cart.config';
 import { createWishlistDashboardConfig } from './user-wishlist.config';
+import { createContactConfig } from './contact.config';
 import { Product } from '../../../models/product.model';
 import { User } from '../../../models/user.model';
 import { AdminUserCartData } from '../../../models/user-cart.model';
 import { AdminUserWishlistData } from '../../../models/user-wishlist.model';
+import { ContactSubmission, AdminUser } from '../../../models/contact.model';
 
 // Dashboard tab configuration type
 export interface DashboardConfig {
@@ -29,6 +31,7 @@ export interface DashboardConfig {
     users: DashboardTabConfig<User>;
     carts: DashboardTabConfig<AdminUserCartData>;
     wishlists: DashboardTabConfig<AdminUserWishlistData>;
+    contacts: DashboardTabConfig<ContactSubmission>;
   };
 }
 
@@ -49,6 +52,9 @@ export interface DashboardDependencies {
   // Wishlist hooks and services
   wishlistManagement: any;
   adminWishlistSearch: any;
+  
+  // Contact hooks and services
+  adminContact: any;
   
   // Shared services
   messageService: any;
@@ -88,7 +94,84 @@ export function createDashboardConfig(deps: DashboardDependencies): DashboardCon
         deps.adminWishlistSearch,
         deps.messageService,
         deps.collapseWishlistRow
-      )
+      ),
+      
+      contacts: {
+        ...createContactConfig(),
+        // Data and state bindings for contact tab
+        dataSignal: deps.adminContact.contactSubmissions,
+        loadingSignal: deps.adminContact.isLoading,
+        errorSignal: deps.adminContact.error,
+        
+        // Data loader configuration
+        dataLoader: {
+          handler: deps.adminContact.loadContactSubmissions,
+          refreshTrigger: deps.adminContact.loadContactSubmissions
+        },
+        
+        // CRUD operations configuration
+        operations: {
+          update: {
+            enabled: true,
+            handler: deps.adminContact.updateContactSubmission,
+            successMessage: 'Contact submission updated successfully',
+            errorMessage: 'Failed to update contact submission',
+            refreshAfterUpdate: true
+          },
+          delete: {
+            enabled: true,
+            handler: deps.adminContact.deleteContactSubmission,
+            successMessage: 'Contact submission deleted successfully',
+            errorMessage: 'Failed to delete contact submission',
+            refreshAfterDelete: true
+          },
+          bulkDelete: {
+            enabled: true,
+            handler: deps.adminContact.bulkDeleteContactSubmissions,
+            successMessage: 'Selected contact submissions deleted successfully',
+            errorMessage: 'Failed to delete contact submissions',
+            refreshAfterDelete: true
+          }
+        },
+        
+        // Custom actions handler - now handled by ContactActionsComponent
+        executeCustomAction: async (action: string, contactId: number, actionData?: any) => {
+          // This is now primarily handled by the ContactActionsComponent
+          // But we keep this for compatibility and fallback scenarios
+          try {
+            switch (action) {
+              case 'assignAdmin':
+              case 'addAdminNote':
+              case 'viewFullMessage':
+              case 'viewAdminNotes':
+                // These actions are now handled by ContactActionsComponent
+                // No need to do anything here as the component handles the API calls
+                break;
+                
+              default:
+                deps.messageService.add({
+                  severity: 'error',
+                  summary: 'Unknown Action',
+                  detail: `Unknown custom action: ${action}`
+                });
+            }
+          } catch (error: any) {
+            deps.messageService.add({
+              severity: 'error',
+              summary: 'Action Failed',
+              detail: `Failed to execute ${action}: ${error.message || error}`
+            });
+          }
+        },
+        
+        // Notification configuration
+        notifications: {
+          showSuccessMessages: true,
+          showErrorMessages: true,
+          successDuration: 3000,
+          errorDuration: 5000
+        }
+      }
     }
   };
 }

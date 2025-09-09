@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, input, output, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonConfirmPopupComponent } from '../../ui/button-confirm-popup/button-confirm-popup.component';
 import { ColumnConfig } from '../object-management-config/table-config.interface';
@@ -30,6 +30,23 @@ export class TabColumnsHeaderComponent {
   filterApply = output<{ field: string; value: any }>();
   filterClear = output<string>();
   toggleSelectAll = output<void>();
+
+  // Computed properties
+  /**
+   * Get the actions column width from configuration
+   */
+  actionsColumnWidth = computed(() => {
+    const actionsConfig = this.config().actions;
+    const hierarchyLevel = this.hierarchyLevel();
+    
+    // Use configured width if available
+    if (actionsConfig?.actionsColumnWidth) {
+      return actionsConfig.actionsColumnWidth;
+    }
+    
+    // Default widths based on hierarchy level
+    return hierarchyLevel > 0 ? '7rem' : '8.5rem';
+  });
   
   /**
    * Get sort icon class based on current sort state

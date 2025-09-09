@@ -7,6 +7,12 @@ export interface ContactRequest {
   message: string;
 }
 
+export interface AdminUser {
+  id: number;
+  username: string;
+  email: string;
+}
+
 export interface ContactResponse {
   success: boolean;
   message: string;
@@ -25,6 +31,7 @@ export interface ContactSubmission {
   message: string;
   userId?: number;
   status: ContactStatus;
+  adminId?: number;          // ID of admin currently reviewing this submission
   messageId?: string;
   errorMessage?: string;
   adminNotes: AdminNoteResponse[];
@@ -45,7 +52,18 @@ export interface ContactUpdate {
 }
 
 export enum ContactStatus {
-  PENDING = 'PENDING',
-  SENT = 'SENT',
-  FAILED = 'FAILED'
+  SENT = 'SENT',       // User sent the contact submission
+  PENDING = 'PENDING', // Admin is reviewing the submission
+  DONE = 'DONE',       // Admin has reviewed and completed
+  CLOSED = 'CLOSED'    // User has validated the changes/response
+}
+
+export interface ContactListResponse {
+  items: ContactSubmission[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
 }

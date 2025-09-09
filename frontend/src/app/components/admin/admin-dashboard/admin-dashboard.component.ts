@@ -10,6 +10,7 @@ import { useProducts } from '../../../hooks/product.hooks';
 import { useAdminProductSearch, useAdminUserSearch, useAdminCartSearch, useAdminWishlistSearch } from '../../../hooks/admin-search.hooks';
 import { useUserManagement } from '../../../hooks/user-management.hooks';
 import { useCartManagement } from '../../../hooks/cart-management.hooks';
+import { useAdminContact } from '../../../hooks/admin-contact.hooks';
 
 
 // NEW: Import the generic dashboard configuration
@@ -57,6 +58,7 @@ export class AdminDashboardComponent implements OnInit {
   adminCartSearch = useAdminCartSearch();
   wishlistManagement = useWishlistManagement();
   adminWishlistSearch = useAdminWishlistSearch();
+  adminContact = useAdminContact();
   
   // NEW: Create generic dashboard configuration
   dashboardConfig!: DashboardConfig;
@@ -95,6 +97,7 @@ export class AdminDashboardComponent implements OnInit {
       adminCartSearch: this.adminCartSearch,
       wishlistManagement: this.wishlistManagement,
       adminWishlistSearch: this.adminWishlistSearch,
+      adminContact: this.adminContact,
       messageService: this.messageService,
       collapseCartRow: collapseCartRow,
       collapseWishlistRow: collapseWishlistRow
@@ -140,6 +143,11 @@ export class AdminDashboardComponent implements OnInit {
       await this.operationsHandler.handleDataLoad('wishlists',
         this.dashboardConfig.tabs.wishlists.dataLoader?.initialParams
       );
+      
+      // Load contacts
+      await this.operationsHandler.handleDataLoad('contacts',
+        this.dashboardConfig.tabs.contacts.dataLoader?.initialParams
+      );
     } catch (error) {
       console.error('Error loading initial dashboard data:', error);
     }
@@ -157,6 +165,9 @@ export class AdminDashboardComponent implements OnInit {
   
   wishlistData = computed(() => this.dashboardConfig?.tabs.wishlists.dataSignal?.() || []);
   isLoadingWishlists = computed(() => this.dashboardConfig?.tabs.wishlists.loadingSignal?.() || false);
+  
+  contactData = computed(() => this.dashboardConfig?.tabs.contacts.dataSignal?.() || []);
+  isLoadingContacts = computed(() => this.dashboardConfig?.tabs.contacts.loadingSignal?.() || false);
 
   // NEW: Generic data loading handlers for each tab
   async onProductDataLoad(event: { page: number; size: number; sorts: any[]; filters: any }): Promise<void> {
@@ -173,6 +184,10 @@ export class AdminDashboardComponent implements OnInit {
   
   async onWishlistDataLoad(event: { page: number; size: number; sorts: any[]; filters: any }): Promise<void> {
     await this.operationsHandler.handleDataLoad('wishlists', event);
+  }
+  
+  async onContactDataLoad(event: { page: number; size: number; sorts: any[]; filters: any }): Promise<void> {
+    await this.operationsHandler.handleDataLoad('contacts', event);
   }
 
   /**

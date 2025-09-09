@@ -213,6 +213,7 @@
   border-radius: 4px;
   background-color: var(--surface-card);
   min-width: max-content; /* Allow table to expand beyond container */
+  width: max-content; /* Force container to size to content */
 }
 
 
@@ -223,6 +224,7 @@
   display: flex;
   flex-direction: column;
   min-width: max-content; /* Allow body to expand */
+  width: max-content; /* Force expansion to content size */
 }
 
 /* Row cell alignment - applies to row-tab component */
@@ -257,6 +259,13 @@
   min-height: 3rem; /* Match header cell height */
 }
 
+/* Override for actions cell to allow expansion */
+:host ::ng-deep app-row-tab .table-cell.actions-cell {
+  overflow: visible !important;
+  min-width: max-content !important;
+  width: max-content !important;
+}
+
 :host ::ng-deep app-row-tab .table-cell:last-child {
   border-right: none;
 }
@@ -272,7 +281,7 @@
   justify-content: center;
   gap: 0.25rem;
   padding: 0.5rem 0.3rem !important;
-  overflow: visible !important; /* Ensure action buttons are visible */
+  white-space: nowrap !important; /* Prevent wrapping */
 }
 
 :host ::ng-deep app-row-tab .table-cell.data-cell {

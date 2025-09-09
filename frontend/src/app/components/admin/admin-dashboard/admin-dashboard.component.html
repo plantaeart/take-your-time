@@ -65,11 +65,13 @@
 
     <!-- Contact Mails Management Tab -->
     <p-tabPanel header="Contact Mails" leftIcon="pi pi-envelope">
-      <div class="tab-content">
-        <h3>Contact Mails Management (RUD)</h3>
-        <p>Read, Update, Delete contact mails</p>
-        <!-- TODO: Implement contact mails RUD component -->
-      </div>
+      <app-tab-management 
+        [config]="dashboardConfig.tabs.contacts"
+        [data]="contactData()"
+        [loading]="isLoadingContacts()"
+        [totalRecordsInput]="adminContact.pagination().total"
+        (dataLoad)="onContactDataLoad($event)">
+      </app-tab-management>
     </p-tabPanel>
 
   </p-tabView>

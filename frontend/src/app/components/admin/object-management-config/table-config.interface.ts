@@ -44,6 +44,7 @@ export interface ActionConfig {
   canExport?: boolean;
   confirmDelete?: boolean;
   customActions?: CustomActionConfig[];
+  actionsColumnWidth?: string; // Custom width for actions column (e.g., '8.5rem', '120px', 'max-content')
 }
 
 export interface CustomActionConfig {

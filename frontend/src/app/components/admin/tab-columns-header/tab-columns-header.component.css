@@ -48,6 +48,10 @@
   font-weight: 600;
   color: var(--text-color);
   text-align: center;
+  /* Use configured width from CSS custom property */
+  width: var(--actions-column-width, 8.5rem);
+  min-width: var(--actions-column-width, 8.5rem);
+  flex-shrink: 0;
 }
 
 .header-cell.data-header {
@@ -64,6 +68,10 @@
 .table-grid-header.hierarchy-level-1 .header-cell.actions-header {
   padding: 0.4rem 0.3rem;
   min-height: 2.5rem;
+  /* Use configured width from CSS custom property (fallback to 7rem for child level) */
+  width: var(--actions-column-width, 7rem);
+  min-width: var(--actions-column-width, 7rem);
+  flex-shrink: 0;
 }
 
 /* Column header content layout */

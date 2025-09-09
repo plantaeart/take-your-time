@@ -17,6 +17,8 @@ import { UploadInputComponent } from '../../ui/table-inputs/upload-input/upload-
 import { CheckboxInputComponent } from '../../ui/table-inputs/checkbox-input/checkbox-input.component';
 import { QuantityControlsComponent } from '../../ui/quantity-controls/quantity-controls.component';
 import { ProductSelectComponent } from '../../ui/product-select/product-select.component';
+import { ContactActionsComponent } from '../../ui/admin-dashboard/contact-actions/contact-actions.component';
+import { ContactSubmission } from '../../../models/contact.model';
 
 @Component({
   selector: 'app-row-tab',
@@ -37,7 +39,8 @@ import { ProductSelectComponent } from '../../ui/product-select/product-select.c
     UploadInputComponent,
     CheckboxInputComponent,
     QuantityControlsComponent,
-    ProductSelectComponent
+    ProductSelectComponent,
+    ContactActionsComponent
   ],
   templateUrl: './row-tab.component.html',
   styleUrl: './row-tab.component.css'
@@ -107,6 +110,22 @@ export class RowTabComponent<T = any> {
   
   customActions = computed(() => {
     return this.config().actions.customActions || [];
+  });
+
+  /**
+   * Get the actions column width from configuration
+   */
+  actionsColumnWidth = computed(() => {
+    const actionsConfig = this.config().actions;
+    const hierarchyLevel = this.hierarchyLevel();
+    
+    // Use configured width if available
+    if (actionsConfig?.actionsColumnWidth) {
+      return actionsConfig.actionsColumnWidth;
+    }
+    
+    // Default widths based on hierarchy level
+    return hierarchyLevel > 0 ? '7rem' : '8.5rem';
   });
   
   // Effect to initialize edit data when editing starts
@@ -282,6 +301,39 @@ export class RowTabComponent<T = any> {
       
       if (value === null || value === undefined) {
         return '-';
+      }
+
+      // Handle special display formats first
+      if (column.displayFormat) {
+        switch (column.displayFormat) {
+          case 'adminNotesCount':
+            if (Array.isArray(value)) {
+              const count = value.length;
+              return count > 0 ? `${count} note${count > 1 ? 's' : ''}` : 'No notes';
+            }
+            return 'No notes';
+            
+          case 'noteCount':
+            if (Array.isArray(value)) {
+              const count = value.length;
+              return count > 0 ? `${count} note${count > 1 ? 's' : ''}` : 'No notes';
+            }
+            return 'No notes';
+            
+          case 'truncate:100':
+            const text = value?.toString() || '-';
+            return text.length > 100 ? text.substring(0, 100) + '...' : text;
+            
+          case 'adminName':
+            // This would need admin user lookup - for now show ID
+            return value ? `Admin ${value}` : 'Unassigned';
+            
+          case 'userId':
+            return value ? value.toString() : 'Guest';
+            
+          case 'datetime':
+            return new Date(value).toLocaleString();
+        }
       }
 
       switch (column.type) {
@@ -484,6 +536,46 @@ export class RowTabComponent<T = any> {
       // Update the signal with cleared fields
       this.editData.set(currentData);
       this._productCache = null; // Clear cache
+    }
+  }
+
+  // ============= CONTACT-SPECIFIC METHODS =============
+  
+  /**
+   * Check if this is a contact row that should use ContactActionsComponent
+   */
+  isContactRow(): boolean {
+    return this.config().objectName === 'Contact' && this.item() && 
+           typeof this.item() === 'object' && this.item() !== null &&
+           'email' in (this.item() as object) && 'message' in (this.item() as object);
+  }
+
+  /**
+   * Get contact submission data for ContactActionsComponent
+   */
+  getContactSubmission(): ContactSubmission | null {
+    if (!this.isContactRow()) return null;
+    return this.item() as ContactSubmission;
+  }
+
+  /**
+   * Handle result from ContactActionsComponent
+   */
+  onContactActionResult(result: { action: string; success: boolean; message?: string }): void {
+    if (result.success) {
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Success',
+        detail: result.message || 'Action completed successfully'
+      });
+      // Emit save to trigger refresh
+      this.save.emit(this.item());
+    } else {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: result.message || 'Action failed'
+      });
     }
   }
 }

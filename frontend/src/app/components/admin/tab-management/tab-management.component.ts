@@ -314,7 +314,10 @@ export class TabManagementComponent<T = any> implements OnInit {
   // Computed property for grid template columns
   gridTemplateColumns = computed(() => {
     const selectWidth = this.config().actions.canBulkDelete ? '3.75rem ' : '';
-    const actionsWidth = '7.5rem ';
+    
+    // Use configured actions column width from config, fallback to default
+    const configuredWidth = this.config().actions?.actionsColumnWidth;
+    const actionsWidth = configuredWidth ? `${configuredWidth} ` : '8.5rem ';
     
     // Add hierarchy/expansion column width if hierarchy is enabled
     const hierarchyWidth = this.isHierarchyEnabled() ? '3.75rem ' : '';
@@ -335,7 +338,10 @@ export class TabManagementComponent<T = any> implements OnInit {
   // Computed property for child level grid template columns
   childGridTemplateColumns = computed(() => {
     const selectWidth = this.config().actions.canBulkDelete ? '3.75rem ' : '';
-    const actionsWidth = '7.5rem ';
+    
+    // Use configured actions column width from config, fallback to smaller default for child level
+    const configuredWidth = this.config().actions?.actionsColumnWidth;
+    const actionsWidth = configuredWidth ? `${configuredWidth} ` : '7rem ';
     
     // Add hierarchy/expansion column width if hierarchy is enabled
     const hierarchyWidth = this.isHierarchyEnabled() ? '3.75rem ' : '';
@@ -953,7 +959,17 @@ export class TabManagementComponent<T = any> implements OnInit {
       
       await this.executeChildAction(childActionName, item);
     } else {
-      // Unknown custom action
+      // Handle general custom actions via config's executeCustomAction
+      if (config.executeCustomAction && (item as any).id) {
+        await config.executeCustomAction(action, (item as any).id);
+      } else {
+        // Unknown custom action
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Unknown Action',
+          detail: `Action "${action}" is not supported`
+        });
+      }
     }
   }
 

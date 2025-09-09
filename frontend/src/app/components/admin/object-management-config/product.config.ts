@@ -213,6 +213,7 @@ const productActions: ActionConfig = {
   canBulkDelete: true,
   canExport: true,
   confirmDelete: true,
+  actionsColumnWidth: '5rem', // Standard width for Edit + Delete buttons only
   customActions: [] // Removed duplicate action
 };
 
