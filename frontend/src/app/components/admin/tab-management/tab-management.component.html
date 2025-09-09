@@ -150,6 +150,7 @@
               [hierarchyLevel]="1"
               [canExpand]="false"
               [hierarchyConfig]="hierarchyConfig()"
+              [excludeProductIds]="getExcludeProductIdsForUser(getColumnValue(hierarchicalItem.data, {field: config().dataKey}))"
               (save)="saveNewChildData($event)"
               (cancel)="cancelChildAction()">
             </app-row-tab>
@@ -169,6 +170,7 @@
               [isExpanded]="childItem.expanded || false"
               [isLoadingChildren]="childItem.loading || false"
               [hierarchyConfig]="hierarchyConfig()"
+              [excludeProductIds]="getExcludeProductIdsForUser(getColumnValue(hierarchicalItem.data, {field: config().dataKey}))"
               (edit)="startEdit(childItem.data)"
               (save)="saveEdit($event)"
               (cancel)="cancelEdit()"

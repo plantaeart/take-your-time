@@ -159,6 +159,41 @@ export class WishlistManagementStore {
   }
 
   /**
+   * Update wishlist item (replace old product with new product)
+   */
+  async updateUserWishlistItem(userId: number, oldProductId: number, newProductId: number): Promise<boolean> {
+    this._isUpdating.set(true);
+    this._error.set(null);
+
+    try {
+      await firstValueFrom(
+        this.wishlistManagementService.updateWishlistItem(userId, oldProductId, newProductId)
+      );
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Success',
+        detail: 'Wishlist item updated successfully'
+      });
+
+      // Refresh data to show updated state
+      await this.loadUserWishlists();
+      return true;
+    } catch (error: any) {
+      const errorMessage = error?.error?.detail || 'Failed to update wishlist item';
+      this._error.set(errorMessage);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Update Error',
+        detail: errorMessage
+      });
+      return false;
+    } finally {
+      this._isUpdating.set(false);
+    }
+  }
+
+  /**
    * Remove item from user's wishlist
    */
   async removeItemFromUserWishlist(userId: number, productId: number): Promise<boolean> {

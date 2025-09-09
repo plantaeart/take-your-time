@@ -30,6 +30,15 @@ export function useAdminCart() {
   };
 
   /**
+   * Update cart item (supports both quantity and product changes)
+   */
+  const updateCartItem = async (userId: number, oldProductId: number, update: { productId?: number; quantity: number }): Promise<boolean> => {
+    const success = await store.updateCartItem(userId, oldProductId, update);
+    
+    return success;
+  };
+
+  /**
    * Remove an item from a user's cart
    */
   const removeCartItem = async (userId: number, productId: number): Promise<boolean> => {
@@ -70,6 +79,7 @@ export function useAdminCart() {
     // Actions
     addItemToCart,
     updateCartItemQuantity,
+    updateCartItem,
     removeCartItem,
     clearUserCart,
     clearError,

@@ -133,16 +133,16 @@ export const LEVEL_1_CART_ITEMS_COLUMNS: ColumnConfig[] = [
     field: 'productId',
     header: 'Product ID',
     type: 'number',
-    sortable: true,
-    filterable: true,
+    sortable: false,
+    filterable: false,
     width: '12rem'
   },
   {
     field: 'productName',
     header: 'Product Name',
     type: 'text',
-    sortable: true,
-    filterable: true,
+    sortable: false,
+    filterable: false,
     width: '12rem',
     editable: true, // Allow editing for new cart items
     editComponent: 'product-select' // Use product select component for new items
@@ -151,8 +151,8 @@ export const LEVEL_1_CART_ITEMS_COLUMNS: ColumnConfig[] = [
     field: 'quantity',
     header: 'Qty',
     type: 'number',
-    sortable: true,
-    filterable: true,
+    sortable: false,
+    filterable: false,
     width: '14rem',
     editable: true, // Allow editing quantity
     editComponent: 'quantity-controls' // Use quantity controls component
@@ -162,16 +162,16 @@ export const LEVEL_1_CART_ITEMS_COLUMNS: ColumnConfig[] = [
     header: 'Unit Price',
     type: 'number',
     displayFormat: 'currency',
-    sortable: true,
-    filterable: true,
+    sortable: false,
+    filterable: false,
     width: '10rem'
   },
   {
     field: 'productStockQuantity',
     header: 'Stock',
     type: 'number',
-    sortable: true,
-    filterable: true,
+    sortable: false,
+    filterable: false,
     width: '10rem'
   },
   {
@@ -179,8 +179,8 @@ export const LEVEL_1_CART_ITEMS_COLUMNS: ColumnConfig[] = [
     header: 'Subtotal',
     type: 'number',
     displayFormat: 'currency',
-    sortable: true,
-    filterable: true,
+    sortable: false,
+    filterable: false,
     width: '10rem'
   }
 ];
@@ -505,16 +505,45 @@ export function createCartDashboardConfig(
     update: {
       enabled: true,
       handler: async (itemData: any) => {
+        console.log('🔧 Cart update handler called with:', itemData);
+        
         // Handle different types of updates based on item level
         if (itemData.hasOwnProperty('productId') && itemData.hasOwnProperty('parentUserId')) {
-          // This is a cart item (level 1) - remove from cart
+          // This is a cart item (level 1) - update quantity and/or product
           const userId = itemData.parentUserId;
-          const productId = itemData.productId;
+          const oldProductId = itemData.productId;
+          const newProductId = itemData.newProductId || itemData.productId;
+          const quantity = itemData.quantity || 1;
           
-          await cartManagement.removeItemFromUserCart(userId, productId);
+          console.log(`📝 Updating cart item: userId=${userId}, oldProductId=${oldProductId}, newProductId=${newProductId}, quantity=${quantity}`);
+          
+          // Check if we're changing the product or just the quantity
+          if (oldProductId !== newProductId) {
+            // Product change - use enhanced update with both productId and quantity
+            console.log(`🔄 Product change detected: ${oldProductId} → ${newProductId}`);
+            await cartManagement.updateUserCartItem(userId, oldProductId, { 
+              productId: newProductId, 
+              quantity 
+            });
+            console.log('✅ Cart item product updated successfully');
+          } else {
+            // Only quantity change
+            console.log(`📊 Quantity update: ${quantity}`);
+            
+            // Only proceed if quantity is valid and > 0
+            if (quantity > 0) {
+              await cartManagement.updateUserCartItem(userId, oldProductId, { quantity });
+              console.log('✅ Cart item quantity updated successfully');
+            } else {
+              // If quantity is 0 or negative, remove the item instead
+              console.log(`🗑️ Quantity is ${quantity}, removing item instead`);
+              await cartManagement.removeItemFromUserCart(userId, oldProductId);
+            }
+          }
         } else if (itemData.hasOwnProperty('userId')) {
           // This is a user (level 0) - clear their entire cart
           const userId = itemData.userId;
+          console.log(`🛒 Clearing entire cart for userId=${userId}`);
           
           await cartManagement.clearUserCart(userId);
         }

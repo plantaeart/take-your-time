@@ -7,6 +7,10 @@ export interface WishlistItemAddRequest {
   productId: number;
 }
 
+export interface WishlistItemUpdateRequest {
+  productId: number;
+}
+
 export interface ApiSuccessResponse {
   message: string;
   success?: boolean; // Optional since backend doesn't always include it
@@ -27,6 +31,14 @@ export class AdminWishlistService {
   addItemToWishlist(userId: number, payload: WishlistItemAddRequest): Observable<ApiSuccessResponse> {
     const url = `${this.baseUrl}/api/admin/users/${userId}/wishlist/items`;
     return this.http.post<ApiSuccessResponse>(url, payload);
+  }
+
+  /**
+   * Update an item in a user's wishlist (change product)
+   */
+  updateWishlistItem(userId: number, originalProductId: number, payload: WishlistItemUpdateRequest): Observable<ApiSuccessResponse> {
+    const url = `${this.baseUrl}/api/admin/users/${userId}/wishlist/items/${originalProductId}`;
+    return this.http.put<ApiSuccessResponse>(url, payload);
   }
 
   /**

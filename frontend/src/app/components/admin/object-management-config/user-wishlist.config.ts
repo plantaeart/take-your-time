@@ -131,16 +131,16 @@ export const LEVEL_1_WISHLIST_ITEMS_COLUMNS: ColumnConfig[] = [
     field: 'productId',
     header: 'Product ID',
     type: 'number',
-    sortable: true,
-    filterable: true,
+    sortable: false,
+    filterable: false,
     width: '12rem'
   },
   {
     field: 'productName',
     header: 'Product Name',
     type: 'text',
-    sortable: true,
-    filterable: true,
+    sortable: false,
+    filterable: false,
     width: '15rem',
     editable: true, // Allow editing for new wishlist items
     editComponent: 'product-select' // Use product select component for new items
@@ -149,8 +149,8 @@ export const LEVEL_1_WISHLIST_ITEMS_COLUMNS: ColumnConfig[] = [
     field: 'productPrice',
     header: 'Price',
     type: 'number',
-    sortable: true,
-    filterable: true,
+    sortable: false,
+    filterable: false,
     filterType: 'range',
     filterMin: 0,
     filterStep: 10,
@@ -161,8 +161,8 @@ export const LEVEL_1_WISHLIST_ITEMS_COLUMNS: ColumnConfig[] = [
     field: 'productStockQuantity',
     header: 'Stock',
     type: 'number',
-    sortable: true,
-    filterable: true,
+    sortable: false,
+    filterable: false,
     width: '8rem'
   }
 ];
@@ -170,7 +170,7 @@ export const LEVEL_1_WISHLIST_ITEMS_COLUMNS: ColumnConfig[] = [
 // Level 1 (Child) - Wishlist item actions
 export const LEVEL_1_WISHLIST_ITEMS_ACTIONS: ActionConfig = {
   canAdd: true, // Can add new items to wishlist
-  canEdit: false, // Cannot edit wishlist item properties (price comes from product)
+  canEdit: true, // Can edit wishlist item properties (enable edit functionality)
   canDelete: true, // Can remove items from wishlist
   canBulkDelete: true,
   canExport: false,
@@ -298,6 +298,9 @@ export function createWishlistDashboardConfig(
     actions: LEVEL_0_USER_ACTIONS,
     dataKey: 'id',
     
+    // Include hierarchy configuration
+    hierarchyConfig: ADMIN_USER_WISHLIST_TABLE_CONFIG.hierarchyConfig,
+    
     // Include child actions from main config but override with working save handler
     childActions: {
       'ADD_WISHLIST_ITEM': {
@@ -325,6 +328,98 @@ export function createWishlistDashboardConfig(
         },
         childEntityName: 'Wishlist Item'
       }
+    },
+    
+    // CRUD operations configuration
+    operations: {
+      create: {
+        enabled: false,
+        handler: async () => false,
+        errorMessage: 'Wishlist creation not supported from admin dashboard'
+      },
+      
+      update: {
+        enabled: true,
+        handler: async (itemData: any) => {
+          // Handle different types of updates based on item level
+          if (itemData.hasOwnProperty('productId') && itemData.hasOwnProperty('parentUserId')) {
+            // This is a wishlist item (level 1) - wishlist items can be edited for product selection
+            const userId = itemData.parentUserId;
+            const oldProductId = itemData.productId;
+            const newProductId = itemData.newProductId || itemData.productId;
+            
+            // If product ID changed, update the wishlist item
+            if (oldProductId !== newProductId) {
+              await wishlistManagement.updateUserWishlistItem(userId, oldProductId, newProductId);
+            }
+          } else if (itemData.hasOwnProperty('userId')) {
+            // This is a user (level 0) - clear their entire wishlist
+            const userId = itemData.userId;
+            await wishlistManagement.clearUserWishlist(userId);
+          }
+          return true;
+        },
+        successMessage: 'Wishlist Updated Successfully! 💝',
+        errorMessage: 'Wishlist Update Failed! ❌',
+        refreshAfterUpdate: true,
+        refreshParams: { page: 1, size: 25, sorts: [], filters: {} }
+      },
+      
+      delete: {
+        enabled: true,
+        handler: async (itemData: any) => {
+          // Handle different types of deletion based on item level
+          if (itemData.productId && itemData.parentUserId) {
+            // This is a wishlist item (level 1) - remove from wishlist
+            const userId = itemData.parentUserId;
+            const productId = itemData.productId;
+            
+            await wishlistManagement.removeItemFromUserWishlist(userId, productId);
+          } else if (itemData.userId && !itemData.parentUserId) {
+            // This is a user (level 0) - clear their entire wishlist
+            const userId = itemData.userId;
+            await wishlistManagement.clearUserWishlist(userId);
+          }
+          return true;
+        },
+        successMessage: 'Item Removed Successfully! 🗑️',
+        errorMessage: 'Item Removal Failed! ❌',
+        refreshAfterDelete: true,
+        onSuccessCallback: (itemData: any) => {
+          // Check if this was a wishlist clearing operation (level 0 user)
+          if (itemData.userId && !itemData.parentUserId) {
+            // This was a user wishlist clear - collapse the parent row
+            if (collapseRowCallback) {
+              collapseRowCallback(itemData.userId);
+            }
+          }
+        }
+      },
+      
+      bulkDelete: {
+        enabled: false,
+        handler: async () => false,
+        errorMessage: 'Bulk wishlist deletion not supported'
+      },
+      
+      export: {
+        enabled: true,
+        handler: async () => {
+          return adminWishlistSearch.state().items;
+        },
+        filename: 'user-wishlists-export',
+        format: 'csv',
+        successMessage: 'Wishlist Data Exported Successfully! 📋',
+        errorMessage: 'Wishlist Export Failed! ❌'
+      }
+    },
+    
+    // Define notifications
+    notifications: {
+      showSuccessMessages: true,
+      showErrorMessages: true,
+      successDuration: 3000,
+      errorDuration: 5000
     },
     
     // Data loading functions
@@ -368,14 +463,16 @@ export function createWishlistDashboardConfig(
     dataSignal: () => adminWishlistSearch.state().items,
     loadingSignal: () => adminWishlistSearch.state().isLoading,
     
-    // Hierarchy configuration
-    hierarchyConfig: ADMIN_USER_WISHLIST_TABLE_CONFIG.hierarchyConfig,
-    
     // Search, export, pagination configs
     search: ADMIN_USER_WISHLIST_TABLE_CONFIG.search,
     export: ADMIN_USER_WISHLIST_TABLE_CONFIG.export,
     pagination: ADMIN_USER_WISHLIST_TABLE_CONFIG.pagination,
     globalFilterFields: ADMIN_USER_WISHLIST_TABLE_CONFIG.globalFilterFields,
+    
+    // Tab configuration
+    tabTitle: 'User Wishlists',
+    tabIcon: 'pi pi-heart',
+    tabOrder: 4,
     
     // NEW: CRUD operations for wishlist management
     createItem: async (item: any) => {

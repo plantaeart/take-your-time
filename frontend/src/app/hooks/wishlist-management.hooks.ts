@@ -39,6 +39,9 @@ export function useWishlistManagement() {
     addItemToUserWishlist: (userId: number, item: WishlistItemCreate) => 
       wishlistManagementStore.addItemToUserWishlist(userId, item),
     
+    updateUserWishlistItem: (userId: number, oldProductId: number, newProductId: number) => 
+      wishlistManagementStore.updateUserWishlistItem(userId, oldProductId, newProductId),
+    
     removeItemFromUserWishlist: (userId: number, productId: number) => 
       wishlistManagementStore.removeItemFromUserWishlist(userId, productId),
     

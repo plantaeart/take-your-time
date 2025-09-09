@@ -62,6 +62,7 @@ export class RowTabComponent<T = any> {
   hierarchyConfig = input<HierarchyConfig | null>(null);
   isNew = input<boolean>(false);
   isCartEmpty = input<boolean>(false); // For cart empty state styling
+  excludeProductIds = input<number[]>([]); // Product IDs to exclude from product selection
   
   // Outputs
   edit = output<void>();
@@ -444,12 +445,10 @@ export class RowTabComponent<T = any> {
   private _productCache: { key: string; product: any } | null = null;
   
   getExistingCartProductIds(): number[] {
-    // This method should return product IDs that are already in the cart
-    // to exclude them from the product selection dropdown
-    
-    // For now, return empty array - this would be populated by the parent component
-    // or could be passed as an input if needed
-    return [];
+    // Return the product IDs that should be excluded from product selection
+    // This input is provided by the parent component and contains all product IDs
+    // already in the user's cart or wishlist
+    return this.excludeProductIds() || [];
   }
   
   onProductSelected(product: any): void {

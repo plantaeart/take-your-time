@@ -23,6 +23,7 @@ export interface CartItemCreate {
 }
 
 export interface CartItemUpdate {
+  productId?: number;  // Optional - if provided, changes the product
   quantity: number;
 }
 

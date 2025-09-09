@@ -81,6 +81,36 @@ export class AdminCartStore {
   }
 
   /**
+   * Update cart item (supports both quantity and product changes)
+   */
+  async updateCartItem(userId: number, oldProductId: number, update: { productId?: number; quantity: number }): Promise<boolean> {
+    this._isLoading.set(true);
+    this._error.set(null);
+
+    try {
+      const response = await firstValueFrom(this.adminCartService.updateCartItem(userId, oldProductId, update));
+      
+      // Backend returns {message: '...'} without success property
+      // Check for successful response by presence of message and no error
+      if (response?.message && !response?.error) {
+        this._lastUpdatedUserId.set(userId);
+        this._lastUpdatedProductId.set(update.productId || oldProductId);
+        return true;
+      } else {
+        this._error.set('Failed to update cart item');
+        return false;
+      }
+    } catch (error: any) {
+      const errorMessage = error?.error?.detail || error?.message || 'Failed to update cart item';
+      this._error.set(errorMessage);
+      console.error('Cart update error:', error);
+      return false;
+    } finally {
+      this._isLoading.set(false);
+    }
+  }
+
+  /**
    * Remove an item from a user's cart
    */
   async removeCartItem(userId: number, productId: number): Promise<boolean> {

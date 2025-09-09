@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { AdminWishlistService, ApiSuccessResponse, WishlistItemAddRequest } from '../services/admin-wishlist.service';
+import { AdminWishlistService, ApiSuccessResponse, WishlistItemAddRequest, WishlistItemUpdateRequest } from '../services/admin-wishlist.service';
 
 @Injectable({
   providedIn: 'root'
@@ -44,6 +44,35 @@ export class AdminWishlistStore {
       const errorMessage = error?.error?.detail || error?.message || 'Failed to add item to wishlist';
       this._error.set(errorMessage);
       console.error('Wishlist add error:', error);
+      return false;
+    } finally {
+      this._isLoading.set(false);
+    }
+  }
+
+  /**
+   * Update an item in a user's wishlist (change product)
+   */
+  async updateWishlistItem(userId: number, originalProductId: number, updateData: WishlistItemUpdateRequest): Promise<boolean> {
+    this._isLoading.set(true);
+    this._error.set(null);
+
+    try {
+      const response = await firstValueFrom(this.adminWishlistService.updateWishlistItem(userId, originalProductId, updateData));
+      
+      // Backend returns {message: '...'} without success property
+      if (response?.message && !response?.error) {
+        this._lastUpdatedUserId.set(userId);
+        this._lastUpdatedProductId.set(updateData.productId);
+        return true;
+      } else {
+        this._error.set('Failed to update wishlist item');
+        return false;
+      }
+    } catch (error: any) {
+      const errorMessage = error?.error?.detail || error?.message || 'Failed to update wishlist item';
+      this._error.set(errorMessage);
+      console.error('Wishlist update error:', error);
       return false;
     } finally {
       this._isLoading.set(false);

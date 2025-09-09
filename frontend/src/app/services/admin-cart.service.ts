@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export interface CartItemUpdateRequest {
+  productId?: number;  // Optional - if provided, changes the product
   quantity: number;
 }
 
@@ -42,6 +43,14 @@ export class AdminCartService {
     const payload: CartItemUpdateRequest = { quantity };
     
     return this.http.put<ApiSuccessResponse>(url, payload);
+  }
+
+  /**
+   * Update cart item (supports both quantity and product changes)
+   */
+  updateCartItem(userId: number, oldProductId: number, update: CartItemUpdateRequest): Observable<ApiSuccessResponse> {
+    const url = `${this.baseUrl}/api/admin/users/${userId}/cart/items/${oldProductId}`;
+    return this.http.put<ApiSuccessResponse>(url, update);
   }
 
   /**

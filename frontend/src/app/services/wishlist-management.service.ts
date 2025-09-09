@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { WishlistItem, WishlistItemCreate } from '../models/wishlist.model';
+import { WishlistItem, WishlistItemCreate, WishlistItemUpdate } from '../models/wishlist.model';
 import { ApiMessage } from '../models/apiMessage.model';
 
 /**
@@ -61,6 +61,14 @@ export class WishlistManagementService {
    */
   addItemToWishlist(userId: number, item: WishlistItemCreate): Observable<ApiMessage> {
     return this.http.post<ApiMessage>(`${this.apiUrl}/api/admin/users/${userId}/wishlist/items`, item);
+  }
+
+  /**
+   * Update wishlist item (replace with new product using PUT endpoint)
+   */
+  updateWishlistItem(userId: number, oldProductId: number, newProductId: number): Observable<ApiMessage> {
+    const updateData: WishlistItemUpdate = { productId: newProductId };
+    return this.http.put<ApiMessage>(`${this.apiUrl}/api/admin/users/${userId}/wishlist/items/${oldProductId}`, updateData);
   }
 
   /**

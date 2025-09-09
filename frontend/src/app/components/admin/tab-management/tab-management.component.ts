@@ -14,6 +14,7 @@ import { TabColumnsHeaderComponent } from '../tab-columns-header/tab-columns-hea
 import { ButtonConfirmPopupComponent, FilterButtonConfig } from '../../ui/button-confirm-popup/button-confirm-popup.component';
 import { GlobalSearchComponent } from '../../ui/global-search/global-search.component';
 import { useAdminCart } from '../../../hooks/admin-cart.hooks';
+import { useAdminWishlist } from '../../../hooks/admin-wishlist.hooks';
 
 interface FilterState {
   [key: string]: any;
@@ -61,7 +62,9 @@ export class TabManagementComponent<T = any> implements OnInit {
   private router = inject(Router);
   
   // Admin cart hooks for handling cart-specific actions
+  // Admin cart and wishlist hooks for handling cart/wishlist operations
   private adminCart = useAdminCart();
+  private adminWishlist = useAdminWishlist();
 
   // Inputs
   config = input.required<TableManagementConfig<T>>();
@@ -607,6 +610,29 @@ export class TabManagementComponent<T = any> implements OnInit {
     return item[column.field];
   }
 
+  getExcludeProductIdsForUser(userId: any): number[] {
+    // Get all product IDs that are already in the user's cart or wishlist
+    // to exclude them from product selection
+    const excludeIds: number[] = [];
+    
+    // Find the user data in the hierarchical data
+    const userItem = this.hierarchicalData().find(item => 
+      this.getColumnValue(item.data, { field: this.config().dataKey }) === userId
+    );
+    
+    if (userItem && userItem.children) {
+      // Extract product IDs from all child items (cart and wishlist)
+      userItem.children.forEach(child => {
+        const productId = this.getColumnValue(child.data, { field: 'productId' });
+        if (productId && !excludeIds.includes(productId)) {
+          excludeIds.push(productId);
+        }
+      });
+    }
+    
+    return excludeIds;
+  }
+
   triggerDataLoad(): void {
     const sortConfig = this.sortState();
     const sorts = sortConfig.field ? [{ field: sortConfig.field, direction: sortConfig.order }] : [];
@@ -666,12 +692,21 @@ export class TabManagementComponent<T = any> implements OnInit {
 
   async saveEdit(editedData: Partial<T>): Promise<void> {
     try {
-      // Check if this is a cart item update (has productId and userId)
-      const isCartItem = (editedData as any).productId && ((editedData as any).userId || (editedData as any).parentUserId);
+      // Check if this is a cart or wishlist item update (has productId and userId)
+      const isCartOrWishlistItem = (editedData as any).productId && ((editedData as any).userId || (editedData as any).parentUserId);
       
-      if (isCartItem) {
-        // Handle cart item quantity update
-        await this.handleCartItemUpdate(editedData as any);
+      if (isCartOrWishlistItem) {
+        // Determine if this is a cart or wishlist item based on the configuration
+        const hierarchyConfig = this.config().hierarchyConfig;
+        const childAttributeField = hierarchyConfig?.childAttributeField;
+        
+        if (childAttributeField === 'cart') {
+          await this.handleCartItemUpdate(editedData as any);
+        } else if (childAttributeField === 'wishlist') {
+          await this.handleWishlistItemUpdate(editedData as any);
+        } else {
+          throw new Error('Unknown item type for cart/wishlist update');
+        }
       } else if (this.config().updateItem) {
         // Handle regular item update
         const itemId = (editedData as any)[this.config().dataKey];
@@ -691,24 +726,106 @@ export class TabManagementComponent<T = any> implements OnInit {
   }
 
   /**
-   * Handle cart item quantity update
+   * Handle cart item update (quantity and/or product change)
    */
   private async handleCartItemUpdate(cartItem: any): Promise<void> {
     // For cart items (level 1), use parentUserId as the actual user ID
     // cartItem.userId contains composite ID like "2_1", parentUserId contains actual user ID
     const userId = cartItem.parentUserId || cartItem.userId;
-    const productId = cartItem.productId;
+    const newProductId = cartItem.productId;
     const quantity = cartItem.quantity;
     
-    if (!userId || !productId || !quantity) {
+    if (!userId || !newProductId || !quantity) {
       throw new Error('Missing required cart item information');
     }
 
-    const success = await this.adminCart.updateCartItemQuantity(userId, productId, quantity);
+    // Get original item data to check for product changes
+    const originalItem = this.editingItem();
+    if (!originalItem) {
+      throw new Error('Original item data not available');
+    }
+
+    const originalProductId = (originalItem as any).productId;
+    
+    // Check if product ID has changed
+    const productChanged = originalProductId !== newProductId;
+    
+    let success: boolean;
+    
+    if (productChanged) {
+      // Use comprehensive update method that supports product changes
+      // URL should use original product ID, request body contains new product ID
+      success = await this.adminCart.updateCartItem(userId, originalProductId, {
+        productId: newProductId,
+        quantity: quantity
+      });
+    } else {
+      // Only quantity changed, use quantity-only update method
+      success = await this.adminCart.updateCartItemQuantity(userId, originalProductId, quantity);
+    }
+    
     if (!success) {
       const storeError = this.adminCart.error();
-      throw new Error(`Failed to update cart item quantity${storeError ? ': ' + storeError : ''}`);
+      throw new Error(`Failed to update cart item${storeError ? ': ' + storeError : ''}`);
     }
+
+    // Show success toast notification
+    const isProductChange = productChanged;
+    const successMessage = isProductChange 
+      ? `Cart item product updated successfully (ID ${originalProductId} → ${newProductId})`
+      : 'Cart item quantity updated successfully';
+      
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Success',
+      detail: successMessage
+    });
+  }
+
+  /**
+   * Handle wishlist item update (product change only, no quantity for wishlist)
+   */
+  private async handleWishlistItemUpdate(wishlistItem: any): Promise<void> {
+    // For wishlist items (level 1), use parentUserId as the actual user ID
+    // wishlistItem.userId contains composite ID like "2_1", parentUserId contains actual user ID
+    const userId = wishlistItem.parentUserId || wishlistItem.userId;
+    const newProductId = wishlistItem.productId;
+    
+    if (!userId || !newProductId) {
+      throw new Error('Missing required wishlist item information');
+    }
+
+    // Get original item data to check for product changes
+    const originalItem = this.editingItem();
+    if (!originalItem) {
+      throw new Error('Original item data not available');
+    }
+
+    const originalProductId = (originalItem as any).productId;
+    
+    // Check if product ID has changed
+    const productChanged = originalProductId !== newProductId;
+    
+    if (productChanged) {
+      // For wishlist, we need to use the comprehensive update method
+      // URL should use original product ID, request body contains new product ID
+      const success = await this.adminWishlist.updateWishlistItem(userId, originalProductId, {
+        productId: newProductId
+      });
+      
+      if (!success) {
+        const storeError = this.adminWishlist.error();
+        throw new Error(`Failed to update wishlist item${storeError ? ': ' + storeError : ''}`);
+      }
+
+      // Show success toast notification for product change
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Success',
+        detail: `Wishlist item product updated successfully (ID ${originalProductId} → ${newProductId})`
+      });
+    }
+    // If product didn't change, no update needed for wishlist items
   }
 
   async deleteItem(item: T): Promise<void> {

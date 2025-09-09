@@ -21,6 +21,10 @@ export interface WishlistItemCreate {
   productId: number;
 }
 
+export interface WishlistItemUpdate {
+  productId: number;
+}
+
 export interface WishlistResponse {
   userId: number;
   items: WishlistItem[];

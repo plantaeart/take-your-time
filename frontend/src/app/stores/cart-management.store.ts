@@ -164,6 +164,22 @@ export class CartManagementStore {
         await this.loadUserCartDetails(userId);
       }
     } catch (error: any) {
+      // Check if the error is "item not found in cart" - if so, try to add instead
+      const isItemNotFound = error?.error?.detail?.includes('not found in cart') || 
+                            error?.message?.includes('not found in cart');
+      
+      if (isItemNotFound) {
+        console.log('🔄 Item not found in cart, attempting to add instead...');
+        try {
+          // Try to add the item instead of updating
+          await this.addItemToUserCart(userId, { productId, quantity: update.quantity });
+          return; // Exit early if add was successful
+        } catch (addError: any) {
+          // If add also fails, continue with original error handling
+          console.error('❌ Add item also failed:', addError);
+        }
+      }
+      
       this._error.set(error.message || 'Failed to update cart item');
       this.messageService.add({
         severity: 'error',
@@ -191,6 +207,12 @@ export class CartManagementStore {
         userId,
         productId,
         timestamp: new Date()
+      });
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Item Removed! 🗑️',
+        detail: `Product ${productId} successfully removed from user ${userId}'s cart.`
       });
 
       // Refresh cart details if currently viewing this user's cart
@@ -224,6 +246,12 @@ export class CartManagementStore {
         type: 'clear',
         userId,
         timestamp: new Date()
+      });
+
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Cart Cleared! 🛒',
+        detail: `All items successfully removed from user ${userId}'s cart.`
       });
 
       // Refresh cart details if currently viewing this user's cart
