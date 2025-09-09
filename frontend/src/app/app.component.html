@@ -6,7 +6,7 @@
   <!-- Main App Layout with Toolbar and Sidebar -->
   <p-toolbar id="app-main-toolbar" [style]="{ height: '100px' }">
       <div class="p-toolbar-group-start">
-          <img id="app-logo-img" src="assets/icons/icon-512x512.png" alt="logo" />
+          <img id="app-logo-img" src="assets/icons/icon.png" alt="logo" />
           @if (auth.user()) {
             <div id="app-user-welcome" class="user-welcome">
               <span class="welcome-text">Hello, {{ auth.user()?.username }}!</span>
