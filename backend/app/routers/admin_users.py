@@ -15,7 +15,7 @@ from app.models.wishlist import WishlistModel, WishlistItem
 from app.models.enums.messages import UserErrorMessages, ProductErrorMessages, CartErrorMessages, WishlistErrorMessages, SuccessMessages, get_success_response
 from app.schemas.user import UserResponse, UserCreate, UserUpdate
 from app.schemas.cart import CartResponse, CartItemResponse, CartItemCreate, CartItemUpdate
-from app.schemas.wishlist import WishlistResponse, WishlistItemResponse, WishlistItemCreate
+from app.schemas.wishlist import WishlistResponse, WishlistItemResponse, WishlistItemCreate, WishlistItemUpdate
 from app.models.enums.messages import (
     AuthErrorMessages, UserErrorMessages, ProductErrorMessages, 
     CartErrorMessages, WishlistErrorMessages, SuccessMessages,
@@ -451,12 +451,12 @@ async def remove_item_from_user_cart(
 @router.put("/users/{userId}/cart/items/{productId}")
 async def update_user_cart_item(
     userId: int = Path(..., description="User ID"),
-    productId: int = Path(..., description="Product ID"),
+    productId: int = Path(..., description="Original Product ID"),
     *,
     itemData: CartItemUpdate,
     adminUser: Annotated[UserModel, Depends(admin_required)]
 ):
-    """Update quantity of an item in a user's cart."""
+    """Update cart item - can update quantity and/or replace with different product."""
     # Prevent admin from managing their own cart
     if userId == adminUser.id:
         raise HTTPException(
@@ -473,9 +473,12 @@ async def update_user_cart_item(
             detail=UserErrorMessages.USER_NOT_FOUND.value
         )
     
-    # Verify product exists and check stock
+    # Determine target product ID (could be different if product is being changed)
+    targetProductId: int = itemData.productId if itemData.productId is not None else productId
+    
+    # Verify target product exists and check stock
     productsCollection: Collection = db_manager.get_collection("products")
-    product: Optional[Dict[str, Any]] = await productsCollection.find_one({"id": productId})
+    product: Optional[Dict[str, Any]] = await productsCollection.find_one({"id": targetProductId})
     if not product:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -483,14 +486,16 @@ async def update_user_cart_item(
         )
     
     if product["quantity"] < itemData.quantity:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=format_message(
-                    ProductErrorMessages.INSUFFICIENT_STOCK_UPDATE,
-                    requestedQuantity=itemData.quantity,
-                    stockQuantity=product["quantity"]
-                )
-            )    # Get user's cart
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=format_message(
+                ProductErrorMessages.INSUFFICIENT_STOCK_UPDATE,
+                requestedQuantity=itemData.quantity,
+                stockQuantity=product["quantity"]
+            )
+        )
+    
+    # Get user's cart
     cartsCollection: Collection = db_manager.get_collection("carts")
     cartDoc: Optional[Dict[str, Any]] = await cartsCollection.find_one({"userId": userId})
     
@@ -502,10 +507,23 @@ async def update_user_cart_item(
     
     cart: CartModel = CartModel(**cartDoc)
     
-    # Find and update the item
+    # Find the original item to update
     itemFound: bool = False
     for item in cart.items:
         if item.productId == productId:
+            # If changing product, check that new product isn't already in cart
+            if itemData.productId is not None and itemData.productId != productId:
+                # Check if target product already exists in cart
+                for existingItem in cart.items:
+                    if existingItem.productId == targetProductId:
+                        raise HTTPException(
+                            status_code=status.HTTP_409_CONFLICT,
+                            detail=f"Product {targetProductId} is already in cart"
+                        )
+                # Update to new product
+                item.productId = targetProductId
+            
+            # Update quantity
             item.quantity = itemData.quantity
             item.updatedAt = datetime.now()
             itemFound = True
@@ -683,6 +701,87 @@ async def add_item_to_user_wishlist(
     )
     
     return get_success_response(SuccessMessages.ITEM_ADDED_TO_USER_WISHLIST)
+
+
+@router.put("/users/{userId}/wishlist/items/{productId}")
+async def update_user_wishlist_item(
+    userId: int = Path(..., description="User ID"),
+    productId: int = Path(..., description="Original Product ID"),
+    *,
+    itemData: WishlistItemUpdate,
+    adminUser: Annotated[UserModel, Depends(admin_required)]
+):
+    """Update wishlist item - replace with different product."""
+    # Prevent admin from managing their own wishlist
+    if userId == adminUser.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=UserErrorMessages.ADMIN_SELF_MANAGEMENT_FORBIDDEN.value
+        )
+    
+    # Verify user exists
+    usersCollection: Collection = db_manager.get_collection("users")
+    user: Optional[Dict[str, Any]] = await usersCollection.find_one({"id": userId})
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=UserErrorMessages.USER_NOT_FOUND.value
+        )
+    
+    # Verify new product exists
+    productsCollection: Collection = db_manager.get_collection("products")
+    product: Optional[Dict[str, Any]] = await productsCollection.find_one({"id": itemData.productId})
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=ProductErrorMessages.PRODUCT_NOT_FOUND.value
+        )
+    
+    # Get user's wishlist
+    wishlistsCollection: Collection = db_manager.get_collection("wishlists")
+    wishlistDoc: Optional[Dict[str, Any]] = await wishlistsCollection.find_one({"userId": userId})
+    
+    if not wishlistDoc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=WishlistErrorMessages.USER_WISHLIST_NOT_FOUND.value
+        )
+    
+    wishlist: WishlistModel = WishlistModel(**wishlistDoc)
+    
+    # Find the original item to update
+    itemFound: bool = False
+    for item in wishlist.items:
+        if item.productId == productId:
+            # Check if new product already exists in wishlist
+            if itemData.productId != productId:
+                for existingItem in wishlist.items:
+                    if existingItem.productId == itemData.productId:
+                        raise HTTPException(
+                            status_code=status.HTTP_409_CONFLICT,
+                            detail=f"Product {itemData.productId} is already in wishlist"
+                        )
+            
+            # Update to new product
+            item.productId = itemData.productId
+            item.addedAt = datetime.now()  # Update timestamp since it's a new product
+            itemFound = True
+            break
+    
+    if not itemFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=WishlistErrorMessages.ITEM_NOT_FOUND_IN_WISHLIST.value
+        )
+    
+    # Update wishlist
+    wishlist.updatedAt = datetime.now()
+    await wishlistsCollection.update_one(
+        {"userId": userId},
+        {"$set": wishlist.model_dump()}
+    )
+    
+    return get_success_response(SuccessMessages.WISHLIST_ITEM_UPDATED)
 
 
 @router.delete("/users/{userId}/wishlist/items/{productId}")

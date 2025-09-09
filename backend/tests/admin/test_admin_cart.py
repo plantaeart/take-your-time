@@ -343,3 +343,283 @@ class TestAdminCartManagement:
             cartData: Dict[str, Any] = response.json()
             assert cartData["totalItems"] == i + 2
             assert cartData["items"][0]["quantity"] == i + 2
+
+    def test_update_user_cart_item_product_change_success(self, client: TestClient, admin_token: str) -> None:
+        """Test successful cart item update with product change."""
+        headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
+        
+        # Create test user
+        userData: Dict[str, str] = {
+            "username": "cartproductchange",
+            "firstname": "CartProduct",
+            "email": "cartproductchange@example.com",
+            "password": "TestPass123!"
+        }
+        userResponse = client.post("/api/account", json=userData)
+        userId: int = userResponse.json()["id"]
+        
+        # Create two test products
+        product1Data: Dict[str, Any] = {
+            "name": "Original Cart Product",
+            "description": "Original product in cart",
+            "category": Category.ELECTRONICS.value,
+            "price": 49.99,
+            "quantity": 20,
+            "shellId": 1001,
+            "inventoryStatus": InventoryStatus.INSTOCK.value
+        }
+        product1Response = client.post("/api/products", json=product1Data, headers=headers)
+        product1Id: int = product1Response.json()["id"]
+        
+        product2Data: Dict[str, Any] = {
+            "name": "Replacement Cart Product",
+            "description": "New product to replace the original",
+            "category": Category.CLOTHING.value,
+            "price": 79.99,
+            "quantity": 15,
+            "shellId": 1002,
+            "inventoryStatus": InventoryStatus.INSTOCK.value
+        }
+        product2Response = client.post("/api/products", json=product2Data, headers=headers)
+        product2Id: int = product2Response.json()["id"]
+        
+        # Add original product to cart
+        itemData: Dict[str, int] = {"productId": product1Id, "quantity": 3}
+        addResponse = client.post(f"/api/admin/users/{userId}/cart/items", json=itemData, headers=headers)
+        assert addResponse.status_code == HTTPStatus.OK.value
+        
+        # Verify original product is in cart
+        getResponse = client.get(f"/api/admin/users/{userId}/cart", headers=headers)
+        cartData: Dict[str, Any] = getResponse.json()
+        assert len(cartData["items"]) == 1
+        assert cartData["items"][0]["productId"] == product1Id
+        assert cartData["items"][0]["quantity"] == 3
+        
+        # Update cart item to new product with new quantity
+        updateData: Dict[str, int] = {"productId": product2Id, "quantity": 5}
+        updateResponse = client.put(f"/api/admin/users/{userId}/cart/items/{product1Id}", json=updateData, headers=headers)
+        assert updateResponse.status_code == HTTPStatus.OK.value
+        
+        # Verify product and quantity were updated
+        getResponse = client.get(f"/api/admin/users/{userId}/cart", headers=headers)
+        updatedCartData: Dict[str, Any] = getResponse.json()
+        assert len(updatedCartData["items"]) == 1
+        assert updatedCartData["items"][0]["productId"] == product2Id
+        assert updatedCartData["items"][0]["quantity"] == 5
+        assert updatedCartData["totalItems"] == 5
+
+    def test_update_user_cart_item_product_change_duplicate(self, client: TestClient, admin_token: str) -> None:
+        """Test updating cart item to a product that's already in the cart."""
+        headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
+        
+        # Create test user
+        userData: Dict[str, str] = {
+            "username": "cartduplicateupdate",
+            "firstname": "CartDuplicate",
+            "email": "cartduplicateupdate@example.com",
+            "password": "TestPass123!"
+        }
+        userResponse = client.post("/api/account", json=userData)
+        userId: int = userResponse.json()["id"]
+        
+        # Create two test products
+        product1Data: Dict[str, Any] = {
+            "name": "First Cart Product",
+            "description": "First product",
+            "category": Category.ELECTRONICS.value,
+            "price": 99.99,
+            "quantity": 10,
+            "shellId": 2001,
+            "inventoryStatus": InventoryStatus.INSTOCK.value
+        }
+        product1Response = client.post("/api/products", json=product1Data, headers=headers)
+        product1Id: int = product1Response.json()["id"]
+        
+        product2Data: Dict[str, Any] = {
+            "name": "Second Cart Product",
+            "description": "Second product",
+            "category": Category.CLOTHING.value,
+            "price": 59.99,
+            "quantity": 8,
+            "shellId": 2002,
+            "inventoryStatus": InventoryStatus.INSTOCK.value
+        }
+        product2Response = client.post("/api/products", json=product2Data, headers=headers)
+        product2Id: int = product2Response.json()["id"]
+        
+        # Add both products to cart
+        itemData1: Dict[str, int] = {"productId": product1Id, "quantity": 2}
+        client.post(f"/api/admin/users/{userId}/cart/items", json=itemData1, headers=headers)
+        
+        itemData2: Dict[str, int] = {"productId": product2Id, "quantity": 3}
+        client.post(f"/api/admin/users/{userId}/cart/items", json=itemData2, headers=headers)
+        
+        # Try to update first product to second product (should conflict)
+        updateData: Dict[str, int] = {"productId": product2Id, "quantity": 5}
+        response = client.put(f"/api/admin/users/{userId}/cart/items/{product1Id}", json=updateData, headers=headers)
+        assert response.status_code == HTTPStatus.CONFLICT.value
+
+    def test_update_user_cart_item_product_change_invalid_product(self, client: TestClient, admin_token: str) -> None:
+        """Test updating cart item with non-existent new product."""
+        headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
+        
+        # Create test user
+        userData: Dict[str, str] = {
+            "username": "cartinvalidproduct",
+            "firstname": "CartInvalid",
+            "email": "cartinvalidproduct@example.com",
+            "password": "TestPass123!"
+        }
+        userResponse = client.post("/api/account", json=userData)
+        userId: int = userResponse.json()["id"]
+        
+        # Create test product for cart
+        productData: Dict[str, Any] = {
+            "name": "Cart Product",
+            "description": "Product for cart",
+            "category": Category.FITNESS.value,
+            "price": 29.99,
+            "quantity": 10,
+            "shellId": 3001,
+            "inventoryStatus": InventoryStatus.INSTOCK.value
+        }
+        productResponse = client.post("/api/products", json=productData, headers=headers)
+        productId: int = productResponse.json()["id"]
+        
+        # Add product to cart
+        itemData: Dict[str, int] = {"productId": productId, "quantity": 2}
+        client.post(f"/api/admin/users/{userId}/cart/items", json=itemData, headers=headers)
+        
+        # Try to update with non-existent product
+        updateData: Dict[str, int] = {"productId": 99999, "quantity": 3}
+        response = client.put(f"/api/admin/users/{userId}/cart/items/{productId}", json=updateData, headers=headers)
+        assert response.status_code == HTTPStatus.NOT_FOUND.value
+
+    def test_update_user_cart_item_same_product_quantity_change(self, client: TestClient, admin_token: str) -> None:
+        """Test updating cart item to same product with different quantity."""
+        headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
+        
+        # Create test user
+        userData: Dict[str, str] = {
+            "username": "cartsameproduct",
+            "firstname": "CartSame",
+            "email": "cartsameproduct@example.com",
+            "password": "TestPass123!"
+        }
+        userResponse = client.post("/api/account", json=userData)
+        userId: int = userResponse.json()["id"]
+        
+        # Create test product
+        productData: Dict[str, Any] = {
+            "name": "Same Product Update Test",
+            "description": "Product for same update test",
+            "category": Category.FITNESS.value,
+            "price": 39.99,
+            "quantity": 12,
+            "shellId": 4001,
+            "inventoryStatus": InventoryStatus.INSTOCK.value
+        }
+        productResponse = client.post("/api/products", json=productData, headers=headers)
+        productId: int = productResponse.json()["id"]
+        
+        # Add product to cart
+        itemData: Dict[str, int] = {"productId": productId, "quantity": 2}
+        client.post(f"/api/admin/users/{userId}/cart/items", json=itemData, headers=headers)
+        
+        # Update to same product with different quantity
+        updateData: Dict[str, int] = {"productId": productId, "quantity": 7}
+        response = client.put(f"/api/admin/users/{userId}/cart/items/{productId}", json=updateData, headers=headers)
+        assert response.status_code == HTTPStatus.OK.value
+        
+        # Verify quantity was updated
+        getResponse = client.get(f"/api/admin/users/{userId}/cart", headers=headers)
+        cartData: Dict[str, Any] = getResponse.json()
+        assert len(cartData["items"]) == 1
+        assert cartData["items"][0]["productId"] == productId
+        assert cartData["items"][0]["quantity"] == 7
+        assert cartData["totalItems"] == 7
+
+    def test_update_user_cart_item_quantity_only(self, client: TestClient, admin_token: str) -> None:
+        """Test updating cart item quantity without changing product."""
+        headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
+        
+        # Create test user
+        userData: Dict[str, str] = {
+            "username": "cartquantityonly",
+            "firstname": "CartQuantity",
+            "email": "cartquantityonly@example.com",
+            "password": "TestPass123!"
+        }
+        userResponse = client.post("/api/account", json=userData)
+        userId: int = userResponse.json()["id"]
+        
+        # Create test product
+        productData: Dict[str, Any] = {
+            "name": "Quantity Only Update Test",
+            "description": "Product for quantity-only update test",
+            "category": Category.ACCESSORIES.value,
+            "price": 19.99,
+            "quantity": 15,
+            "shellId": 5001,
+            "inventoryStatus": InventoryStatus.INSTOCK.value
+        }
+        productResponse = client.post("/api/products", json=productData, headers=headers)
+        productId: int = productResponse.json()["id"]
+        
+        # Add product to cart
+        itemData: Dict[str, int] = {"productId": productId, "quantity": 3}
+        client.post(f"/api/admin/users/{userId}/cart/items", json=itemData, headers=headers)
+        
+        # Update quantity only (no productId in update data)
+        updateData: Dict[str, int] = {"quantity": 8}
+        response = client.put(f"/api/admin/users/{userId}/cart/items/{productId}", json=updateData, headers=headers)
+        assert response.status_code == HTTPStatus.OK.value
+        
+        # Verify only quantity was updated
+        getResponse = client.get(f"/api/admin/users/{userId}/cart", headers=headers)
+        cartData: Dict[str, Any] = getResponse.json()
+        assert len(cartData["items"]) == 1
+        assert cartData["items"][0]["productId"] == productId  # Same product
+        assert cartData["items"][0]["quantity"] == 8  # Updated quantity
+        assert cartData["totalItems"] == 8
+
+    def test_update_user_cart_item_invalid_quantity(self, client: TestClient, admin_token: str) -> None:
+        """Test updating cart item with invalid quantity."""
+        headers: Dict[str, str] = {"Authorization": f"Bearer {admin_token}"}
+        
+        # Create test user
+        userData: Dict[str, str] = {
+            "username": "cartinvalidqty",
+            "firstname": "CartInvalidQty",
+            "email": "cartinvalidqty@example.com",
+            "password": "TestPass123!"
+        }
+        userResponse = client.post("/api/account", json=userData)
+        userId: int = userResponse.json()["id"]
+        
+        # Create test product
+        productData: Dict[str, Any] = {
+            "name": "Invalid Quantity Test Product",
+            "description": "Product for invalid quantity test",
+            "category": Category.ELECTRONICS.value,
+            "price": 49.99,
+            "quantity": 10,
+            "shellId": 6001,
+            "inventoryStatus": InventoryStatus.INSTOCK.value
+        }
+        productResponse = client.post("/api/products", json=productData, headers=headers)
+        productId: int = productResponse.json()["id"]
+        
+        # Add product to cart
+        itemData: Dict[str, int] = {"productId": productId, "quantity": 2}
+        client.post(f"/api/admin/users/{userId}/cart/items", json=itemData, headers=headers)
+        
+        # Try to update with invalid quantity (negative)
+        updateData: Dict[str, int] = {"quantity": -1}
+        response = client.put(f"/api/admin/users/{userId}/cart/items/{productId}", json=updateData, headers=headers)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY.value
+        
+        # Try to update with zero quantity
+        updateData = {"quantity": 0}
+        response = client.put(f"/api/admin/users/{userId}/cart/items/{productId}", json=updateData, headers=headers)
+        assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY.value

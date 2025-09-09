@@ -97,6 +97,7 @@ class SuccessMessages(Enum):
     USER_CART_CLEARED = "User's cart cleared successfully"
     ITEM_ADDED_TO_USER_WISHLIST = "Item added to user's wishlist successfully"
     ITEM_REMOVED_FROM_USER_WISHLIST = "Item removed from user's wishlist successfully"
+    WISHLIST_ITEM_UPDATED = "Wishlist item updated successfully"
     USER_WISHLIST_CLEARED = "User's wishlist cleared successfully"
 
 

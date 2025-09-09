@@ -26,7 +26,8 @@ class CartItemCreate(BaseModel):
 
 
 class CartItemUpdate(BaseModel):
-    """Schema for updating cart item quantity."""
+    """Schema for updating cart item - can update quantity and/or product."""
+    productId: Optional[int] = Field(None, description="New product ID (if changing product)")
     quantity: int = Field(..., ge=1, description="New quantity")
 
 
